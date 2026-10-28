@@ -581,7 +581,10 @@ public final class Gota {
 
     // ---------- Minimización numérica (sdf y t*) ----------
 
-    /** f en el muestreo grueso: con elipses usa una distancia aproximada (Sampson) en vez de la exacta. */
+    /**
+     * f en el muestreo grueso. Usa la misma f exacta que el refinado: el muestreo con la distancia aproximada de
+     * Sampson daba mínimos erróneos con elipses. Sampson queda solo como alternativa de distanciaElipse.
+     */
     private double fMuestreo(double x, double y, double t, boolean porRho) {
         return f(x, y, t, porRho);
     }
