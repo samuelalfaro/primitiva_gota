@@ -12,6 +12,55 @@
 
     <properties>
         <maven.compiler.release>17</maven.compiler.release>
+        <!-- Para versiones antiguas del plugin del compilador (< 3.6), que no conocen "release" y usan 1.5 por defecto -->
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+            </plugin>
+            <!-- Los ejemplos (src/ejemplos/java) se compilan junto con las pruebas, para que sigan compilando con la API. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <id>ejemplos</id>
+                        <phase>generate-test-sources</phase>
+                        <goals><goal>add-test-source</goal></goals>
+                        <configuration>
+                            <sources><source>src/ejemplos/java</source></sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- "mvn test" ejecuta todas las suites (clase Todas, una JVM por suite). -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <id>suites</id>
+                        <phase>test</phase>
+                        <goals><goal>java</goal></goals>
+                        <configuration>
+                            <classpathScope>test</classpathScope>
+                            <mainClass>Todas</mainClass>
+                            <arguments>
+                                <argument>${project.build.outputDirectory}${path.separator}${project.build.testOutputDirectory}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>
