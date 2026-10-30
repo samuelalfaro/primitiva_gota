@@ -17,7 +17,7 @@ public class LadosDemo {
         for (int k = 0; k < 2; k++) {
             BufferedImage p = new BufferedImage(440, 330, BufferedImage.TYPE_INT_ARGB);
             java.util.Arrays.fill(((DataBufferInt) p.getRaster().getDataBuffer()).getData(), 0xFFF4F1EA);
-            gs[k].render(p, Rellenos.tira(tex));
+            gs[k].render(p, Texturas.tira(tex));
             out.getGraphics().drawImage(p, k * 440, 0, null);
         }
         ImageIO.write(out, "png", new File("lados_demo.png"));
