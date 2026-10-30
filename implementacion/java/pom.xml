@@ -11,8 +11,7 @@
     <description>Primitiva 2D formada por dos elipses unidas por una curva Bézier.</description>
 
     <properties>
-        <maven.compiler.release>17</maven.compiler.release>
-        <!-- Para versiones antiguas del plugin del compilador (< 3.6), que no conocen "release" y usan 1.5 por defecto -->
+        <!-- source/target en vez de release: no necesitan lib/ct.sym, que falta en algunos JDK de Ubuntu -->
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
