@@ -317,7 +317,7 @@ public class GotaRegresion {
         comprueba("composición alfa (src-over) contra la fórmula de referencia", malos == 0, malos + " casos de 15. " + primero);
 
         Gota curva = Gota.curva(p(30, 150), 25, new Gota.Vec(0, -120), p(150, 150), 15, new Gota.Vec(0, -120), Gota.Perfil.central(1.3));
-        Gota.Relleno rel = Rellenos.conGamma(0xFFFFE27A, 0xFF2563EB, 0xFFC2410C, 0xFF1E1B4B, 2.0, 0.7);
+        Gota.Relleno rel = Colores.conGamma(0xFFFFE27A, 0xFF2563EB, 0xFFC2410C, 0xFF1E1B4B, 2.0, 0.7);
         boolean iguales = true;
         for (Gota gg : new Gota[] { curva, curva.conSolape(Gota.Solape.TRAZO) }) {
             BufferedImage a1 = fondoRuido(200, 180, 7), a2 = fondoRuido(200, 180, 7);

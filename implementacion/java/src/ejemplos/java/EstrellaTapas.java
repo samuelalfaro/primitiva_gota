@@ -11,9 +11,9 @@ public class EstrellaTapas {
         int W = 440, H = 400, FONDO = 0xFFF4F1EA;
         Texturas.Textura tex = Texturas.referencia();
         Composicion[] col = {
-                ComposicionPruebas.estrella(0).mezcla(Rellenos.RGB),
-                ComposicionPruebas.estrella(18).mezcla(Rellenos.LCH),
-                ComposicionPruebas.cadena().mezcla(Rellenos.RGB_LINEAL) };
+                ComposicionPruebas.estrella(0).mezcla(Mezcla.RGB),
+                ComposicionPruebas.estrella(18).mezcla(Mezcla.LCH),
+                ComposicionPruebas.cadena().mezcla(Mezcla.RGB_LINEAL) };
         Composicion[] txt = { ComposicionPruebas.estrella(0), ComposicionPruebas.cadena() };
         BufferedImage out = new BufferedImage(W * 3, H * 2, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(datos(out), FONDO);

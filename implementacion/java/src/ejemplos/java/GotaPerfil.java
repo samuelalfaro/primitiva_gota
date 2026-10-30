@@ -18,7 +18,7 @@ public class GotaPerfil {
             double ox = (i % 3) * 300, oy = (i / 3) * 300;
             Gota g = Gota.lineal(new Point2D.Double(ox + 60, oy + 150), 50, new Point2D.Double(ox + 240, oy + 150), 20,
                                  Gota.Perfil.radioMedio(cfg[i][0], cfg[i][1], cfg[i][2]));
-            g.render(img, Rellenos.cadena(0xFF1E1B4B, 0xFFFFE27A, 0xFF2563EB, 0xFF7C2D12));
+            g.render(img, Colores.cadena(0xFF1E1B4B, 0xFFFFE27A, 0xFF2563EB, 0xFF7C2D12));
             // marca de tm sobre el eje
             Point2D c = g.centro(g.tm());
             img.setRGB((int) c.getX(), (int) c.getY(), 0xFFFF0000);

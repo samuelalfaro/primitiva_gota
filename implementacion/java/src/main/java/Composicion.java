@@ -77,7 +77,7 @@ public final class Composicion {
 
         /**
          * Ajuste de la transición del color del centro al de los lados (0.5 lineal). Por debajo de 0.5 el punto medio de
-         * la mezcla queda más cerca del centro y la nervadura se marca; ver {@link Rellenos.Lateral#conAjuste}.
+         * la mezcla queda más cerca del centro y la nervadura se marca; ver {@link Colores.Lateral#conAjuste}.
          */
         public Nodo ajusteLateral(double s) {
             if (!(s >= 0 && s <= 1)) throw new IllegalArgumentException("ajusteLateral debe estar en [0, 1]");
@@ -87,7 +87,7 @@ public final class Composicion {
 
         /**
          * Ajuste de la mezcla polar normal -> contra en las tapas (0.5 lineal: la punta es la media). Ver
-         * {@link Rellenos.Lateral#conAjusteArco}.
+         * {@link Colores.Lateral#conAjusteArco}.
          */
         public Nodo ajusteArco(double s) {
             if (!(s >= 0 && s <= 1)) throw new IllegalArgumentException("ajusteArco debe estar en [0, 1]");
@@ -124,7 +124,7 @@ public final class Composicion {
     private final List<Nodo> nodos = new ArrayList<>();
     private final List<Arista> aristas = new ArrayList<>();
     private double suaviza = 0;
-    private Rellenos.Mezcla mezcla = Rellenos.LCH;
+    private Mezcla mezcla = Mezcla.LCH;
     private boolean ajustaPendientes = true;
 
     // Resultado de construir (se rehace tras cualquier cambio).
@@ -162,7 +162,7 @@ public final class Composicion {
     }
 
     /** Mezcla de color (por defecto LCH). Ojo: el arco corto del tono puede dejar un salto con tonos opuestos. */
-    public Composicion mezcla(Rellenos.Mezcla m) { mezcla = Objects.requireNonNull(m, "mezcla"); invalida(); return this; }
+    public Composicion mezcla(Mezcla m) { mezcla = Objects.requireNonNull(m, "mezcla"); invalida(); return this; }
 
     /** Igualar la pendiente del radio en las uniones (por defecto sí). */
 
@@ -242,7 +242,7 @@ public final class Composicion {
         Objects.requireNonNull(tex, "textura");
         construye();
         List<Gota.Relleno> rs = new ArrayList<>();
-        for (int i = 0; i < gotas.size(); i++) rs.add(Rellenos.tira(tex));
+        for (int i = 0; i < gotas.size(); i++) rs.add(Texturas.tira(tex));
         pinta(dst, rs);
     }
 
@@ -272,7 +272,7 @@ public final class Composicion {
                 if (ev[1] < 0) continue;
                 Gota g = gotas.get((int) ev[1]);
                 Gota.Relleno rl = rel.get((int) ev[1]);
-                Gota.Muestra m = g.parametros(x, y);
+                Coordenadas.Muestra m = g.parametros(x, y);
                 int c = rl.usaUv() ? rl.argb(m, g.uv(x, y)) : rl.argb(m);
                 int idx = base + j * stride + i;
                 datos[idx] = sobre(datos[idx], c, ev[0]);
@@ -394,7 +394,7 @@ public final class Composicion {
             Gota g = Gota.curva(new Point2D.Double(A.x, A.y), A.radio, r.va, new Point2D.Double(B.x, B.y), B.radio, r.vb,
                     base.aspecto(r.lamA, r.lamB));
             gotas.add(g);
-            rellenos.add(Rellenos.cadenaLateral(lateralDe(A, aristas.get(i), true), lateralDe(B, aristas.get(i), false), mezcla));
+            rellenos.add(Colores.cadenaLateral(lateralDe(A, aristas.get(i), true), lateralDe(B, aristas.get(i), false), mezcla));
             Rectangle2D gb = g.bounds();
             if (bb == null) bb = new Rectangle2D.Double(gb.getX(), gb.getY(), gb.getWidth(), gb.getHeight());
             else bb.add(gb);
@@ -428,7 +428,7 @@ public final class Composicion {
         return creciente ? new int[] { sDec, sCre } : new int[] { sCre, sDec };
     }
 
-    private Rellenos.Lateral lateralDe(Nodo n, Arista e, boolean inicio) {
+    private Colores.Lateral lateralDe(Nodo n, Arista e, boolean inicio) {
         int centro = n.centro != null ? n.centro : (n.sectores != null && n.sectores.length > 0 ? n.sectores[0] : 0xFFCCCCCC);
         List<Brazo> br = brazos(n);
         int d = br.size();
@@ -453,9 +453,9 @@ public final class Composicion {
         for (int k = 0; k < d; k++)
             if (br.get(k).e == e && br.get(k).inicio == inicio) {
                 int[] sc = sectoresDe(br, k);
-                return new Rellenos.Lateral(col[sc[0]], centro, col[sc[1]], n.ajusteLateral, n.ajusteArco);
+                return new Colores.Lateral(col[sc[0]], centro, col[sc[1]], n.ajusteLateral, n.ajusteArco);
             }
-        return Rellenos.Lateral.uniforme(centro);
+        return Colores.Lateral.uniforme(centro);
     }
 
     // ---------- Pendiente del radio ----------

@@ -21,12 +21,12 @@ public class GotaColorDemo {
         // Identidad: mezclar(c, c, u) debe devolver c (tolerancia de 1 por canal)
         String[] nombres = { "RGB", "RGB_LINEAL", "HSL corto", "HSL horario", "HSL antihorario",
                              "HSL largo", "LCH corto", "LCH horario", "LCH antihorario", "LCH largo" };
-        Rellenos.Mezcla[] todas = {
-            Rellenos.RGB, Rellenos.RGB_LINEAL,
-            Rellenos.hsl(Rellenos.Tono.CORTO), Rellenos.hsl(Rellenos.Tono.HORARIO),
-            Rellenos.hsl(Rellenos.Tono.ANTIHORARIO), Rellenos.hsl(Rellenos.Tono.LARGO),
-            Rellenos.lch(Rellenos.Tono.CORTO), Rellenos.lch(Rellenos.Tono.HORARIO),
-            Rellenos.lch(Rellenos.Tono.ANTIHORARIO), Rellenos.lch(Rellenos.Tono.LARGO),
+        Mezcla[] todas = {
+            Mezcla.RGB, Mezcla.RGB_LINEAL,
+            Mezcla.hsl(Mezcla.Tono.CORTO), Mezcla.hsl(Mezcla.Tono.HORARIO),
+            Mezcla.hsl(Mezcla.Tono.ANTIHORARIO), Mezcla.hsl(Mezcla.Tono.LARGO),
+            Mezcla.lch(Mezcla.Tono.CORTO), Mezcla.lch(Mezcla.Tono.HORARIO),
+            Mezcla.lch(Mezcla.Tono.ANTIHORARIO), Mezcla.lch(Mezcla.Tono.LARGO),
         };
         int[] prueba = { 0xFFFF0000, 0xFF00FF00, 0xFF0000FF, 0xFFFFFFFF, 0xFF000000,
                          0xFF808080, 0xFF2563EB, 0xFFFACC15, 0x80336699 };
@@ -43,20 +43,20 @@ public class GotaColorDemo {
 
         // Sentido del tono: rojo (0°) a azul (240°), punto medio en HSL
         int rojo = 0xFFFF0000, azul = 0xFF0000FF, magenta = 0xFFFF00FF, verde = 0xFF00FF00;
-        ok &= comprueba("corto      -> magenta", Rellenos.hsl(Rellenos.Tono.CORTO).mezclar(rojo, azul, 0.5), magenta);
-        ok &= comprueba("largo      -> verde  ", Rellenos.hsl(Rellenos.Tono.LARGO).mezclar(rojo, azul, 0.5), verde);
-        ok &= comprueba("horario    -> verde  ", Rellenos.hsl(Rellenos.Tono.HORARIO).mezclar(rojo, azul, 0.5), verde);
-        ok &= comprueba("antihorario-> magenta", Rellenos.hsl(Rellenos.Tono.ANTIHORARIO).mezclar(rojo, azul, 0.5), magenta);
+        ok &= comprueba("corto      -> magenta", Mezcla.hsl(Mezcla.Tono.CORTO).mezclar(rojo, azul, 0.5), magenta);
+        ok &= comprueba("largo      -> verde  ", Mezcla.hsl(Mezcla.Tono.LARGO).mezclar(rojo, azul, 0.5), verde);
+        ok &= comprueba("horario    -> verde  ", Mezcla.hsl(Mezcla.Tono.HORARIO).mezclar(rojo, azul, 0.5), verde);
+        ok &= comprueba("antihorario-> magenta", Mezcla.hsl(Mezcla.Tono.ANTIHORARIO).mezclar(rojo, azul, 0.5), magenta);
 
         // Colores: centros azul y amarillo, bordes azul noche y ladrillo
         int a = 0xFF2563EB, b = 0xFFFACC15, aBorde = 0xFF1E1B4B, bBorde = 0xFF7C2D12;
         Gota.Relleno[] rellenos = {
-            Rellenos.conGamma(a, b, aBorde, bBorde, 2.0, 0.7, Rellenos.HSL, Rellenos.HSL),
-            Rellenos.conGamma(a, b, aBorde, bBorde, 2.0, 0.7,
-                              Rellenos.hsl(Rellenos.Tono.ANTIHORARIO), Rellenos.HSL),
-            Rellenos.conGamma(a, b, aBorde, bBorde, 2.0, 0.7, Rellenos.LCH, Rellenos.LCH),
-            Rellenos.conGamma(a, b, aBorde, bBorde, 2.0, 0.7,
-                              Rellenos.lch(Rellenos.Tono.ANTIHORARIO), Rellenos.LCH),
+            Colores.conGamma(a, b, aBorde, bBorde, 2.0, 0.7, Mezcla.HSL, Mezcla.HSL),
+            Colores.conGamma(a, b, aBorde, bBorde, 2.0, 0.7,
+                              Mezcla.hsl(Mezcla.Tono.ANTIHORARIO), Mezcla.HSL),
+            Colores.conGamma(a, b, aBorde, bBorde, 2.0, 0.7, Mezcla.LCH, Mezcla.LCH),
+            Colores.conGamma(a, b, aBorde, bBorde, 2.0, 0.7,
+                              Mezcla.lch(Mezcla.Tono.ANTIHORARIO), Mezcla.LCH),
         };
 
         BufferedImage img = new BufferedImage(1200, 600, BufferedImage.TYPE_INT_ARGB);

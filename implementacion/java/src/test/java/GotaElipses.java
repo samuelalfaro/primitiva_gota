@@ -291,7 +291,7 @@ public class GotaElipses {
             for (int y = (int) b.getMinY(); y < (int) b.getMaxY(); y += 2)
                 for (int x = (int) b.getMinX(); x < (int) b.getMaxX(); x += 2) {
                     if (!g.contiene(x + 0.5, y + 0.5)) continue;
-                    Gota.Uv uv = g.uv(x + 0.5, y + 0.5);
+                    Coordenadas.Uv uv = g.uv(x + 0.5, y + 0.5);
                     n++;
                     if (Double.isNaN(uv.u()) || Double.isNaN(uv.v())) nan++;
                     if (uv.u() < 0 || uv.u() > 1 || uv.v() < 0 || uv.v() > 1) fuera++;
@@ -308,7 +308,7 @@ public class GotaElipses {
         for (int y = (int) b.getMinY(); y < (int) b.getMaxY(); y++)
             for (int x = (int) b.getMinX(); x < (int) b.getMaxX(); x++) {
                 if (!gc.contiene(x + 0.5, y + 0.5)) continue;
-                Gota.Uv a = gc.uv(x + 0.5, y + 0.5), c = ge.uv(x + 0.5, y + 0.5);
+                Coordenadas.Uv a = gc.uv(x + 0.5, y + 0.5), c = ge.uv(x + 0.5, y + 0.5);
                 double d = Math.max(Math.abs(a.u() - c.u()), Math.abs(a.v() - c.v()));
                 n++; peor = Math.max(peor, d);
                 if (d > 1e-3) malos++;
@@ -360,9 +360,9 @@ public class GotaElipses {
                         if (g.contiene(ax + mid * dx, ay + mid * dy)) lo = mid; else hi = mid;
                     }
                     double qx = ax + (lo - 1e-6) * dx, qy = ay + (lo - 1e-6) * dy;
-                    Gota.Muestra m = g.parametros(qx, qy);
+                    Coordenadas.Muestra m = g.parametros(qx, qy);
                     if (m.t() < 0.06 || m.t() > 0.94) continue;
-                    Gota.Uv uv = g.uv(qx, qy);
+                    Coordenadas.Uv uv = g.uv(qx, qy);
                     double e = Math.min(Math.abs(uv.u()), Math.abs(uv.u() - 1));
                     tot++;
                     peorContorno = Math.max(peorContorno, e);
@@ -382,7 +382,7 @@ public class GotaElipses {
                             double A = fin == 0 ? -dep : dep;
                             double qx = c.getX() + A * tx + S * nx, qy = c.getY() + A * ty + S * ny;
                             if (!g.contiene(qx, qy)) { previo = Double.NaN; tPrev = Double.NaN; continue; }
-                            Gota.Uv uv = g.uv(qx, qy);
+                            Coordenadas.Uv uv = g.uv(qx, qy);
                             double tn = g.parametros(qx, qy).t();
                             if (!Double.isNaN(tPrev) && Math.abs(tn - tPrev) > 0.02) previo = Double.NaN;   // costura del propio reparto (t*) entre capas: la uv la sigue
                             tPrev = tn;
@@ -413,7 +413,7 @@ public class GotaElipses {
             double ox = (i % 3) * 300, oy = (i / 3) * 300;
             Gota g = i < 3 ? Gota.lineal(p(ox + 80, oy + 150), 30, p(ox + 220, oy + 150), 20, Gota.Perfil.recto().aspecto(ls[i][0], ls[i][1]))
                            : Gota.curva(p(ox + 70, oy + 230), 22, new Gota.Vec(0, -170), p(ox + 230, oy + 230), 14, new Gota.Vec(0, -170), Gota.Perfil.recto().aspecto(ls[i][0], ls[i][1]));
-            g.render(img, Rellenos.cadena(0xFF1E1B4B, 0xFFFFE27A, 0xFF2563EB, 0xFF7C2D12));
+            g.render(img, Colores.cadena(0xFF1E1B4B, 0xFFFFE27A, 0xFF2563EB, 0xFF7C2D12));
         }
         ImageIO.write(img, "png", new File("gota_elipses.png"));
     }

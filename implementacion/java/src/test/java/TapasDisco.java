@@ -26,8 +26,8 @@ public class TapasDisco {
         return m;
     }
 
-    static final Rellenos.Lateral N1 = new Rellenos.Lateral(0xFFD7263D, 0xFFFFE9A8, 0xFF2D6CDF);
-    static final Rellenos.Lateral N2 = new Rellenos.Lateral(0xFF1FA39A, 0xFFE8F5D0, 0xFFF28E2B);
+    static final Colores.Lateral N1 = new Colores.Lateral(0xFFD7263D, 0xFFFFE9A8, 0xFF2D6CDF);
+    static final Colores.Lateral N2 = new Colores.Lateral(0xFF1FA39A, 0xFFE8F5D0, 0xFFF28E2B);
     static final int EXT = 0xFF222222;
 
     static Gota recta(double cx, double cy, double r) {
@@ -41,7 +41,7 @@ public class TapasDisco {
         double r = 40, cx = 100, cy = 100;
         Gota g = recta(cx, cy, r);
         BufferedImage im = new BufferedImage(220, 300, BufferedImage.TYPE_INT_ARGB);
-        g.render(im, Rellenos.tira(tex));
+        g.render(im, Texturas.tira(tex));
         int[] d = datos(im);
         int n = 0, mal = 0, maxE = 0, nTapas = 0;
         for (int j = 0; j < 300; j++)
@@ -59,7 +59,7 @@ public class TapasDisco {
                 "píxeles " + n + " (tapas " + nTapas + "), distintos " + mal + ", máx " + maxE);
         // y coincide con el mapeo en disco
         BufferedImage di = new BufferedImage(220, 300, BufferedImage.TYPE_INT_ARGB);
-        g.render(di, Rellenos.discoCapsula(tex));
+        g.render(di, Texturas.discoCapsula(tex));
         int[] dd = datos(di);
         int dif = 0, borde = 0;
         for (int j = 0; j < 300; j++)
@@ -77,7 +77,7 @@ public class TapasDisco {
     static void identidadColor() {
         double r = 40, cx = 100, cy = 100;
         Gota g = recta(cx, cy, r);
-        Gota.Relleno rel = Rellenos.cadenaLateral(N1, N2, Rellenos.RGB);
+        Gota.Relleno rel = Colores.cadenaLateral(N1, N2, Mezcla.RGB);
         BufferedImage im = new BufferedImage(220, 300, BufferedImage.TYPE_INT_ARGB);
         g.render(im, rel);
         int[] d = datos(im);
@@ -86,10 +86,10 @@ public class TapasDisco {
             for (int i = 0; i < 220; i++) {
                 double px = i + 0.5, py = j + 0.5;
                 if (g.sdf(px, py) > -2) continue;
-                Gota.Muestra m = g.parametros(px, py);
+                Coordenadas.Muestra m = g.parametros(px, py);
                 int esperado;
-                if (py < cy) esperado = N1.enDisco(m.lateral(), -m.axial(), Rellenos.RGB);
-                else if (py > cy + 2 * r) esperado = N2.enDisco(m.lateral(), m.axial(), Rellenos.RGB);
+                if (py < cy) esperado = N1.enDisco(m.lateral(), -m.axial(), Mezcla.RGB);
+                else if (py > cy + 2 * r) esperado = N2.enDisco(m.lateral(), m.axial(), Mezcla.RGB);
                 else continue;
                 n++;
                 int e = maxCanal(d[j * 220 + i], esperado);
@@ -98,7 +98,7 @@ public class TapasDisco {
             }
         comprueba("color: las tapas rectas siguen (s, th) de la posición real", mal == 0, "píxeles " + n + ", distintos " + mal + ", máx " + maxE);
         // propiedades del semidisco
-        Rellenos.Mezcla M = Rellenos.RGB;
+        Mezcla M = Mezcla.RGB;
         boolean ok = N1.enDisco(0, 0, M) == N1.centro()
                 && N1.enDisco(1, 0, M) == N1.normal()
                 && N1.enDisco(-1, 0, M) == N1.contra()
@@ -110,8 +110,8 @@ public class TapasDisco {
     }
 
     static void ajusteLateral() {
-        Rellenos.Mezcla M = Rellenos.RGB;
-        Rellenos.Lateral fino = N1.conAjuste(0.25);
+        Mezcla M = Mezcla.RGB;
+        Colores.Lateral fino = N1.conAjuste(0.25);
         boolean ok = true;
         for (int i = 0; i <= 20; i++) {
             double l = -1 + 2 * i / 20.0;
@@ -128,7 +128,7 @@ public class TapasDisco {
         try { N1.conAjuste(1.5); } catch (IllegalArgumentException e) { lanza = true; }
         comprueba("ajuste lateral fuera de [0, 1] se rechaza", lanza, "");
         // ajuste del arco polar normal -> contra
-        Rellenos.Lateral arco = N1.conAjusteArco(0.25);
+        Colores.Lateral arco = N1.conAjusteArco(0.25);
         boolean okArco = true;
         for (int i = 0; i <= 20; i++) {
             double l = -1 + 2 * i / 20.0;
@@ -151,25 +151,25 @@ public class TapasDisco {
     static void costura() {
         Gota g = Gota.curva(p(60, 70), 24, new Gota.Vec(110, 0), p(230, 240), 58, new Gota.Vec(0, -120),
                 Gota.Perfil.recto().aspecto(1.6, 0.6));
-        Gota.Relleno rel0 = Rellenos.cadenaLateral(N1, N2, Rellenos.LCH).para(g);
+        Gota.Relleno rel0 = Colores.cadenaLateral(N1, N2, Mezcla.LCH).para(g);
         double c1 = g.corte1(), c3 = g.corte3();
         int maxA = 0, maxB = 0;
-        Gota.Muestra m0 = new Gota.Muestra(0, 0.5, 0, 0);
+        Coordenadas.Muestra m0 = new Coordenadas.Muestra(0, 0.5, 0, 0);
         for (int i = 0; i <= 200; i++) {
             double u = i / 200.0;
-            maxA = Math.max(maxA, maxCanal(rel0.argb(m0, new Gota.Uv(u, c1)), rel0.argb(m0, new Gota.Uv(u, c1 - 1e-9))));
-            maxB = Math.max(maxB, maxCanal(rel0.argb(m0, new Gota.Uv(u, c3)), rel0.argb(m0, new Gota.Uv(u, c3 + 1e-9))));
+            maxA = Math.max(maxA, maxCanal(rel0.argb(m0, new Coordenadas.Uv(u, c1)), rel0.argb(m0, new Coordenadas.Uv(u, c1 - 1e-9))));
+            maxB = Math.max(maxB, maxCanal(rel0.argb(m0, new Coordenadas.Uv(u, c3)), rel0.argb(m0, new Coordenadas.Uv(u, c3 + 1e-9))));
         }
         comprueba("costura: el color casa en v1 y v3 para todo u (elipses con pendiente de radio)", maxA <= 1 && maxB <= 1, "saltos " + maxA + " / " + maxB);
         // la textura de referencia es discontinua en los cortes a propósito (cuatro fondos): se usa una continua
         Texturas.Textura tex = (u, v) -> 0xFF000000 | ((int) (255 * Math.min(1, Math.max(0, u))) << 16)
                 | ((int) (255 * Math.min(1, Math.max(0, v))) << 8) | (int) (255 * Math.min(1, Math.max(0, 0.5 * u + 0.5 * v)));
-        Gota.Relleno tr = Rellenos.tira(tex).para(g);
+        Gota.Relleno tr = Texturas.tira(tex).para(g);
         int mt = 0;
         for (int i = 0; i <= 200; i++) {
             double u = i / 200.0;
-            mt = Math.max(mt, maxCanal(tr.argb(m0, new Gota.Uv(u, g.corte1())), tr.argb(m0, new Gota.Uv(u, g.corte1() - 1e-9))));
-            mt = Math.max(mt, maxCanal(tr.argb(m0, new Gota.Uv(u, g.corte3())), tr.argb(m0, new Gota.Uv(u, g.corte3() + 1e-9))));
+            mt = Math.max(mt, maxCanal(tr.argb(m0, new Coordenadas.Uv(u, g.corte1())), tr.argb(m0, new Coordenadas.Uv(u, g.corte1() - 1e-9))));
+            mt = Math.max(mt, maxCanal(tr.argb(m0, new Coordenadas.Uv(u, g.corte3())), tr.argb(m0, new Coordenadas.Uv(u, g.corte3() + 1e-9))));
         }
         comprueba("costura (textura): sin salto en v1 y v3", mt <= 2, "salto máx " + mt);
 
@@ -177,7 +177,7 @@ public class TapasDisco {
         int W = 320, H = 320;
         for (Gota gg : new Gota[] { g, Gota.curva(p(60, 70), 24, new Gota.Vec(110, 0), p(230, 240), 58, new Gota.Vec(0, -120), Gota.Perfil.recto()) }) {
             BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
-            gg.render(im, Rellenos.cadenaLateral(N1, N2, Rellenos.RGB));
+            gg.render(im, Colores.cadenaLateral(N1, N2, Mezcla.RGB));
             int[] d = datos(im);
             int mx = 0;
             for (int j = 0; j < H; j++)
@@ -197,8 +197,8 @@ public class TapasDisco {
     static void casoBasico() throws Exception {
         double E = 40, r1 = 3 * E, r2 = 2 * E, d = 7 * E, cx1 = 150, cy = 170;
         Gota g = Gota.lineal(p(cx1, cy), r1, p(cx1 + d, cy), r2, Gota.Perfil.recto());
-        Rellenos.Mezcla M = Rellenos.RGB;
-        Gota.Relleno rel = Rellenos.cadenaLateral(N1, N2, M);
+        Mezcla M = Mezcla.RGB;
+        Gota.Relleno rel = Colores.cadenaLateral(N1, N2, M);
         BufferedImage im = new BufferedImage(560, 340, BufferedImage.TYPE_INT_ARGB);
         g.render(im, rel);
         int[] px = datos(im);
@@ -206,7 +206,7 @@ public class TapasDisco {
         double nx = (r1 - r2) / d, ny = -Math.sqrt(1 - nx * nx);
         double[][] c = { { cx1, cy }, { cx1 + d, cy } };
         double[] r = { r1, r2 };
-        Rellenos.Lateral[] lat = { N1, N2 };
+        Colores.Lateral[] lat = { N1, N2 };
         boolean ok = true;
         StringBuilder det = new StringBuilder();
         for (int k = 0; k < 2; k++) {

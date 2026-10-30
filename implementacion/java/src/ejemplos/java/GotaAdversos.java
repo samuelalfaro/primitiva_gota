@@ -34,7 +34,7 @@ public class GotaAdversos {
         g[7] = Gota.curva(p(7, 60, 240), 0, new Gota.Vec(0, -200),
                           p(7, 240, 240), 40, new Gota.Vec(0, -200), Gota.Perfil.central(1.0));
 
-        Gota.Relleno rel = Rellenos.cuatroColores(0xFFFFE27A, 0xFFFF8A5B, 0xFFC2410C, 0xFF7C1D6F);
+        Gota.Relleno rel = Colores.cuatroColores(0xFFFFE27A, 0xFFFF8A5B, 0xFFC2410C, 0xFF7C1D6F);
         BufferedImage img = new BufferedImage(1200, 600, BufferedImage.TYPE_INT_ARGB);
         Arrays.fill(((DataBufferInt) img.getRaster().getDataBuffer()).getData(), 0xFFFFFFFF);
 

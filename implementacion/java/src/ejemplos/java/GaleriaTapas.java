@@ -13,17 +13,17 @@ public class GaleriaTapas {
         Texturas.Textura tex = Texturas.referencia();
         int W = 440, H = 400, FONDO = 0xFFF4F1EA;
         Gota gruesa = Gota.curva(p(80, 90), 34, new Gota.Vec(130, 0), p(300, 290), 62, new Gota.Vec(0, -130), Gota.Perfil.recto());
-        Rellenos.Lateral a = new Rellenos.Lateral(0xFFD7263D, 0xFFFFE9A8, 0xFF2D6CDF);
-        Rellenos.Lateral b = new Rellenos.Lateral(0xFF1FA39A, 0xFFE8F5D0, 0xFFF28E2B);
+        Colores.Lateral a = new Colores.Lateral(0xFFD7263D, 0xFFFFE9A8, 0xFF2D6CDF);
+        Colores.Lateral b = new Colores.Lateral(0xFF1FA39A, 0xFFE8F5D0, 0xFFF28E2B);
         Composicion estT = ComposicionPruebas.estrella(0);
 
         Object[][] filas = {
-                { "gruesa-textura", new Gota.Relleno[] { Rellenos.tira(tex), Rellenos.discoCapsula(tex), null } },
+                { "gruesa-textura", new Gota.Relleno[] { Texturas.tira(tex), Texturas.discoCapsula(tex), null } },
                 { "gruesa-color", new Gota.Relleno[] {
-                        Rellenos.cadenaLateral(a, b, Rellenos.RGB),
-                        Rellenos.cadenaLateral(a, b, Rellenos.RGB_LINEAL),
-                        Rellenos.cadenaLateral(a, b, Rellenos.LCH) } },
-                { "estrella-textura", new Gota.Relleno[] { Rellenos.tira(tex), null, null } },
+                        Colores.cadenaLateral(a, b, Mezcla.RGB),
+                        Colores.cadenaLateral(a, b, Mezcla.RGB_LINEAL),
+                        Colores.cadenaLateral(a, b, Mezcla.LCH) } },
+                { "estrella-textura", new Gota.Relleno[] { Texturas.tira(tex), null, null } },
         };
         BufferedImage out = new BufferedImage(W * 3, H * 3, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(((DataBufferInt) out.getRaster().getDataBuffer()).getData(), FONDO);

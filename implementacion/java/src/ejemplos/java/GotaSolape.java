@@ -30,7 +30,7 @@ public class GotaSolape {
     public static void main(String[] args) throws Exception {
         String[] nombres = { "lazo grueso", "lazo fino", "circulo contenido", "hinchada h=1.8" };
         // centros amarillo -> azul para distinguir el principio del camino del final
-        Gota.Relleno rel = Rellenos.cuatroColores(0xFFFFE27A, 0xFF2563EB, 0xFFC2410C, 0xFF1E1B4B);
+        Gota.Relleno rel = Colores.cuatroColores(0xFFFFE27A, 0xFF2563EB, 0xFFC2410C, 0xFF1E1B4B);
 
         BufferedImage img = new BufferedImage(1200, 600, BufferedImage.TYPE_INT_ARGB);
         Arrays.fill(((DataBufferInt) img.getRaster().getDataBuffer()).getData(), 0xFFFFFFFF);

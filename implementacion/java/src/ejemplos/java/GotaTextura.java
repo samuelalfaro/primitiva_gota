@@ -64,7 +64,7 @@ public class GotaTextura {
 
         BufferedImage tex = texturaPrueba();
         ImageIO.write(tex, "png", new File("gota_textura_base.png"));
-        Gota.Relleno rel = Rellenos.textura(Texturas.deImagen(tex));
+        Gota.Relleno rel = Texturas.textura(Texturas.deImagen(tex));
 
         BufferedImage img = new BufferedImage(900, 600, BufferedImage.TYPE_INT_ARGB);
         Arrays.fill(((DataBufferInt) img.getRaster().getDataBuffer()).getData(), 0xFFFFFFFF);
@@ -109,7 +109,7 @@ public class GotaTextura {
                 U[y][x] = V[y][x] = Double.NaN;
                 double px = x0 + x + 0.5, py = y0 + y + 0.5;
                 if (!g.contiene(px, py)) continue;
-                Gota.Uv uv = g.uv(px, py);
+                Coordenadas.Uv uv = g.uv(px, py);
                 U[y][x] = uv.u(); V[y][x] = uv.v();
                 dentro++;
                 if (uv.u() < -1e-9 || uv.u() > 1 + 1e-9 || uv.v() < -1e-9 || uv.v() > 1 + 1e-9
@@ -147,7 +147,7 @@ public class GotaTextura {
                 double tx = d.getX() - c0.getX(), ty = d.getY() - c0.getY(), n = Math.hypot(tx, ty);
                 tx /= n; ty /= n;
                 double r1 = g.radio(0) - 0.5;
-                Gota.Uv t1 = g.uv(c0.getX() - tx * r1, c0.getY() - ty * r1);
+                Coordenadas.Uv t1 = g.uv(c0.getX() - tx * r1, c0.getY() - ty * r1);
                 bien &= t1.v() < 0.02 && Math.abs(t1.u() - 0.5) < 0.02;
                 clave = String.format(" | punta trasera uv=(%.3f, %.3f)", t1.u(), t1.v());
                 if (puntaFrente) {
@@ -155,7 +155,7 @@ public class GotaTextura {
                     double ux = c1.getX() - e.getX(), uy = c1.getY() - e.getY(), m = Math.hypot(ux, uy);
                     ux /= m; uy /= m;
                     double r2 = g.radio(1) - 0.5;
-                    Gota.Uv t2 = g.uv(c1.getX() + ux * r2, c1.getY() + uy * r2);
+                    Coordenadas.Uv t2 = g.uv(c1.getX() + ux * r2, c1.getY() + uy * r2);
                     bien &= t2.v() > 0.98 && Math.abs(t2.u() - 0.5) < 0.02;
                     clave += String.format(" | punta delantera uv=(%.3f, %.3f)", t2.u(), t2.v());
                 }
@@ -167,7 +167,7 @@ public class GotaTextura {
         return bien;
     }
 
-    static boolean cerca(Gota.Uv uv, double u, double v) {
+    static boolean cerca(Coordenadas.Uv uv, double u, double v) {
         boolean ok = Math.abs(uv.u() - u) < 0.02 && Math.abs(uv.v() - v) < 0.02;
         if (!ok) System.out.printf("   punto clave: uv=(%.3f, %.3f), esperado (%.2f, %.2f)%n", uv.u(), uv.v(), u, v);
         return ok;
