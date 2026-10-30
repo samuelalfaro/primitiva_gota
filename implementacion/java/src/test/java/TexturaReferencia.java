@@ -87,8 +87,8 @@ public class TexturaReferencia {
         Gota g = recta(cx, cy, r);
         BufferedImage disco = new BufferedImage(220, 300, BufferedImage.TYPE_INT_ARGB);
         BufferedImage tira = new BufferedImage(220, 300, BufferedImage.TYPE_INT_ARGB);
-        g.render(disco, Rellenos.discoCapsula(tex));
-        g.render(tira, Rellenos.tira(tex));
+        g.render(disco, Texturas.discoCapsula(tex));
+        g.render(tira, Texturas.tira(tex));
         int[] dd = datos(disco), dt = datos(tira);
         int nDentro = 0, mDisco = 0, mTira = 0, maxD = 0, maxT = 0;
         for (int j = 0; j < 300; j++)
@@ -111,7 +111,7 @@ public class TexturaReferencia {
         // lo mismo con los fondos a cada lado: la orientación (normal a la derecha) tiene que casar con la de la textura
         Texturas.Textura tl = Texturas.referenciaLados();
         BufferedImage il = new BufferedImage(220, 300, BufferedImage.TYPE_INT_ARGB);
-        g.render(il, Rellenos.tira(tl));
+        g.render(il, Texturas.tira(tl));
         int[] dl = datos(il);
         int mL = 0;
         for (int j = 0; j < 300; j++)
@@ -141,7 +141,7 @@ public class TexturaReferencia {
             }
         Gota recta = recta(150, 70, 50);                         // 2r = 100: la cápsula exacta
         Gota curva = Gota.curva(p(70, 70), 30, new Gota.Vec(120, 0), p(220, 250), 55, new Gota.Vec(0, -110), Gota.Perfil.recto());
-        Gota.Relleno[] rel = { Rellenos.tira(tex), Rellenos.discoCapsula(tex) };
+        Gota.Relleno[] rel = { Texturas.tira(tex), Texturas.discoCapsula(tex) };
         Gota[] gs = { recta, curva };
         for (int k = 0; k < 4; k++) {
             BufferedImage panel = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);

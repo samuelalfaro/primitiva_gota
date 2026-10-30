@@ -42,13 +42,13 @@ public class GotaCadena {
     static void transicion() {
         int N = 1000;
         double e = 0;
-        for (int i = 0; i <= N; i++) e = Math.max(e, Math.abs(Rellenos.transicion(i / (double) N, 0.5) - i / (double) N));
+        for (int i = 0; i <= N; i++) e = Math.max(e, Math.abs(Colores.transicion(i / (double) N, 0.5) - i / (double) N));
         comprueba("u(t, 0.5) = t: el neutro es lineal", e < 1e-12, String.format("error %.1e", e));
 
         boolean ext = true;
         for (int j = 0; j <= N; j++) {
             double s = j / (double) N;
-            if (Rellenos.transicion(0, s) != 0 || Rellenos.transicion(1, s) != 1) ext = false;
+            if (Colores.transicion(0, s) != 0 || Colores.transicion(1, s) != 1) ext = false;
         }
         comprueba("u(0, s) = 0 y u(1, s) = 1 para todo s (también los saltos)", ext, "");
 
@@ -56,7 +56,7 @@ public class GotaCadena {
         for (int j = 0; j <= 100; j++) {
             double s = j / 100.0, prev = -1;
             for (int i = 0; i <= N; i++) {
-                double u = Rellenos.transicion(i / (double) N, s);
+                double u = Colores.transicion(i / (double) N, s);
                 if (u < prev - 1e-12) mono = false;
                 prev = u;
             }
@@ -67,7 +67,7 @@ public class GotaCadena {
         for (int i = 1; i < N; i++) {
             double t = i / (double) N, prev = 2;
             for (int j = 0; j <= N; j++) {
-                double u = Rellenos.transicion(t, j / (double) N);
+                double u = Colores.transicion(t, j / (double) N);
                 if (u > prev + 1e-12) monoS = false;
                 prev = u;
             }
@@ -78,7 +78,7 @@ public class GotaCadena {
         for (int j = 0; j <= 100; j++)
             for (int i = 0; i <= 100; i++) {
                 double s = j / 100.0, t = i / 100.0;
-                sim = Math.max(sim, Math.abs(Rellenos.transicion(t, s) - (1 - Rellenos.transicion(1 - t, 1 - s))));
+                sim = Math.max(sim, Math.abs(Colores.transicion(t, s) - (1 - Colores.transicion(1 - t, 1 - s))));
             }
         comprueba("simetría u(t, s) = 1 - u(1 - t, 1 - s) (adelantar y retrasar son espejos)", sim < 1e-12,
                   String.format("error %.1e", sim));
@@ -86,11 +86,11 @@ public class GotaCadena {
         double salto = 0;
         for (int i = 0; i <= 100; i++) {
             double t = i / 100.0;
-            salto = Math.max(salto, Math.abs(Rellenos.transicion(t, 0.5 - 1e-9) - Rellenos.transicion(t, 0.5 + 1e-9)));
+            salto = Math.max(salto, Math.abs(Colores.transicion(t, 0.5 - 1e-9) - Colores.transicion(t, 0.5 + 1e-9)));
         }
         comprueba("continuidad al cruzar el neutro s = 0.5", salto < 1e-6, String.format("salto máximo %.1e", salto));
 
-        double a = Rellenos.transicion(0.5, 1e-9), b = Rellenos.transicion(0.5, 1 - 1e-9);
+        double a = Colores.transicion(0.5, 1e-9), b = Colores.transicion(0.5, 1 - 1e-9);
         comprueba("continuidad en los extremos: u(1/2, s→0) → 1 y u(1/2, s→1) → 0", a > 0.999 && b < 0.001,
                   String.format("u(1/2, 1e-9) = %.6f, u(1/2, 1 - 1e-9) = %.6f", a, b));
     }
@@ -99,7 +99,7 @@ public class GotaCadena {
 
     static BufferedImage lienzo(int w, int h) { return new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB); }
 
-    static Gota.Muestra mu() { return new Gota.Muestra(0.5, 0, 0, 0); }
+    static Coordenadas.Muestra mu() { return new Coordenadas.Muestra(0.5, 0, 0, 0); }
 
     static int maxDif(int[] a, int[] b) {
         int m = 0;
@@ -118,25 +118,25 @@ public class GotaCadena {
         };
         int peor = 0;
         for (Gota g : gs) {
-            for (Rellenos.Mezcla m : new Rellenos.Mezcla[] { Rellenos.RGB, Rellenos.LCH }) {
+            for (Mezcla m : new Mezcla[] { Mezcla.RGB, Mezcla.LCH }) {
                 BufferedImage i1 = lienzo(300, 300), i2 = lienzo(300, 300);
-                g.render(i1, Rellenos.dosColores(a, b, m));
-                g.render(i2, Rellenos.dosColores(a, b, 0.5, m));
+                g.render(i1, Colores.dosColores(a, b, m));
+                g.render(i2, Colores.dosColores(a, b, 0.5, m));
                 peor = Math.max(peor, maxDif(datos(i1), datos(i2)));
             }
         }
         comprueba("dosColores(a, b) == dosColores(a, b, 0.5) (RGB y LCH, también con tm movido)", peor <= 1,
                   "dif. máx " + peor + " nivel");
 
-        Gota.Relleno r0 = Rellenos.dosColores(a, b, 0.0).para(gs[0]), r1 = Rellenos.dosColores(a, b, 1.0).para(gs[0]);
-        Gota.Uv tapa1 = new Gota.Uv(0.5, 0.1), tapa2 = new Gota.Uv(0.5, 0.9), medio = new Gota.Uv(0.5, 0.5);
+        Gota.Relleno r0 = Colores.dosColores(a, b, 0.0).para(gs[0]), r1 = Colores.dosColores(a, b, 1.0).para(gs[0]);
+        Coordenadas.Uv tapa1 = new Coordenadas.Uv(0.5, 0.1), tapa2 = new Coordenadas.Uv(0.5, 0.9), medio = new Coordenadas.Uv(0.5, 0.5);
         boolean ok = r0.argb(mu(), tapa1) == a && r0.argb(mu(), tapa2) == b && r1.argb(mu(), tapa1) == a
                 && r1.argb(mu(), tapa2) == b && r0.argb(mu(), medio) == b && r1.argb(mu(), medio) == a;
         comprueba("dosColores con ajuste 0 y 1: tapas de color constante; el salto cae en el tramo central", ok, "");
 
         boolean lanza = false;
-        try { Rellenos.dosColores(a, b, 0.5).argb(0.5, 0.5); } catch (UnsupportedOperationException e) { lanza = true; }
-        boolean lambdaOk = Rellenos.dosColores(a, b).argb(0.5, 0.5) != 0;
+        try { Colores.dosColores(a, b, 0.5).argb(0.5, 0.5); } catch (UnsupportedOperationException e) { lanza = true; }
+        boolean lambdaOk = Colores.dosColores(a, b).argb(0.5, 0.5) != 0;
         comprueba("dosColores(a, b) admite argb(t, rho); la variante con ajuste exige la coordenada v", lanza && lambdaOk, "");
     }
 
@@ -155,16 +155,16 @@ public class GotaCadena {
         boolean exactas = true, continuas = true;
         String det = "";
         for (double s : ajustes) {
-            Gota.Relleno r = Rellenos.cadena(e1, c1, c2, e2, s, s, s, Rellenos.RGB).para(g);
-            boolean ok = r.argb(mu(), new Gota.Uv(0.5, 0)) == e1
-                    && r.argb(mu(), new Gota.Uv(0.5, 0.25)) == c1
-                    && r.argb(mu(), new Gota.Uv(0.5, 0.75)) == c2
-                    && r.argb(mu(), new Gota.Uv(0.5, 1)) == e2;
+            Gota.Relleno r = Colores.cadena(e1, c1, c2, e2, s, s, s, Mezcla.RGB).para(g);
+            boolean ok = r.argb(mu(), new Coordenadas.Uv(0.5, 0)) == e1
+                    && r.argb(mu(), new Coordenadas.Uv(0.5, 0.25)) == c1
+                    && r.argb(mu(), new Coordenadas.Uv(0.5, 0.75)) == c2
+                    && r.argb(mu(), new Coordenadas.Uv(0.5, 1)) == e2;
             if (!ok) { exactas = false; det += " s=" + s; }
             if (s > 0 && s < 1) {   // con los saltos deliberados no hay continuidad en el ancla
-                if (!cercano(r.argb(mu(), new Gota.Uv(0.5, 0.25 - 1e-7)), c1, 1)) continuas = false;
-                if (!cercano(r.argb(mu(), new Gota.Uv(0.5, 0.75 + 1e-7)), c2, 1)) continuas = false;
-                if (!cercano(r.argb(mu(), new Gota.Uv(0.5, 0.25 + 1e-7)), c1, 1)) continuas = false;
+                if (!cercano(r.argb(mu(), new Coordenadas.Uv(0.5, 0.25 - 1e-7)), c1, 1)) continuas = false;
+                if (!cercano(r.argb(mu(), new Coordenadas.Uv(0.5, 0.75 + 1e-7)), c2, 1)) continuas = false;
+                if (!cercano(r.argb(mu(), new Coordenadas.Uv(0.5, 0.25 + 1e-7)), c1, 1)) continuas = false;
             }
         }
         comprueba("anclas exactas en v = 0, 1/4, 3/4, 1 (todos los ajustes, incluidos 0 y 1)", exactas, det);
@@ -178,7 +178,7 @@ public class GotaCadena {
         // cortes no uniformes: v1 = 0.1, v3 = 0.9 (pesos 1 : 8 : 1 -> v1 = 0.1, v3 = 0.9)
         Gota g = Gota.lineal(p(60.5, 150.5), 50, p(240.5, 150.5), 20, Gota.Perfil.recto()).conTira(1, 8, 1);
         BufferedImage img = lienzo(300, 300);
-        g.render(img, Rellenos.cadena(e1, c1, c2, e2));
+        g.render(img, Colores.cadena(e1, c1, c2, e2));
         int pix1 = datos(img)[150 * 300 + 60], pix2 = datos(img)[150 * 300 + 240];   // centros exactos de los círculos
         comprueba("la cadena sigue los cortes de la gota: el color de cada centro es exacto (v1 = " +
                   String.format("%.3f", g.corte1()) + ", v3 = " + String.format("%.3f", g.corte3()) + ")",
@@ -188,7 +188,7 @@ public class GotaCadena {
         // en TRAZO también: el color de v es el mismo que el de la textura
         Gota gt = g.conSolape(Gota.Solape.TRAZO);
         BufferedImage img3 = lienzo(300, 300);
-        gt.render(img3, Rellenos.cadena(e1, c1, c2, e2));
+        gt.render(img3, Colores.cadena(e1, c1, c2, e2));
         comprueba("modo TRAZO: mismo color exacto en los centros", datos(img3)[150 * 300 + 60] == c1 && datos(img3)[150 * 300 + 240] == c2, "");
     }
 
@@ -217,7 +217,7 @@ public class GotaCadena {
         for (int i = 0; i < ajustes.length; i++) {
             double ox = (i % 3) * 300, oy = (i / 3) * 300;
             Gota g = Gota.lineal(p(ox + 60, oy + 150), 50, p(ox + 240, oy + 150), 25, Gota.Perfil.central(1.2));
-            g.render(img, Rellenos.cadena(e1, c1, c2, e2, ajustes[i][0], ajustes[i][1], ajustes[i][2]));
+            g.render(img, Colores.cadena(e1, c1, c2, e2, ajustes[i][0], ajustes[i][1], ajustes[i][2]));
         }
         ImageIO.write(img, "png", new File("gota_cadena.png"));
     }
@@ -231,7 +231,7 @@ public class GotaCadena {
             for (double s : ss)
                 for (int i = 0; i <= 20; i++) {
                     double t = i / 20.0;
-                    w.println(String.format(Locale.ROOT, "%.2f,%.2f,%.12f", t, s, Rellenos.transicion(t, s)));
+                    w.println(String.format(Locale.ROOT, "%.2f,%.2f,%.12f", t, s, Colores.transicion(t, s)));
                 }
         }
     }
