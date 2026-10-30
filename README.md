@@ -1,9 +1,433 @@
 # Primitiva Gota
 
-Primitiva de dibujo 2D formada por 2 elipses unidas por una curva Bezier.
+> Primitiva de dibujo 2D formada por dos elipses unidas por una curva Bézier cúbica.
 
-## Licencia
+## 📌 Descripción General
+
+La **primitiva Gota** es una forma vectorial 2D definida como la envolvente de una familia de elipses (o círculos) cuyo centro recorre una curva Bézier cúbica y cuyo radio varía según una función de perfil. Esta primitiva permite crear formas orgánicas y suaves que combinan las propiedades de las elipses con la flexibilidad de las curvas paramétricas.
+
+**Características principales:**
+- Forma definida por 2 puntos extremos (centros de las elipses) y 2 puntos de control (para la Bézier)
+- Radio variable a lo largo del camino con control de suavizado
+- Soporte para elipses (con relación de aspecto configurable) y círculos
+- Sistema de coordenadas intrínsecas para mapeo de texturas y colores
+- Composición topológica: cadenas, ciclos, estrellas y figuras complejas
+- Antialiasing integrado
+- Modelos de color avanzados (RGB, RGB lineal, HSL, Oklch)
+
+---
+
+## 🔷 Especificación Geométrica
+
+### Definición Matemática
+
+Una **gota** se define como el conjunto de puntos `(x, y)` tales que existe `t ∈ [0,1]` donde:
+
+```
+|p - c(t)|² - r(t)² ≤ 0
+```
+
+Donde:
+- **`c(t)`**: Curva Bézier cúbica que define el camino entre los centros
+  - `c(t) = (1-t)³·P₀ + 3(1-t)²t·P₁ + 3(1-t)t²·P₂ + t³·P₃`
+  - `P₀` y `P₃` son los centros de las elipses extremos
+  - `P₁` y `P₂` son los puntos de control
+
+- **`r(t)`**: Función de radio (cuadrática de Bézier o lineal por tramos)
+  - Con suavizado = 1: `r(t)` es una única cuadrática por `(0, r₁)`, `(tₘ, rₘ)`, `(1, r₂)`
+  - Con suavizado < 1: dos cuadráticas unidas en `tₘ` con pendientes interpoladas
+
+### Parámetros Principales
+
+```java
+// Construcción básica
+Gota.gotaLineal(centro1, radio1, centro2, radio2, perfil)
+Gota.gotaCurva(centro1, radio1, vec1, centro2, radio2, vec2, perfil)
+
+// Perfil del radio
+Perfil.radioMedio(rm)              // Radio medio en t=0.5
+Perfil.central(central)            // rm = central * (r1 + r2) / 2
+Perfil.recto()                     // Tangentes rectas: rm = (r1 + r2) / 2
+Perfil.aspecto(lambda1, lambda2)  // Elipses: relación aspecto a/b
+```
+
+### Geometría de las Elipses
+
+Para elipses, la condición de pertenencia se generaliza:
+
+```
+(d·T)² + λ²(d·T⊥)² - λ²·b²·|T|² ≤ 0
+```
+
+Donde:
+- `d = p - c(t)`: vector del punto al centro
+- `T`: vector tangente unitario al camino
+- `T⊥`: vector normal unitario (rotación 90° de T)
+- `λ = a/b`: relación de aspecto (radio tangente / radio normal)
+- `b`: radio normal (el radio clásico)
+- `a = λ·b`: radio tangente
+
+---
+
+## 📐 Sistema de Coordenadas
+
+### Coordenadas Intrínsecas
+
+Cada píxel de la gota tiene coordenadas intrínsecas que permiten un mapeo consistente de colores y texturas:
+
+```
+Muestra(t, rho, axial, lateral)
+```
+
+- **`t`**: Posición a lo largo del camino `[0,1]`
+- **`rho`**: Distancia normalizada al centro `rho = |p - c(t)| / r(t)` donde `0 ≤ rho ≤ 1`
+- **`axial`**: Coordenada axial `(p - c)·T / r` (proyección sobre la tangente)
+- **`lateral`**: Coordenada lateral `(p - c)·N / r` (proyección sobre la normal)
+
+Se cumple: `rho² = axial² + lateral²`
+
+### Coordenadas de Textura (Tira)
+
+```
+Uv(u, v)
+```
+
+La **tira** divide la gota en 4 regiones:
+
+```
+[0, v₁]    → Tapa trasera (semicírculo del primer círculo)
+[v₁, v₂]   → Primera mitad del cuerpo (t ∈ [0, tₘ])
+[v₂, v₃]   → Segunda mitad del cuerpo (t ∈ [tₘ, 1])
+[v₃, 1]    → Tapa delantera (semicírculo del segundo círculo)
+```
+
+- **`u`**: Coordenada horizontal de lado a lado `[0,1]`
+  - `u = 0.5` sobre el camino
+  - `u = 0` borde izquierdo (respecto al sentido de avance)
+  - `u = 1` borde derecho
+- **`v`**: Coordenada longitudinal `[0,1]`
+
+---
+
+## 🎨 Modelos de Color y Textura
+
+### Diagrama de la Primitiva
+
+```svg
+<svg viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Camino Bézier -->
+  <path d="M 50 100 C 150 50 450 150 550 100" 
+        fill="none" stroke="#666" stroke-width="2" stroke-dasharray="5,5"/>
+  
+  <!-- Puntos de control -->
+  <circle cx="50" cy="100" r="4" fill="#f00"/>
+  <circle cx="550" cy="100" r="4" fill="#f00"/>
+  <circle cx="150" cy="50" r="3" fill="#0a0"/>
+  <circle cx="450" cy="150" r="3" fill="#0a0"/>
+  
+  <!-- Gota (aproximación visual) -->
+  <path d="M 50 60 C 100 30 150 40 200 60 C 250 80 300 80 350 80 C 400 80 450 100 500 80 C 550 60 550 140 500 160 C 450 180 400 160 350 160 C 300 160 250 160 200 160 C 150 160 100 170 50 140 Z"
+        fill="#4CAF50" fill-opacity="0.3" stroke="#4CAF50" stroke-width="2"/>
+  
+  <!-- Centros de las elipses -->
+  <circle cx="50" cy="100" r="20" fill="none" stroke="#2196F3" stroke-width="1.5"/>
+  <circle cx="550" cy="100" r="20" fill="none" stroke="#2196F3" stroke-width="1.5"/>
+  
+  <!-- Radios -->
+  <line x1="50" y1="100" x2="30" y2="100" stroke="#2196F3" stroke-width="1"/>
+  <line x1="50" y1="100" x2="70" y2="100" stroke="#2196F3" stroke-width="1"/>
+  <line x1="550" y1="100" x2="530" y2="100" stroke="#2196F3" stroke-width="1"/>
+  <line x1="550" y1="100" x2="570" y2="100" stroke="#2196F3" stroke-width="1"/>
+  
+  <!-- Etiquetas -->
+  <text x="50" y="40" text-anchor="middle" font-size="12" fill="#333">P₀ (c₁, r₁)</text>
+  <text x="550" y="40" text-anchor="middle" font-size="12" fill="#333">P₃ (c₂, r₂)</text>
+  <text x="150" y="40" text-anchor="middle" font-size="10" fill="#333">P₁</text>
+  <text x="450" y="180" text-anchor="middle" font-size="10" fill="#333">P₂</text>
+  <text x="300" y="190" text-anchor="middle" font-size="11" fill="#333">c(t) - camino Bézier cúbica</text>
+  
+  <!-- Flecha de dirección -->
+  <path d="M 200 110 L 300 110" stroke="#666" stroke-width="1" marker-end="url(#arrowhead)"/>
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+    </marker>
+  </defs>
+</svg>
+```
+
+### Sistema de Coordenadas Intrínsecas
+
+```svg
+<svg viewBox="0 0 400 150" xmlns="http://www.w3.org/2000/svg">
+  <!-- Gota simplificada -->
+  <path d="M 50 75 C 100 50 300 100 350 75 C 350 75 300 50 200 50 C 100 50 50 75 50 75 Z"
+        fill="none" stroke="#4CAF50" stroke-width="2"/>
+  
+  <!-- Camino -->
+  <path d="M 50 75 C 100 50 300 100 350 75" 
+        fill="none" stroke="#666" stroke-width="1" stroke-dasharray="3,3"/>
+  
+  <!-- Punto ejemplo -->
+  <circle cx="200" cy="60" r="3" fill="#f00"/>
+  
+  <!-- Vectores -->
+  <line x1="200" y1="75" x2="200" y2="60" stroke="#FF5722" stroke-width="2"/>
+  <line x1="200" y1="75" x2="190" y2="70" stroke="#2196F3" stroke-width="2"/>
+  <line x1="200" y1="75" x2="205" y2="80" stroke="#9C27B0" stroke-width="2"/>
+  
+  <!-- Etiquetas -->
+  <text x="200" y="45" text-anchor="middle" font-size="11" fill="#333">píxel</text>
+  <text x="215" y="70" text-anchor="start" font-size="10" fill="#FF5722">d = p - c(t)</text>
+  <text x="180" y="65" text-anchor="end" font-size="10" fill="#2196F3">T (tangente)</text>
+  <text x="210" y="85" text-anchor="start" font-size="10" fill="#9C27B0">N (normal)</text>
+  <text x="200" y="95" text-anchor="middle" font-size="10" fill="#666">c(t)</text>
+  
+  <!-- Ecuaciones -->
+  <text x="20" y="130" font-size="11" fill="#333">axial = (p - c)·T / r</text>
+  <text x="20" y="145" font-size="11" fill="#333">lateral = (p - c)·N / r</text>
+  <text x="300" y="130" font-size="11" fill="#333">rho² = axial² + lateral²</text>
+</svg>
+```
+
+### Modelos de Color
+
+La primitiva soporta múltiples modelos de interpolación de color:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    MODELOS DE INTERPOLACIÓN                   │
+├─────────────────────────────────────────────────────────────┤
+│  RGB          │  Interpolación lineal en espacio RGB         │
+│  RGB_LINEAL   │  Interpolación lineal gamma-correcta        │
+│  HSL          │  Interpolación en espacio HSL               │
+│  OKLCH        │  Interpolación en espacio Oklch (perceptual)│
+│  Personalizada│  Cualquier función lambda propia             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Configuraciones de color:**
+
+```java
+// 1. Dos colores (centro de cada círculo)
+Colores.dosColores(colorA, colorB, Mezcla.RGB)
+
+// 2. Dos colores con ajuste de transición
+Colores.dosColores(colorA, colorB, ajuste, Mezcla.HSL)
+
+// 3. Cadena axial de 4 colores
+Colores.cadena(extremo1, centro1, centro2, extremo2, Mezcla.OKLCH)
+
+// 4. Cadena completa con 3 ajustes
+Colores.cadena(e1, c1, c2, e2, ajusteEC1, ajusteCC, ajusteCE2, mezcla)
+```
+
+**Parámetros de la cadena axial:**
+- `extremo1`: Color en v = 0 (inicio de la tapa trasera)
+- `centro1`: Color en v = v₁ (centro del primer círculo)
+- `centro2`: Color en v = v₃ (centro del segundo círculo)
+- `extremo2`: Color en v = 1 (final de la tapa delantera)
+- `ajuste`: Controla cuándo se produce la transición (0 = inicio, 0.5 = centro, 1 = final)
+
+### Modelos de Textura
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     MAPEOS DE TEXTURA                        │
+├─────────────────────────────────────────────────────────────┤
+│  TIRA         │  Textura a lo largo de la gota              │
+│  DISCO        │  Textura en coordenadas polares              │
+│  REFERENCIA   │  Textura de referencia 1×2 (cápsula)         │
+│  IMAGEN       │  Textura desde archivo de imagen              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Textura de referencia (cápsula 1×2):**
+
+```svg
+<svg viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="lines" patternUnits="userSpaceOnUse" width="20" height="20">
+      <path d="M 0 0 L 20 20" stroke="#666" stroke-width="0.5"/>
+      <path d="M 0 10 L 20 30" stroke="#666" stroke-width="0.5"/>
+      <path d="M 10 0 L 30 20" stroke="#666" stroke-width="0.5"/>
+    </pattern>
+  </defs>
+  
+  <!-- Cápsula (textura de referencia) -->
+  <rect x="20" y="100" width="160" height="80" fill="#B3E5FC" stroke="#0288D1" stroke-width="1"/>
+  <circle cx="100" cy="100" r="40" fill="#FFE0B2" stroke="#F57C00" stroke-width="1"/>
+  <circle cx="100" cy="180" r="40" fill="#C8E6C9" stroke="#43A047" stroke-width="1"/>
+  
+  <!-- Líneas de referencia -->
+  <rect x="60" y="120" width="80" height="60" fill="url(#lines)" opacity="0.3"/>
+  
+  <!-- Circles concentricos -->
+  <circle cx="100" cy="100" r="30" fill="none" stroke="#F57C00" stroke-width="0.5" opacity="0.5"/>
+  <circle cx="100" cy="100" r="20" fill="none" stroke="#F57C00" stroke-width="0.5" opacity="0.5"/>
+  <circle cx="100" cy="180" r="30" fill="none" stroke="#43A047" stroke-width="0.5" opacity="0.5"/>
+  <circle cx="100" cy="180" r="20" fill="none" stroke="#43A047" stroke-width="0.5" opacity="0.5"/>
+  
+  <!-- Divisiones -->
+  <line x1="20" y1="140" x2="180" y2="140" stroke="#0288D1" stroke-width="1" stroke-dasharray="2,2"/>
+  <line x1="20" y1="140" x2="20" y2="140" stroke="#0288D1" stroke-width="2"/>
+  <line x1="180" y1="140" x2="180" y2="140" stroke="#0288D1" stroke-width="2"/>
+  
+  <!-- Etiquetas -->
+  <text x="100" y="50" text-anchor="middle" font-size="11" fill="#333">Textura de Referencia</text>
+  <text x="100" y="90" text-anchor="middle" font-size="10" fill="#333">(1×2 proporción)</text>
+  <text x="50" y="105" text-anchor="middle" font-size="9" fill="#333">v=0</text>
+  <text x="150" y="105" text-anchor="middle" font-size="9" fill="#333">v=0.25</text>
+  <text x="50" y="145" text-anchor="middle" font-size="9" fill="#333">v=0.5</text>
+  <text x="150" y="185" text-anchor="middle" font-size="9" fill="#333">v=0.75</text>
+  <text x="50" y="225" text-anchor="middle" font-size="9" fill="#333">v=1</text>
+</svg>
+```
+
+---
+
+## 🔧 Uso
+
+### Requisitos
+
+- Java 17 o superior
+- Maven 3.6+ (opcional)
+
+### Compilación y Ejecución
+
+```bash
+# Compilar todo y ejecutar pruebas
+mvn test
+
+# Ejecutar un ejemplo específico
+echo "Flor" | mvn exec:java -Dexec.mainClass="Flor"
+
+# O usar el script de ejemplos
+./ejemplos.sh Flor
+```
+
+Las imágenes generadas se guardan en `target/imagenes/`.
+
+### Ejemplos Disponibles
+
+| Ejemplo | Descripción |
+|---------|-------------|
+| `GotaDemo` | Demostración básica de una gota |
+| `Flor` | Composición de gotas formando una flor |
+| `Hoja` | Gota configurada como hoja |
+| `EstrellaTapas` | Estrella con tapas de semidisco |
+| `Figura8` | Dos gotas formando un ocho |
+| `GotaTextura` | Gota con textura aplicada |
+| `GotaPerfil` | Demostración de diferentes perfiles |
+| `GotaColorDemo` | Demostración de modelos de color |
+| `GotaSolape` | Pruebas de solapamiento |
+| `ArcoDemo` | Arcos formados con gotas |
+| `LadosDemo` | Demostración de lados y bordes |
+
+---
+
+## 🏗️ Arquitectura
+
+### Estructura del Proyecto
+
+```
+primitiva-gota/
+├── src/
+│   ├── main/java/          # Biblioteca principal
+│   │   ├── Gota.java           # Primitiva: geometría, SDF y raster
+│   │   ├── Coordenadas.java    # Coordenadas intrínsecas
+│   │   ├── Colores.java        # Modelos de color
+│   │   ├── Texturas.java       # Mapeo de texturas
+│   │   ├── Mezcla.java         # Interpolación de colores
+│   │   ├── ComposicionColor.java # Composición de rellenos
+│   │   └── Composicion.java    # Composición topológica
+│   │
+│   ├── test/java/          # Pruebas
+│   │   ├── Todas.java          # Ejecuta todas las pruebas
+│   │   ├── GotaRegresion.java  # Pruebas de regresión
+│   │   ├── ComposicionPruebas.java # Pruebas de composición
+│   │   └── ...
+│   │
+│   └── ejemplos/java/      # Ejemplos y demos
+│       ├── Flor.java
+│       ├── Hoja.java
+│       └── ...
+│
+├── pom.xml                 # Configuración Maven
+└── ejemplos.sh             # Script para ejecutar ejemplos
+```
+
+### Dependencias entre Clases
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        FLUJO DE DATOS                             │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   Gota ──[genera]──> Coordenadas ──┬──> Colores ──┐              │
+│                                   │              │              │
+│                                   └──> Texturas ──┘              │
+│                                       (Mezcla)──────────┘        │
+│                                                                  │
+│   ComposicionColor (combina 2 rellenos)                         │
+│   Composicion (une gotas y las pinta)                           │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📊 Especificación Técnica Detallada
+
+### Algoritmo de Renderizado
+
+1. **División recursiva**: La gota se divide en tramos hasta que el polinomio de grado 6 (para círculos) o 12 (para elipses) puede evaluarse directamente
+2. **Evaluación en base de Bernstein**: Los polinomios se evalúan en base de Bernstein para garantizar estabilidad numérica
+3. **Antialiasing**: Banda de 0.5 píxeles con evaluación conservadora
+4. **Profundidad máxima**: 24 niveles de subdivisión
+
+### Tipos de Solapamiento
+
+| Tipo | Descripción |
+|------|-------------|
+| `PLANO` | Un único color por píxel (mínimo rho) |
+| `TRAZO` | Cada tramo es una capa, con antialiasing propio |
+
+### Perfil del Radio
+
+```
+rm = radio en t = tm (por defecto 0.5)
+suavizado ∈ [0, 1]:
+  - suavizado = 1: una única cuadrática
+  - suavizado < 1: dos cuadráticas con pendientes interpoladas
+  - suavizado = 0: línea recta con codo en tm
+```
+
+### Relación de Aspecto (Elipses)
+
+```
+λ = a / b (relación radio tangente / radio normal)
+- λ = 1: círculos (algoritmo de grado 6)
+- λ ≠ 1: elipses (algoritmo de grado 12)
+- Dominio: (0.05, 20)
+```
+
+---
+
+## 📜 Licencia
 
 Este proyecto se distribuye bajo la [WTFPL](LICENSE) (*Do What The Fuck You Want To Public License*).
 
-Lo puedes usar, modificar o ignorar. Está aquí por si a alguien le sirve tanto como a mí.
+> Lo puedes usar, modificar o ignorar. Está aquí por si a alguien le sirve tanto como a mí.
+
+---
+
+## 🔗 Recursos Adicionales
+
+- [Implementación de referencia en Java](implementacion/java/README.md)
+- [Documentación de las clases](implementacion/java/src/main/java/)
+- [Pruebas y ejemplos](implementacion/java/src/test/java/)
+
+---
+
+*Generado con ❤️ para la comunidad de gráficos 2D*
