@@ -164,10 +164,6 @@ Colores.cadena(e1, c1, c2, e2, ajusteEC1, ajusteCC, ajusteCE2, mezcla)
 - `extremo2`: Color en v = 1 (final de la tapa delantera)
 - `ajuste`: Controla cuándo se produce la transición (0 = inicio, 0.5 = centro, 1 = final)
 
-### Modelos de Textura
-
-
-
 ## 🔧 Uso
 
 ### Requisitos
