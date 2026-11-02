@@ -355,8 +355,6 @@ public final class Composicion {
         return unit(m.x - n.x, m.y - n.y);
     }
 
-    private static double largo(Gota.Vec v) { return Math.hypot(v.x(), v.y()); }
-
     /** Datos de una arista tras fijar tiradores y pendiente. */
     private record Ar(int a, int b, Gota.Vec va, Gota.Vec vb, double lamA, double lamB, double q, boolean fija) {}
 

@@ -572,16 +572,8 @@ public final class Gota {
 
     // ---------- Minimización numérica (sdf y t*) ----------
 
-    /**
-     * f en el muestreo grueso. Usa la misma f exacta que el refinado: el muestreo con la distancia aproximada de
-     * Sampson daba mínimos erróneos con elipses. Sampson queda solo como alternativa de distanciaElipse.
-     */
-    private double fMuestreo(double x, double y, double t, boolean porRho) {
-        return f(x, y, t, porRho);
-    }
-
     private double f(double x, double y, double t, boolean porRho) {
-        if (elipses) return fElipse(x, y, t, porRho, true);
+        if (elipses) return fElipse(x, y, t, porRho);
         double dx = x - cx(t), dy = y - cy(t);
         double d = Math.sqrt(dx * dx + dy * dy), r = rad(t);
         return porRho ? d / Math.max(r, 1e-9) : d - r;
@@ -591,7 +583,7 @@ public final class Gota {
     private double[] minimizar(double x, double y, boolean porRho) {
         int n = muestras;
         double[] g = new double[n + 1];
-        for (int i = 0; i <= n; i++) g[i] = fMuestreo(x, y, i / (double) n, porRho);
+        for (int i = 0; i <= n; i++) g[i] = f(x, y, i / (double) n, porRho);
         double bestT = 0, bestV = Double.POSITIVE_INFINITY;
         for (int i = 0; i <= n; i++) {
             boolean izq = i == 0 || g[i] <= g[i - 1];
@@ -630,7 +622,7 @@ public final class Gota {
     private java.util.List<double[]> hebras(double x, double y, double limite) {
         int n = muestras;
         double[] g = new double[n + 1];
-        for (int i = 0; i <= n; i++) g[i] = fMuestreo(x, y, i / (double) n, false);
+        for (int i = 0; i <= n; i++) g[i] = f(x, y, i / (double) n, false);
         java.util.List<double[]> out = new java.util.ArrayList<>();
         for (int i = 0; i <= n; i++) {
             boolean izq = i == 0 || g[i] < g[i - 1];     // '<' a un lado: una sola muestra por meseta
@@ -662,8 +654,6 @@ public final class Gota {
         return dst;
     }
 
-    // ---------- Coordenadas.Muestra completa en un círculo de la familia ----------
-
     // ---------- Elipses: orientación, aspecto y distancia ----------
 
     /** Aspecto a/b en t (lineal). */
@@ -680,25 +670,16 @@ public final class Gota {
 
     /**
      * Valor de la familia en t para elipses: ρ_e (norma elíptica, igual que ρ si son círculos) o la distancia
-     * con signo a la elipse (exacta, o aproximada de primer orden si exacto es false).
+     * con signo a la elipse (exacta).
      */
-    private double fElipse(double x, double y, double t, boolean porRho, boolean exacto) {
+    private double fElipse(double x, double y, double t, boolean porRho) {
         double dx = x - cx(t), dy = y - cy(t);
         double[] d = dirD(t);
         double u = dx * d[0] + dy * d[1], v = dx * d[1] - dy * d[0];
         double b = rad(t), a = lam(t) * b;
         if (porRho) return Math.hypot(u / Math.max(a, 1e-9), v / Math.max(b, 1e-9));
         if (b <= 1e-12) return Math.hypot(u, v);
-        return exacto ? distElipse(a, b, u, v) : sampson(a, b, u, v);
-    }
-
-    /** Distancia con signo aproximada (de primer orden) a la elipse de semiejes a, b, para un punto (u, v). */
-    private static double sampson(double a, double b, double u, double v) {
-        double q = (u / a) * (u / a) + (v / b) * (v / b);
-        double gx = u / (a * a), gy = v / (b * b);
-        double g = 2 * Math.sqrt(gx * gx + gy * gy);
-        if (g < 1e-12) return -Math.min(a, b);
-        return (q - 1) / g;
+        return distElipse(a, b, u, v);
     }
 
     /**
