@@ -111,48 +111,7 @@ La **tira** divide la gota en 4 regiones:
 
 ### Diagrama de la Primitiva
 
-```svg
-<svg viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
-  <!-- Camino Bézier -->
-  <path d="M 50 100 C 150 50 450 150 550 100" 
-        fill="none" stroke="#666" stroke-width="2" stroke-dasharray="5,5"/>
-  
-  <!-- Puntos de control -->
-  <circle cx="50" cy="100" r="4" fill="#f00"/>
-  <circle cx="550" cy="100" r="4" fill="#f00"/>
-  <circle cx="150" cy="50" r="3" fill="#0a0"/>
-  <circle cx="450" cy="150" r="3" fill="#0a0"/>
-  
-  <!-- Gota (aproximación visual) -->
-  <path d="M 50 60 C 100 30 150 40 200 60 C 250 80 300 80 350 80 C 400 80 450 100 500 80 C 550 60 550 140 500 160 C 450 180 400 160 350 160 C 300 160 250 160 200 160 C 150 160 100 170 50 140 Z"
-        fill="#4CAF50" fill-opacity="0.3" stroke="#4CAF50" stroke-width="2"/>
-  
-  <!-- Centros de las elipses -->
-  <circle cx="50" cy="100" r="20" fill="none" stroke="#2196F3" stroke-width="1.5"/>
-  <circle cx="550" cy="100" r="20" fill="none" stroke="#2196F3" stroke-width="1.5"/>
-  
-  <!-- Radios -->
-  <line x1="50" y1="100" x2="30" y2="100" stroke="#2196F3" stroke-width="1"/>
-  <line x1="50" y1="100" x2="70" y2="100" stroke="#2196F3" stroke-width="1"/>
-  <line x1="550" y1="100" x2="530" y2="100" stroke="#2196F3" stroke-width="1"/>
-  <line x1="550" y1="100" x2="570" y2="100" stroke="#2196F3" stroke-width="1"/>
-  
-  <!-- Etiquetas -->
-  <text x="50" y="40" text-anchor="middle" font-size="12" fill="#333">P₀ (c₁, r₁)</text>
-  <text x="550" y="40" text-anchor="middle" font-size="12" fill="#333">P₃ (c₂, r₂)</text>
-  <text x="150" y="40" text-anchor="middle" font-size="10" fill="#333">P₁</text>
-  <text x="450" y="180" text-anchor="middle" font-size="10" fill="#333">P₂</text>
-  <text x="300" y="190" text-anchor="middle" font-size="11" fill="#333">c(t) - camino Bézier cúbica</text>
-  
-  <!-- Flecha de dirección -->
-  <path d="M 200 110 L 300 110" stroke="#666" stroke-width="1" marker-end="url(#arrowhead)"/>
-  <defs>
-    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
-    </marker>
-  </defs>
-</svg>
-```
+![](./.README_files/figura-1.svg)
 
 ### Sistema de Coordenadas Intrínsecas
 
