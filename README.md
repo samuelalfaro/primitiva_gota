@@ -19,6 +19,12 @@ La **primitiva Gota** es una forma vectorial 2D definida como la envolvente de u
 
 ## 🔷 Especificación Geométrica
 
+
+### Diagrama de la Primitiva
+
+![](./.README_files/figura-1.svg)
+
+
 ### Definición Matemática
 
 Una **gota** se define como el conjunto de puntos `(x, y)` tales que existe `t ∈ [0,1]` donde:
@@ -109,9 +115,11 @@ La **tira** divide la gota en 4 regiones:
 
 ## 🎨 Modelos de Color y Textura
 
-### Diagrama de la Primitiva
 
-![](./.README_files/figura-1.svg)
+**Textura de referencia (cápsula 1×2):**
+
+![](./.README_files/figura-3.png)
+
 
 ### Sistema de Coordenadas Intrínsecas
 
@@ -158,20 +166,7 @@ Colores.cadena(e1, c1, c2, e2, ajusteEC1, ajusteCC, ajusteCE2, mezcla)
 
 ### Modelos de Textura
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     MAPEOS DE TEXTURA                       │
-├─────────────────────────────────────────────────────────────┤
-│  TIRA         │  Textura a lo largo de la gota              │
-│  DISCO        │  Textura en coordenadas polares             │
-│  REFERENCIA   │  Textura de referencia 1×2 (cápsula)        │
-│  IMAGEN       │  Textura desde archivo de imagen            │
-└─────────────────────────────────────────────────────────────┘
-```
 
-**Textura de referencia (cápsula 1×2):**
-
-![](./.README_files/figura-3.png)
 
 ## 🔧 Uso
 
