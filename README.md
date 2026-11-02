@@ -107,8 +107,6 @@ La **tira** divide la gota en 4 regiones:
   - `u = 1` borde derecho
 - **`v`**: Coordenada longitudinal `[0,1]`
 
----
-
 ## 🎨 Modelos de Color y Textura
 
 ### Diagrama de la Primitiva
@@ -322,7 +320,6 @@ Las imágenes generadas se guardan en `target/imagenes/`.
 | `ArcoDemo` | Arcos formados con gotas |
 | `LadosDemo` | Demostración de lados y bordes |
 
----
 
 ## 🏗️ Arquitectura
 
