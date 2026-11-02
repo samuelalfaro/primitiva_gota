@@ -25,80 +25,69 @@ Una **gota** es la envolvente de una familia de secciones elípticas
 (o circulares, como caso particular) cuyos centros recorren una curva
 Bézier cúbica y cuyos radios varían según un perfil cuadrático.
 
-Sea \(t \in [0,1]\) el parámetro del camino. Cada sección tiene:
+Sea $t \in [0,1]$ el parámetro del camino. Cada sección tiene:
 
-- Centro \(c(t)\), sobre una curva Bézier cúbica.
-- Radio normal \(b(t)\).
-- Relación de aspecto \(\lambda(t)\).
-- Radio tangente \(a(t)=\lambda(t)b(t)\).
+- Centro $c(t)$, sobre una curva Bézier cúbica.
+- Radio normal $b(t)$.
+- Relación de aspecto $\lambda(t)$.
+- Radio tangente $a(t)=\lambda(t)b(t)$.
 
 La orientación de cada elipse viene dada por la tangente al camino.
 
 La curva central:
 
-\\[ \boxed{ c(t)=(1-t)^3P_0+ 3(1-t)^2tP_1+ 3(1-t)t^2P_2+ t^3P_3 } \\]
+$c(t)=(1-t)^3P_0+ 3(1-t)^2tP_1+ 3(1-t)t^2P_2+ t^3P_3$
 
 Donde:
 
-- \\(P_0,P_3\\): centros de las secciones extremas.
-- \\(P_1,P_2\\): puntos de control de la Bézier.
-
-Y aquí viene la primera precisión importante: la gota no es simplemente una curva Bézier con dos elipses en sus extremos. Es la unión de toda una familia de elipses intermedias.
-
+- $(P_0,P_3)$: centros de las secciones extremas.
+- $(P_1,P_2)$: puntos de control de la Bézier.
 
 ### Geometría de las Elipses
 
 Definimos:
 
-\\[ d=p-c(t) \\]
+$d=p-c(t)$
 
-\\[ T(t)=\frac{c'(t)}{|c'(t)|} \\]
+$T(t)=\frac{c'(t)}{|c'(t)|}$
 
-\\[ N(t)= \begin{pmatrix} T_y\\\ -T_x \end{pmatrix} \\]
+$N(t)= \begin{pmatrix} T_y\\\ -T_x \end{pmatrix}$
 
 Las proyecciones del vector sobre los ejes de la elipse son:
 
-\\[ d_T=d\cdot T \\]
+$d_T=d\cdot T$
 
-\\[ d_N=d\cdot N \\]
+$d_N=d\cdot N$
 
 La condición de pertenencia pasa a ser:
 
-\\[ \boxed{ \frac{d_T^2}{a(t)^2} + \frac{d_N^2}{b(t)^2} \leq 1 } \\]
+$\frac{d_T^2}{a(t)^2} + \frac{d_N^2}{b(t)^2} \leq 1$
 
-Y, puesto que \\(a=\lambda b\\):
+Y, puesto que $a=\lambda b$:
 
-\\[ \boxed{ d_T^2+\lambda(t)^2d_N^2 -\lambda(t)^2b(t)^2 \leq 0 } \\]
-
-Esta última expresión es la equivalente a la que utiliza el algoritmo, suponiendo una tangente unitaria.
-
-El resultado es especialmente elegante:
-
-- Si \\(\lambda=1\\), recuperamos el círculo.
-- Si \\(\lambda>1\\), la elipse se alarga en la dirección tangente.
-- Si \\(\lambda<1\\), se alarga en la dirección normal.
+$d_T^2+\lambda(t)^2d_N^2 -\lambda(t)^2b(t)^2 \leq 0$
 
 La gota queda definida por:
 
-\\[ \boxed{ G= \bigcup\_{t\in[0,1]} E(t) } \\]
+$G= \bigcup\_{t\in[0,1]} E(t)$
 
-Donde \\(E(t)\\) es la sección elíptica correspondiente a cada parámetro.
+Donde \$E(t)$ es la sección elíptica correspondiente a cada parámetro.
 
 Una observación de implementación: en el código se utiliza una dirección \\(D(t)\\) no necesariamente normalizada, derivada de la curva y regularizada para evitar degeneraciones. Por eso la expresión polinómica implementada es:
 
-\\[ (d\cdot D)^2+ \lambda^2(d\cdot D^\perp)^2 -\lambda^2b^2|D|^2\leq0 \\]
+$(d\cdot D)^2+ \lambda^2(d\cdot D^\perp)^2 -\lambda^2b^2|D|^2\leq0$
 
 ### Perfil del Radio
 
-El radio normal \(b(t)\) varía a lo largo del camino mediante un
+El radio normal $b(t)$ varía a lo largo del camino mediante un
 perfil cuadrático definido por:
 
-- \(r_1\): radio inicial.
-- \(r_2\): radio final.
-- \(r_m\): radio en la posición \(t_m\).
-- \(s\): parámetro de suavizado, entre 0 y 1.
+- $r_1$: radio inicial.
+- $r_2$: radio final.
+- $r_m$: radio en la posición \(t_m\).
+- $s$: parámetro de suavizado, entre 0 y 1.
 
-Por defecto, \(t_m=0.5\).
+Por defecto, $t_m=0.5$.
 
 Con suavizado 1, se utiliza una única curva cuadrática de Bézier:
 
@@ -106,7 +95,7 @@ $$
 b(t)=(1-t)^2r_1+2(1-t)tq+t^2r_2
 $$
 
-El control \(q\) se calcula para cumplir \(b(t_m)=r_m\):
+El control $q$ se calcula para cumplir $b(t_m)=r_m$:
 
 $$
 q=
@@ -115,12 +104,11 @@ q=
 $$
 
 Con suavizado inferior a 1, el perfil se construye mediante dos
-cuadráticas unidas en \(t_m\), interpolando sus pendientes entre
+cuadráticas unidas en $t_m$, interpolando sus pendientes entre
 el perfil lineal por tramos y el perfil cuadrático suave.
 
-- \(s=1\): perfil cuadrático suave, cuando sus controles son válidos.
-- \(s=0\): interpolación lineal entre los tres valores, con un codo
-  en \(t_m\).
+- $s=1$: perfil cuadrático suave, cuando sus controles son válidos.
+- $s=0$: interpolación lineal entre los tres valores, con un codo en %t_m$.
 - Valores intermedios: transición entre ambos comportamientos.
 
 El perfil garantiza radios no negativos.
@@ -135,8 +123,8 @@ $$
 
 Donde:
 
-- \(a(t)\): radio tangente al camino.
-- \(b(t)\): radio normal al camino.
+- $a(t)$: radio tangente al camino.
+- $b(t)$: radio normal al camino.
 
 La relación de aspecto varía linealmente entre los valores
 configurados en los extremos:
@@ -151,9 +139,9 @@ $$
 a(t)=\lambda(t)b(t)
 $$
 
-- \(\lambda=1\): círculo.
-- \(\lambda>1\): elipse alargada en dirección tangente.
-- \(\lambda<1\): elipse alargada en dirección normal.
+- $\lambda=1$: círculo.
+- $\lambda>1$: elipse alargada en dirección tangente.
+- $\lambda<1$: elipse alargada en dirección normal.
 
 Dominio de la relación de aspecto:
 
@@ -165,58 +153,9 @@ El círculo es un caso particular de la misma primitiva,
 no una implementación geométrica diferente desde el punto
 de vista de su definición.
 
-## 📐 Sistema de Coordenadas
-
-### Coordenadas Intrínsecas
-
-Cada píxel de la gota se describe mediante una muestra:
-
-$$
-Muestra(t,\rho,axial,lateral)
-$$
-
-Las coordenadas se calculan respecto a la sección que cubre
-el píxel:
-
-- \(t\): posición a lo largo del camino.
-- \(axial\): proyección normalizada sobre la tangente.
-- \(lateral\): proyección normalizada sobre la normal.
-- \(\rho\): distancia radial normalizada respecto a la sección.
-
-Con \(d=p-c(t)\), tangente unitaria \(T\), normal unitaria \(N\),
-radio tangente \(a(t)\) y radio normal \(b(t)\):
-
-$$
-axial=\frac{d\cdot T}{a(t)}
-$$
-
-$$
-lateral=\frac{d\cdot N}{b(t)}
-$$
-
-$$
-\rho=\sqrt{axial^2+lateral^2}
-$$
-
-Se cumple:
-
-$$
-\rho^2=axial^2+lateral^2
-$$
-
-La pertenencia a la sección viene determinada por:
-
-$$
-\rho\leq1
-$$
-
-En los círculos, donde \(a=b=r\), se recupera el sistema
-de coordenadas circular original.
-
 ## 🎨 Modelos de Color y Textura
 
-
-### Sistema de Coordenadas Intrínsecas
+### 📐 Sistema de Coordenadas Intrínsecas
 
 Cada píxel de la gota se describe mediante una muestra:
 
@@ -227,13 +166,13 @@ $$
 Las coordenadas se calculan respecto a la sección que cubre
 el píxel:
 
-- \(t\): posición a lo largo del camino.
-- \(axial\): proyección normalizada sobre la tangente.
-- \(lateral\): proyección normalizada sobre la normal.
-- \(\rho\): distancia radial normalizada respecto a la sección.
+- $t$: posición a lo largo del camino.
+- $axial$: proyección normalizada sobre la tangente.
+- $lateral$: proyección normalizada sobre la normal.
+- $\rho$: distancia radial normalizada respecto a la sección.
 
-Con \(d=p-c(t)\), tangente unitaria \(T\), normal unitaria \(N\),
-radio tangente \(a(t)\) y radio normal \(b(t)\):
+Con $d=p-c(t)$, tangente unitaria $T$, normal unitaria $N$,
+radio tangente $a(t)$ y radio normal $b(t)$:
 
 $$
 axial=\frac{d\cdot T}{a(t)}
@@ -262,11 +201,9 @@ $$
 En los círculos, donde \(a=b=r\), se recupera el sistema
 de coordenadas circular original.
 
+### Coordenadas de Textura (Tira)
 
 ![](./.README_files/figura-2.svg)
-
-
-### Coordenadas de Textura (Tira)
 
 **Textura de referencia (cápsula 1×2):**
 
@@ -443,24 +380,6 @@ primitiva_gota/
 | `PLANO` | Un único color por píxel (mínimo rho) |
 | `TRAZO` | Cada tramo es una capa, con antialiasing propio |
 
-### Perfil del Radio
-
-```
-rm = radio en t = tm (por defecto 0.5)
-suavizado ∈ [0, 1]:
-  - suavizado = 1: una única cuadrática
-  - suavizado < 1: dos cuadráticas con pendientes interpoladas
-  - suavizado = 0: línea recta con codo en tm
-```
-
-### Relación de Aspecto (Elipses)
-
-```
-λ = a / b (relación radio tangente / radio normal)
-- λ = 1: círculos (algoritmo de grado 6)
-- λ ≠ 1: elipses (algoritmo de grado 12)
-- Dominio: (0.05, 20)
-```
 
 ## 🔗 Recursos Adicionales
 
