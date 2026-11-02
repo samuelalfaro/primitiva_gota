@@ -1,6 +1,6 @@
 # Primitiva Gota
 
-> Primitiva de dibujo 2D formada por dos elipses unidas por una curva Bézier cúbica.
+*Primitiva de dibujo 2D formada por dos elipses unidas por una curva Bézier cúbica.*
 
 ## 📌 Descripción General
 
@@ -196,13 +196,13 @@ La primitiva soporta múltiples modelos de interpolación de color:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    MODELOS DE INTERPOLACIÓN                   │
+│                    MODELOS DE INTERPOLACIÓN                 │
 ├─────────────────────────────────────────────────────────────┤
-│  RGB          │  Interpolación lineal en espacio RGB         │
+│  RGB          │  Interpolación lineal en espacio RGB        │
 │  RGB_LINEAL   │  Interpolación lineal gamma-correcta        │
 │  HSL          │  Interpolación en espacio HSL               │
 │  OKLCH        │  Interpolación en espacio Oklch (perceptual)│
-│  Personalizada│  Cualquier función lambda propia             │
+│  Personalizada│  Cualquier función lambda propia            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -233,12 +233,12 @@ Colores.cadena(e1, c1, c2, e2, ajusteEC1, ajusteCC, ajusteCE2, mezcla)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     MAPEOS DE TEXTURA                        │
+│                     MAPEOS DE TEXTURA                       │
 ├─────────────────────────────────────────────────────────────┤
 │  TIRA         │  Textura a lo largo de la gota              │
-│  DISCO        │  Textura en coordenadas polares              │
-│  REFERENCIA   │  Textura de referencia 1×2 (cápsula)         │
-│  IMAGEN       │  Textura desde archivo de imagen              │
+│  DISCO        │  Textura en coordenadas polares             │
+│  REFERENCIA   │  Textura de referencia 1×2 (cápsula)        │
+│  IMAGEN       │  Textura desde archivo de imagen            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -361,17 +361,16 @@ primitiva-gota/
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        FLUJO DE DATOS                             │
+│                        FLUJO DE DATOS                           │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│   Gota ──[genera]──> Coordenadas ──┬──> Colores ──┐              │
-│                                   │              │              │
-│                                   └──> Texturas ──┘              │
-│                                       (Mezcla)──────────┘        │
-│                                                                  │
+│                                                                 │
+│   Gota ──[genera]──> Coordenadas ──┬──> Colores ───┐            │
+│                                    │               │ (Mezcla)   │
+│                                    └──> Texturas ──┘            │
+│                                                                 │
 │   ComposicionColor (combina 2 rellenos)                         │
 │   Composicion (une gotas y las pinta)                           │
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -412,13 +411,6 @@ suavizado ∈ [0, 1]:
 - Dominio: (0.05, 20)
 ```
 
----
-
-## 📜 Licencia
-
-Este proyecto se distribuye bajo la [WTFPL](LICENSE) (*Do What The Fuck You Want To Public License*).
-
-> Lo puedes usar, modificar o ignorar. Está aquí por si a alguien le sirve tanto como a mí.
 
 ---
 
@@ -427,6 +419,14 @@ Este proyecto se distribuye bajo la [WTFPL](LICENSE) (*Do What The Fuck You Want
 - [Implementación de referencia en Java](implementacion/java/README.md)
 - [Documentación de las clases](implementacion/java/src/main/java/)
 - [Pruebas y ejemplos](implementacion/java/src/test/java/)
+
+---
+
+## 📜 Licencia
+
+Este proyecto se distribuye bajo la [WTFPL](LICENSE) (*Do What The Fuck You Want To Public License*).
+
+> Lo puedes usar, modificar o ignorar. Está aquí por si a alguien le sirve tanto como a mí.
 
 ---
 
