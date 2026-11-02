@@ -115,37 +115,7 @@ La **tira** divide la gota en 4 regiones:
 
 ### Sistema de Coordenadas Intrínsecas
 
-```svg
-<svg viewBox="0 0 400 150" xmlns="http://www.w3.org/2000/svg">
-  <!-- Gota simplificada -->
-  <path d="M 50 75 C 100 50 300 100 350 75 C 350 75 300 50 200 50 C 100 50 50 75 50 75 Z"
-        fill="none" stroke="#4CAF50" stroke-width="2"/>
-  
-  <!-- Camino -->
-  <path d="M 50 75 C 100 50 300 100 350 75" 
-        fill="none" stroke="#666" stroke-width="1" stroke-dasharray="3,3"/>
-  
-  <!-- Punto ejemplo -->
-  <circle cx="200" cy="60" r="3" fill="#f00"/>
-  
-  <!-- Vectores -->
-  <line x1="200" y1="75" x2="200" y2="60" stroke="#FF5722" stroke-width="2"/>
-  <line x1="200" y1="75" x2="190" y2="70" stroke="#2196F3" stroke-width="2"/>
-  <line x1="200" y1="75" x2="205" y2="80" stroke="#9C27B0" stroke-width="2"/>
-  
-  <!-- Etiquetas -->
-  <text x="200" y="45" text-anchor="middle" font-size="11" fill="#333">píxel</text>
-  <text x="215" y="70" text-anchor="start" font-size="10" fill="#FF5722">d = p - c(t)</text>
-  <text x="180" y="65" text-anchor="end" font-size="10" fill="#2196F3">T (tangente)</text>
-  <text x="210" y="85" text-anchor="start" font-size="10" fill="#9C27B0">N (normal)</text>
-  <text x="200" y="95" text-anchor="middle" font-size="10" fill="#666">c(t)</text>
-  
-  <!-- Ecuaciones -->
-  <text x="20" y="130" font-size="11" fill="#333">axial = (p - c)·T / r</text>
-  <text x="20" y="145" font-size="11" fill="#333">lateral = (p - c)·N / r</text>
-  <text x="300" y="130" font-size="11" fill="#333">rho² = axial² + lateral²</text>
-</svg>
-```
+![](./.README_files/figura-2.svg)
 
 ### Modelos de Color
 
