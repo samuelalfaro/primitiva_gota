@@ -6,6 +6,8 @@
 
 La **primitiva Gota** es una forma vectorial 2D definida como la envolvente de una familia de elipses (o círculos) cuyo centro recorre una curva Bézier cúbica y cuyo radio varía según una función de perfil. Esta primitiva permite crear formas orgánicas y suaves que combinan las propiedades de las elipses con la flexibilidad de las curvas paramétricas.
 
+![](./.README_files/figura-1.svg)
+
 **Características principales:**
 - Forma definida por 2 puntos extremos (centros de las elipses) y 2 puntos de control (para la Bézier)
 - Radio variable a lo largo del camino con control de suavizado
@@ -18,12 +20,6 @@ La **primitiva Gota** es una forma vectorial 2D definida como la envolvente de u
 ---
 
 ## 🔷 Especificación Geométrica
-
-
-### Diagrama de la Primitiva
-
-![](./.README_files/figura-1.svg)
-
 
 ### Definición Matemática
 
