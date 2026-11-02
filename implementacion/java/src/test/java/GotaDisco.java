@@ -197,7 +197,7 @@ public class GotaDisco {
 
     static void galeria() throws Exception {
         BufferedImage base = ImageIO.read(GotaDisco.class.getResource("/gota_textura_base.png"));
-        Texturas.Textura tex = Texturas.deImagen(base, Texturas.Borde.SUJETAR);
+        Texturas.Textura tex = Texturas.deImagen(base);
         BufferedImage img = new BufferedImage(900, 600, BufferedImage.TYPE_INT_ARGB);
         Arrays.fill(datos(img), 0xFFFFFFFF);
         Texturas.Disco ins = Texturas.Disco.inscrito();

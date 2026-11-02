@@ -19,21 +19,19 @@ public final class Texturas {
         default double aspecto() { return 1; }
     }
 
-    /** Qué hacer con coordenadas fuera de [0,1]. */
-    public enum Borde { SUJETAR, REPETIR, ESPEJO }
-
-    public static Textura deImagen(BufferedImage img) { return deImagen(img, Borde.SUJETAR); }
-
-    /** Textura bilineal (alfa premultiplicado) a partir de una imagen. La imagen se copia. */
-    public static Textura deImagen(BufferedImage img, Borde borde) {
+    /**
+     * Textura bilineal (alfa premultiplicado) a partir de una imagen. La imagen se copia. Las coordenadas fuera de
+     * [0, 1] repiten el texel del borde.
+     */
+    public static Textura deImagen(BufferedImage img) {
         final int w = img.getWidth(), h = img.getHeight();
         final int[] px = img.getRGB(0, 0, w, h, null, 0, w);
         return (u, v) -> {
             double x = u * w - 0.5, y = v * h - 0.5;       // los centros de texel están en medio
             int x0 = (int) Math.floor(x), y0 = (int) Math.floor(y);
             double fx = x - x0, fy = y - y0;
-            int a = Mezcla.RGB.mezclar(texel(px, w, h, x0, y0, borde), texel(px, w, h, x0 + 1, y0, borde), fx);
-            int b = Mezcla.RGB.mezclar(texel(px, w, h, x0, y0 + 1, borde), texel(px, w, h, x0 + 1, y0 + 1, borde), fx);
+            int a = Mezcla.RGB.mezclar(texel(px, w, h, x0, y0), texel(px, w, h, x0 + 1, y0), fx);
+            int b = Mezcla.RGB.mezclar(texel(px, w, h, x0, y0 + 1), texel(px, w, h, x0 + 1, y0 + 1), fx);
             return Mezcla.RGB.mezclar(a, b, fy);
         };
     }
@@ -329,30 +327,15 @@ public final class Texturas {
 
     /** Ángulo interpolado en grados, normalizado a [0, 360), con el sentido pedido (mismas reglas que el tono). */
     static double interpolaAngulo(double a0, double a1, double u, Mezcla.Tono tono) {
-        double corto = ((a1 - a0 + 180) % 360 + 360) % 360 - 180;   // [-180, 180)
-        double d = switch (tono) {
-            case CORTO -> corto;
-            case LARGO -> corto > 0 ? corto - 360 : corto + 360;
-            case HORARIO -> ((a1 - a0) % 360 + 360) % 360;
-            case ANTIHORARIO -> -(((a0 - a1) % 360 + 360) % 360);
-        };
+        double d = tono.giro(a0, a1);
         return (((a0 + d * u) % 360) + 360) % 360;
     }
 
     private static double clamp(double x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
 
-    private static int texel(int[] px, int w, int h, int i, int j, Borde borde) {
-        return px[indice(j, h, borde) * w + indice(i, w, borde)];
+    private static int texel(int[] px, int w, int h, int i, int j) {
+        return px[indice(j, h) * w + indice(i, w)];
     }
 
-    private static int indice(int i, int n, Borde borde) {
-        return switch (borde) {
-            case SUJETAR -> Math.max(0, Math.min(n - 1, i));
-            case REPETIR -> Math.floorMod(i, n);
-            case ESPEJO -> {
-                int k = Math.floorMod(i, 2 * n);
-                yield k < n ? k : 2 * n - 1 - k;
-            }
-        };
-    }
+    private static int indice(int i, int n) { return Math.max(0, Math.min(n - 1, i)); }
 }

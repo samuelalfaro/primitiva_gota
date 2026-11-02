@@ -176,7 +176,7 @@ public class GotaCombina {
     static void galeria() throws Exception {
         BufferedImage img = new BufferedImage(900, 600, BufferedImage.TYPE_INT_ARGB);
         Arrays.fill(datos(img), 0xFFFFFFFF);
-        Texturas.Textura tx = Texturas.deImagen(javax.imageio.ImageIO.read(GotaCombina.class.getResource("/gota_textura_base.png")), Texturas.Borde.SUJETAR);
+        Texturas.Textura tx = Texturas.deImagen(javax.imageio.ImageIO.read(GotaCombina.class.getResource("/gota_textura_base.png")));
         ComposicionColor.Modo[] ms = ComposicionColor.Modo.values();
         for (int i = 0; i < 6; i++) {
             double ox = (i % 3) * 300, oy = (i / 3) * 300;

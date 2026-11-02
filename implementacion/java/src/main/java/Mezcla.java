@@ -23,7 +23,18 @@ public interface Mezcla {
         /** Tono creciente. */
         HORARIO,
         /** Tono decreciente. */
-        ANTIHORARIO
+        ANTIHORARIO;
+
+        /** Giro con signo, en grados, para ir del ángulo a0 al a1 en este sentido (ángulos en grados). */
+        public double giro(double a0, double a1) {
+            double corto = ((a1 - a0 + 180) % 360 + 360) % 360 - 180;   // [-180, 180)
+            return switch (this) {
+                case CORTO -> corto;
+                case LARGO -> corto > 0 ? corto - 360 : corto + 360;
+                case HORARIO -> ((a1 - a0) % 360 + 360) % 360;
+                case ANTIHORARIO -> -(((a0 - a1) % 360 + 360) % 360);
+            };
+        }
     }
 
     /** sRGB directo, alfa premultiplicado. Es el valor por defecto. */
@@ -175,13 +186,7 @@ public interface Mezcla {
                                      double u, double eps, Tono tono) {
         if (c0 < eps) return h1;
         if (c1 < eps) return h0;
-        double corto = ((h1 - h0 + 180) % 360 + 360) % 360 - 180;   // [-180, 180)
-        double d = switch (tono) {
-            case CORTO -> corto;
-            case LARGO -> corto > 0 ? corto - 360 : corto + 360;
-            case HORARIO -> ((h1 - h0) % 360 + 360) % 360;
-            case ANTIHORARIO -> -(((h0 - h1) % 360 + 360) % 360);
-        };
+        double d = tono.giro(h0, h1);
         double h = (h0 + d * u) % 360;
         return h < 0 ? h + 360 : h;
     }

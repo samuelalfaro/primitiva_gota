@@ -34,11 +34,6 @@ public final class ComposicionColor {
         return new Combinado(color, textura, modo, entorno);
     }
 
-    /** Atajo: relleno de color multiplicado, reemplazado, etc. por una textura en tira. */
-    public static Gota.Relleno conTextura(Gota.Relleno color, Texturas.Textura tex, Modo modo) {
-        return combinar(color, Texturas.textura(tex), modo);
-    }
-
     private static final class Combinado implements Gota.Relleno {
         private final Gota.Relleno color, tex;
         private final Modo modo;
