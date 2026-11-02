@@ -48,7 +48,7 @@ Gota.gotaCurva(centro1, radio1, vec1, centro2, radio2, vec2, perfil)
 Perfil.radioMedio(rm)              // Radio medio en t=0.5
 Perfil.central(central)            // rm = central * (r1 + r2) / 2
 Perfil.recto()                     // Tangentes rectas: rm = (r1 + r2) / 2
-Perfil.aspecto(lambda1, lambda2)  // Elipses: relación aspecto a/b
+Perfil.aspecto(lambda1, lambda2)   // Elipses: relación aspecto a/b
 ```
 
 ### Geometría de las Elipses
@@ -284,8 +284,6 @@ Colores.cadena(e1, c1, c2, e2, ajusteEC1, ajusteCC, ajusteCE2, mezcla)
 </svg>
 ```
 
----
-
 ## 🔧 Uso
 
 ### Requisitos
@@ -374,8 +372,6 @@ primitiva-gota/
 └─────────────────────────────────────────────────────────────────┘
 ```
 
----
-
 ## 📊 Especificación Técnica Detallada
 
 ### Algoritmo de Renderizado
@@ -411,16 +407,11 @@ suavizado ∈ [0, 1]:
 - Dominio: (0.05, 20)
 ```
 
-
----
-
 ## 🔗 Recursos Adicionales
 
 - [Implementación de referencia en Java](implementacion/java/README.md)
 - [Documentación de las clases](implementacion/java/src/main/java/)
 - [Pruebas y ejemplos](implementacion/java/src/test/java/)
-
----
 
 ## 📜 Licencia
 
