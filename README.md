@@ -1,6 +1,7 @@
 # Primitiva Gota
 
-*Primitiva de dibujo 2D formada por dos elipses unidas por una curva Bézier cúbica.*
+*Primitiva geométrica 2D definida por la envolvente de una familia
+de secciones elípticas a lo largo de una curva Bézier cúbica.*
 
 ## 📌 Descripción General
 
@@ -14,112 +15,297 @@ La **primitiva Gota** es una forma vectorial 2D definida como la envolvente de u
 - Soporte para elipses (con relación de aspecto configurable) y círculos
 - Sistema de coordenadas intrínsecas para mapeo de texturas y colores
 - Composición topológica: cadenas, ciclos, estrellas y figuras complejas
-- Antialiasing integrado
-- Modelos de color avanzados (RGB, RGB lineal, HSL, Oklch)
 
----
 
 ## 🔷 Especificación Geométrica
 
 ### Definición Matemática
 
-Una **gota** se define como el conjunto de puntos `(x, y)` tales que existe `t ∈ [0,1]` donde:
+Una **gota** es la envolvente de una familia de secciones elípticas
+(o circulares, como caso particular) cuyos centros recorren una curva
+Bézier cúbica y cuyos radios varían según un perfil cuadrático.
 
-```
-|p - c(t)|² - r(t)² ≤ 0
-```
+Sea \(t \in [0,1]\) el parámetro del camino. Cada sección tiene:
+
+- Centro \(c(t)\), sobre una curva Bézier cúbica.
+- Radio normal \(b(t)\).
+- Relación de aspecto \(\lambda(t)\).
+- Radio tangente \(a(t)=\lambda(t)b(t)\).
+
+La orientación de cada elipse viene dada por la tangente al camino.
+
+La curva central:
+
+\\[ \boxed{ c(t)=(1-t)^3P_0+ 3(1-t)^2tP_1+ 3(1-t)t^2P_2+ t^3P_3 } \\]
 
 Donde:
-- **`c(t)`**: Curva Bézier cúbica que define el camino entre los centros
-  - `c(t) = (1-t)³·P₀ + 3(1-t)²t·P₁ + 3(1-t)t²·P₂ + t³·P₃`
-  - `P₀` y `P₃` son los centros de las elipses extremos
-  - `P₁` y `P₂` son los puntos de control
 
-- **`r(t)`**: Función de radio (cuadrática de Bézier o lineal por tramos)
-  - Con suavizado = 1: `r(t)` es una única cuadrática por `(0, r₁)`, `(tₘ, rₘ)`, `(1, r₂)`
-  - Con suavizado < 1: dos cuadráticas unidas en `tₘ` con pendientes interpoladas
+- \\(P_0,P_3\\): centros de las secciones extremas.
+- \\(P_1,P_2\\): puntos de control de la Bézier.
 
-### Parámetros Principales
+Y aquí viene la primera precisión importante: la gota no es simplemente una curva Bézier con dos elipses en sus extremos. Es la unión de toda una familia de elipses intermedias.
 
-```java
-// Construcción básica
-Gota.gotaLineal(centro1, radio1, centro2, radio2, perfil)
-Gota.gotaCurva(centro1, radio1, vec1, centro2, radio2, vec2, perfil)
-
-// Perfil del radio
-Perfil.radioMedio(rm)              // Radio medio en t=0.5
-Perfil.central(central)            // rm = central * (r1 + r2) / 2
-Perfil.recto()                     // Tangentes rectas: rm = (r1 + r2) / 2
-Perfil.aspecto(lambda1, lambda2)   // Elipses: relación aspecto a/b
-```
 
 ### Geometría de las Elipses
 
-Para elipses, la condición de pertenencia se generaliza:
+Definimos:
 
-```
-(d·T)² + λ²(d·T⊥)² - λ²·b²·|T|² ≤ 0
-```
+\\[ d=p-c(t) \\]
+
+\\[ T(t)=\frac{c'(t)}{|c'(t)|} \\]
+
+\\[ N(t)= \begin{pmatrix} T_y\\\ -T_x \end{pmatrix} \\]
+
+Las proyecciones del vector sobre los ejes de la elipse son:
+
+\\[ d_T=d\cdot T \\]
+
+\\[ d_N=d\cdot N \\]
+
+La condición de pertenencia pasa a ser:
+
+\\[ \boxed{ \frac{d_T^2}{a(t)^2} + \frac{d_N^2}{b(t)^2} \leq 1 } \\]
+
+Y, puesto que \\(a=\lambda b\\):
+
+\\[ \boxed{ d_T^2+\lambda(t)^2d_N^2 -\lambda(t)^2b(t)^2 \leq 0 } \\]
+
+Esta última expresión es la equivalente a la que utiliza el algoritmo, suponiendo una tangente unitaria.
+
+El resultado es especialmente elegante:
+
+- Si \\(\lambda=1\\), recuperamos el círculo.
+- Si \\(\lambda>1\\), la elipse se alarga en la dirección tangente.
+- Si \\(\lambda<1\\), se alarga en la dirección normal.
+
+La gota queda definida por:
+
+\\[ \boxed{ G= \bigcup\_{t\in[0,1]} E(t) } \\]
+
+Donde \\(E(t)\\) es la sección elíptica correspondiente a cada parámetro.
+
+Una observación de implementación: en el código se utiliza una dirección \\(D(t)\\) no necesariamente normalizada, derivada de la curva y regularizada para evitar degeneraciones. Por eso la expresión polinómica implementada es:
+
+\\[ (d\cdot D)^2+ \lambda^2(d\cdot D^\perp)^2 -\lambda^2b^2|D|^2\leq0 \\]
+
+### Perfil del Radio
+
+El radio normal \(b(t)\) varía a lo largo del camino mediante un
+perfil cuadrático definido por:
+
+- \(r_1\): radio inicial.
+- \(r_2\): radio final.
+- \(r_m\): radio en la posición \(t_m\).
+- \(s\): parámetro de suavizado, entre 0 y 1.
+
+Por defecto, \(t_m=0.5\).
+
+Con suavizado 1, se utiliza una única curva cuadrática de Bézier:
+
+$$
+b(t)=(1-t)^2r_1+2(1-t)tq+t^2r_2
+$$
+
+El control \(q\) se calcula para cumplir \(b(t_m)=r_m\):
+
+$$
+q=
+\frac{r_m-(1-t_m)^2r_1-t_m^2r_2}
+{2t_m(1-t_m)}
+$$
+
+Con suavizado inferior a 1, el perfil se construye mediante dos
+cuadráticas unidas en \(t_m\), interpolando sus pendientes entre
+el perfil lineal por tramos y el perfil cuadrático suave.
+
+- \(s=1\): perfil cuadrático suave, cuando sus controles son válidos.
+- \(s=0\): interpolación lineal entre los tres valores, con un codo
+  en \(t_m\).
+- Valores intermedios: transición entre ambos comportamientos.
+
+El perfil garantiza radios no negativos.
+
+### Relación de Aspecto (Elipses)
+
+La relación de aspecto se define como:
+
+$$
+\lambda(t)=\frac{a(t)}{b(t)}
+$$
 
 Donde:
-- `d = p - c(t)`: vector del punto al centro
-- `T`: vector tangente unitario al camino
-- `T⊥`: vector normal unitario (rotación 90° de T)
-- `λ = a/b`: relación de aspecto (radio tangente / radio normal)
-- `b`: radio normal (el radio clásico)
-- `a = λ·b`: radio tangente
 
----
+- \(a(t)\): radio tangente al camino.
+- \(b(t)\): radio normal al camino.
+
+La relación de aspecto varía linealmente entre los valores
+configurados en los extremos:
+
+$$
+\lambda(t)=(1-t)\lambda_1+t\lambda_2
+$$
+
+Por tanto:
+
+$$
+a(t)=\lambda(t)b(t)
+$$
+
+- \(\lambda=1\): círculo.
+- \(\lambda>1\): elipse alargada en dirección tangente.
+- \(\lambda<1\): elipse alargada en dirección normal.
+
+Dominio de la relación de aspecto:
+
+$$
+0.05 \leq \lambda \leq 20
+$$
+
+El círculo es un caso particular de la misma primitiva,
+no una implementación geométrica diferente desde el punto
+de vista de su definición.
 
 ## 📐 Sistema de Coordenadas
 
 ### Coordenadas Intrínsecas
 
-Cada píxel de la gota tiene coordenadas intrínsecas que permiten un mapeo consistente de colores y texturas:
+Cada píxel de la gota se describe mediante una muestra:
 
-```
-Muestra(t, rho, axial, lateral)
-```
+$$
+Muestra(t,\rho,axial,lateral)
+$$
 
-- **`t`**: Posición a lo largo del camino `[0,1]`
-- **`rho`**: Distancia normalizada al centro `rho = |p - c(t)| / r(t)` donde `0 ≤ rho ≤ 1`
-- **`axial`**: Coordenada axial `(p - c)·T / r` (proyección sobre la tangente)
-- **`lateral`**: Coordenada lateral `(p - c)·N / r` (proyección sobre la normal)
+Las coordenadas se calculan respecto a la sección que cubre
+el píxel:
 
-Se cumple: `rho² = axial² + lateral²`
+- \(t\): posición a lo largo del camino.
+- \(axial\): proyección normalizada sobre la tangente.
+- \(lateral\): proyección normalizada sobre la normal.
+- \(\rho\): distancia radial normalizada respecto a la sección.
 
-### Coordenadas de Textura (Tira)
+Con \(d=p-c(t)\), tangente unitaria \(T\), normal unitaria \(N\),
+radio tangente \(a(t)\) y radio normal \(b(t)\):
 
-```
-Uv(u, v)
-```
+$$
+axial=\frac{d\cdot T}{a(t)}
+$$
 
-La **tira** divide la gota en 4 regiones:
+$$
+lateral=\frac{d\cdot N}{b(t)}
+$$
 
-```
-[0, v₁]    → Tapa trasera (semicírculo del primer círculo)
-[v₁, v₂]   → Primera mitad del cuerpo (t ∈ [0, tₘ])
-[v₂, v₃]   → Segunda mitad del cuerpo (t ∈ [tₘ, 1])
-[v₃, 1]    → Tapa delantera (semicírculo del segundo círculo)
-```
+$$
+\rho=\sqrt{axial^2+lateral^2}
+$$
 
-- **`u`**: Coordenada horizontal de lado a lado `[0,1]`
-  - `u = 0.5` sobre el camino
-  - `u = 0` borde izquierdo (respecto al sentido de avance)
-  - `u = 1` borde derecho
-- **`v`**: Coordenada longitudinal `[0,1]`
+Se cumple:
+
+$$
+\rho^2=axial^2+lateral^2
+$$
+
+La pertenencia a la sección viene determinada por:
+
+$$
+\rho\leq1
+$$
+
+En los círculos, donde \(a=b=r\), se recupera el sistema
+de coordenadas circular original.
 
 ## 🎨 Modelos de Color y Textura
 
+
+### Sistema de Coordenadas Intrínsecas
+
+Cada píxel de la gota se describe mediante una muestra:
+
+$$
+Muestra(t,\rho,axial,lateral)
+$$
+
+Las coordenadas se calculan respecto a la sección que cubre
+el píxel:
+
+- \(t\): posición a lo largo del camino.
+- \(axial\): proyección normalizada sobre la tangente.
+- \(lateral\): proyección normalizada sobre la normal.
+- \(\rho\): distancia radial normalizada respecto a la sección.
+
+Con \(d=p-c(t)\), tangente unitaria \(T\), normal unitaria \(N\),
+radio tangente \(a(t)\) y radio normal \(b(t)\):
+
+$$
+axial=\frac{d\cdot T}{a(t)}
+$$
+
+$$
+lateral=\frac{d\cdot N}{b(t)}
+$$
+
+$$
+\rho=\sqrt{axial^2+lateral^2}
+$$
+
+Se cumple:
+
+$$
+\rho^2=axial^2+lateral^2
+$$
+
+La pertenencia a la sección viene determinada por:
+
+$$
+\rho\leq1
+$$
+
+En los círculos, donde \(a=b=r\), se recupera el sistema
+de coordenadas circular original.
+
+
+![](./.README_files/figura-2.svg)
+
+
+### Coordenadas de Textura (Tira)
 
 **Textura de referencia (cápsula 1×2):**
 
 ![](./.README_files/figura-3.png)
 
+La tira utiliza dos coordenadas normalizadas:
 
-### Sistema de Coordenadas Intrínsecas
+$$
+UV=(u,v), \qquad u,v\in[0,1]
+$$
 
-![](./.README_files/figura-2.svg)
+- \(u\): posición transversal, de un lado al otro de la gota.
+- \(v\): posición longitudinal, desde la primera tapa hasta la segunda.
+
+En el cuerpo, \(u=0.5\) corresponde al camino central.
+Las coordenadas \(u=0\) y \(u=1\) representan los lados opuestos.
+
+La coordenada longitudinal se distribuye en cuatro regiones:
+
+- \([0,v_1]\): tapa inicial.
+- \([v_1,v_2]\): primera mitad del cuerpo.
+- \([v_2,v_3]\): segunda mitad del cuerpo.
+- \([v_3,1]\): tapa final.
+
+Las tapas se representan como semidiscos mediante:
+
+$$
+l=2u-1
+$$
+
+$$
+h=w\sqrt{1-l^2}
+$$
+
+donde \(w\) representa la profundidad normalizada de la tapa.
+
+Esta transformación permite utilizar una misma tira de coordenadas
+para aplicar tanto colores como texturas, independientemente de
+que la gota esté formada por círculos o elipses.
 
 ### Modelos de Color
 
@@ -140,17 +326,24 @@ La primitiva soporta múltiples modelos de interpolación de color:
 **Configuraciones de color:**
 
 ```java
-// 1. Dos colores (centro de cada círculo)
-Colores.dosColores(colorA, colorB, Mezcla.RGB)
+// Construcción lineal
+Gota.lineal(centro1, radio1, centro2, radio2, perfil);
 
-// 2. Dos colores con ajuste de transición
-Colores.dosColores(colorA, colorB, ajuste, Mezcla.HSL)
+// Construcción mediante Bézier cúbica
+Gota.curva(centro1, radio1, vec1, centro2, radio2, vec2, perfil);
 
-// 3. Cadena axial de 4 colores
-Colores.cadena(extremo1, centro1, centro2, extremo2, Mezcla.OKLCH)
+// Perfil del radio
+Gota.Perfil.radioMedio(rm);
+Gota.Perfil.radioMedio(rm, tm, suavizado);
+Gota.Perfil.central(central);
+Gota.Perfil.recto();
 
-// 4. Cadena completa con 3 ajustes
-Colores.cadena(e1, c1, c2, e2, ajusteEC1, ajusteCC, ajusteCE2, mezcla)
+// Relación de aspecto
+Gota.Perfil.radioMedio(rm).aspecto(lambda);
+Gota.Perfil.radioMedio(rm).aspecto(lambda1, lambda2);
+
+// Radios tangentes absolutos
+Gota.Perfil.radioMedio(rm).radiosTangentes(a1, a2);
 ```
 
 **Parámetros de la cadena axial:**
@@ -204,30 +397,17 @@ Las imágenes generadas se guardan en `target/imagenes/`.
 ### Estructura del Proyecto
 
 ```
-primitiva-gota/
-├── src/
-│   ├── main/java/          # Biblioteca principal
-│   │   ├── Gota.java           # Primitiva: geometría, SDF y raster
-│   │   ├── Coordenadas.java    # Coordenadas intrínsecas
-│   │   ├── Colores.java        # Modelos de color
-│   │   ├── Texturas.java       # Mapeo de texturas
-│   │   ├── Mezcla.java         # Interpolación de colores
-│   │   ├── ComposicionColor.java # Composición de rellenos
-│   │   └── Composicion.java    # Composición topológica
-│   │
-│   ├── test/java/          # Pruebas
-│   │   ├── Todas.java          # Ejecuta todas las pruebas
-│   │   ├── GotaRegresion.java  # Pruebas de regresión
-│   │   ├── ComposicionPruebas.java # Pruebas de composición
-│   │   └── ...
-│   │
-│   └── ejemplos/java/      # Ejemplos y demos
-│       ├── Flor.java
-│       ├── Hoja.java
-│       └── ...
-│
-├── pom.xml                 # Configuración Maven
-└── ejemplos.sh             # Script para ejecutar ejemplos
+primitiva_gota/
+├── README.md
+├── implementacion/
+│   └── java/
+│       ├── pom.xml
+│       ├── src/
+│       │   ├── main/java/
+│       │   ├── test/java/
+│       │   └── ejemplos/java/
+│       └── ejemplos.sh
+└── ...
 ```
 
 ### Dependencias entre Clases
