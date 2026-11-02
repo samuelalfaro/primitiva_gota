@@ -171,45 +171,7 @@ Colores.cadena(e1, c1, c2, e2, ajusteEC1, ajusteCC, ajusteCE2, mezcla)
 
 **Textura de referencia (cápsula 1×2):**
 
-```svg
-<svg viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <pattern id="lines" patternUnits="userSpaceOnUse" width="20" height="20">
-      <path d="M 0 0 L 20 20" stroke="#666" stroke-width="0.5"/>
-      <path d="M 0 10 L 20 30" stroke="#666" stroke-width="0.5"/>
-      <path d="M 10 0 L 30 20" stroke="#666" stroke-width="0.5"/>
-    </pattern>
-  </defs>
-  
-  <!-- Cápsula (textura de referencia) -->
-  <rect x="20" y="100" width="160" height="80" fill="#B3E5FC" stroke="#0288D1" stroke-width="1"/>
-  <circle cx="100" cy="100" r="40" fill="#FFE0B2" stroke="#F57C00" stroke-width="1"/>
-  <circle cx="100" cy="180" r="40" fill="#C8E6C9" stroke="#43A047" stroke-width="1"/>
-  
-  <!-- Líneas de referencia -->
-  <rect x="60" y="120" width="80" height="60" fill="url(#lines)" opacity="0.3"/>
-  
-  <!-- Circles concentricos -->
-  <circle cx="100" cy="100" r="30" fill="none" stroke="#F57C00" stroke-width="0.5" opacity="0.5"/>
-  <circle cx="100" cy="100" r="20" fill="none" stroke="#F57C00" stroke-width="0.5" opacity="0.5"/>
-  <circle cx="100" cy="180" r="30" fill="none" stroke="#43A047" stroke-width="0.5" opacity="0.5"/>
-  <circle cx="100" cy="180" r="20" fill="none" stroke="#43A047" stroke-width="0.5" opacity="0.5"/>
-  
-  <!-- Divisiones -->
-  <line x1="20" y1="140" x2="180" y2="140" stroke="#0288D1" stroke-width="1" stroke-dasharray="2,2"/>
-  <line x1="20" y1="140" x2="20" y2="140" stroke="#0288D1" stroke-width="2"/>
-  <line x1="180" y1="140" x2="180" y2="140" stroke="#0288D1" stroke-width="2"/>
-  
-  <!-- Etiquetas -->
-  <text x="100" y="50" text-anchor="middle" font-size="11" fill="#333">Textura de Referencia</text>
-  <text x="100" y="90" text-anchor="middle" font-size="10" fill="#333">(1×2 proporción)</text>
-  <text x="50" y="105" text-anchor="middle" font-size="9" fill="#333">v=0</text>
-  <text x="150" y="105" text-anchor="middle" font-size="9" fill="#333">v=0.25</text>
-  <text x="50" y="145" text-anchor="middle" font-size="9" fill="#333">v=0.5</text>
-  <text x="150" y="185" text-anchor="middle" font-size="9" fill="#333">v=0.75</text>
-  <text x="50" y="225" text-anchor="middle" font-size="9" fill="#333">v=1</text>
-</svg>
-```
+![](./.README_files/figura-3.png)
 
 ## 🔧 Uso
 
