@@ -225,7 +225,7 @@ En los círculos, donde $a=b=r$, se recupera el sistema de coordenadas circular 
 
 ### Coordenadas de Textura (Tira)
 
-![](./.README_files/figura-2.svg)
+![](./.README_files/figura-2.png)
 
 **Textura de referencia (cápsula 1×2):**
 
