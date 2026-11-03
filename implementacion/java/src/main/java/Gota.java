@@ -464,8 +464,7 @@ public final class Gota {
      * Es la misma t de la que salen las coordenadas de la tira ({@link #uv}), así que colores y texturas coinciden.
      */
     public Coordenadas.Muestra parametros(double x, double y) {
-        if (coord.usaCostura()) return coord.muestra(x, y, ganador(x, y).t());
-        return porRho(x, y);
+        return coord.muestra(x, y, ganador(x, y).t());
     }
 
     /** Muestra del círculo en el que el píxel está más centrado (mínimo de rho): decide qué gota manda en una composición. */
@@ -482,11 +481,10 @@ public final class Gota {
 
     /** Coordenadas de textura de la tira en el punto (valores en [0, 1] dentro de la gota). */
     public Coordenadas.Uv uv(double x, double y) {
-        if (coord.usaCostura()) return ganador(x, y).uv();
-        return coord.uvElipse(x, y, porRho(x, y).t());
+        return ganador(x, y).uv();
     }
 
-    /** Coordenadas del píxel (solo círculos): la única solución en PLANO; en TRAZO la de mayor clave (la más tardía del trazo). */
+    /** Coordenadas del píxel: la única solución en PLANO; en TRAZO la de mayor clave (la más tardía del trazo). */
     private Coordenadas.Costurado ganador(double x, double y) {
         if (solape == Solape.TRAZO) {
             Costurador.Candidato mejor = null;
@@ -498,13 +496,9 @@ public final class Gota {
 
     /** Color del relleno en el píxel, con las coordenadas (muestra y tira) calculadas una sola vez. */
     int color(Relleno rel, double x, double y) {
-        if (coord.usaCostura()) {
-            Coordenadas.Costurado c = ganador(x, y);
-            Coordenadas.Muestra m = coord.muestra(x, y, c.t());
-            return rel.usaUv() ? rel.argb(m, c.uv()) : rel.argb(m);
-        }
-        Coordenadas.Muestra m = porRho(x, y);
-        return rel.usaUv() ? rel.argb(m, coord.uvElipse(x, y, m.t())) : rel.argb(m);
+        Coordenadas.Costurado c = ganador(x, y);
+        Coordenadas.Muestra m = coord.muestra(x, y, c.t());
+        return rel.usaUv() ? rel.argb(m, c.uv()) : rel.argb(m);
     }
 
     // ---------- Render ----------
@@ -693,7 +687,7 @@ public final class Gota {
             int color;
             if (!usa && !usaUv) {
                 color = relleno.argb(0, 0);
-            } else if (coord.usaCostura()) {
+            } else {
                 // lo dibujado hasta esta capa: la solución de mayor clave por debajo del punto medio con la capa siguiente;
                 // la última capa se queda con la mayor de todas (también las tapas finales)
                 if (cs == null) cs = coord.candidatos(x, y);
@@ -707,10 +701,6 @@ public final class Gota {
                 if (best == null) best = primero != null ? primero : coord.costurado(x, y);
                 Coordenadas.Muestra m = coord.muestra(x, y, best.t());
                 color = usaUv ? relleno.argb(m, best.uv()) : relleno.argb(m);
-            } else if (usaUv) {
-                color = relleno.argb(coord.muestra(x, y, hb[0]), coord.uvElipse(x, y, hb[0]));
-            } else {
-                color = relleno.argb(coord.muestra(x, y, hb[0]));
             }
             dst = componer(dst, color, cob);
         }

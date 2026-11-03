@@ -104,7 +104,7 @@ public class GotaElipses {
                     if (Math.abs(sc - se) > 1e-5) difSdf++;
                 }
                 if (cc && ce) {   // dentro: mismo rho mínimo (la regla de t* es la misma)
-                    double rc = gc.porRho(x, y).rho(), re = ge.parametros(x, y).rho();
+                    double rc = gc.porRho(x, y).rho(), re = ge.porRho(x, y).rho();
                     peorRho = Math.max(peorRho, Math.abs(rc - re));
                     if (Math.abs(rc - re) > 1e-4 * Math.max(1, rc)) difRho++;
                 }
