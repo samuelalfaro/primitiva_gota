@@ -51,6 +51,6 @@ semidisco. Ver `Coordenadas.discoTapa` y `Colores.Lateral`.
 `Gota.Costura` decide cómo se reparte la tira entre cuerpo y tapas, igual para colores y texturas
 (`gota.conCostura(...)`; por defecto ESPIGA): ORTOGONAL (líneas de t constante normales al camino, tapas semidiscos),
 ESPIGA (cada mitad es el radio al punto de tangencia, tapas polares) y SUAVIZADO (como ESPIGA, con Hermites C1 en el eje).
-Solo para círculos con solape PLANO; con elipses o TRAZO se mantiene por ahora el cálculo anterior.
+Valen para círculos, con solape PLANO y TRAZO. En TRAZO el píxel puede tener varias soluciones (el camino pasa varias veces por él) y manda la de mayor clave: t en la banda, y las tapas como si prolongaran el trazo (la inicial, más cerca del centro es posterior; la final, más lejos del centro es posterior). Con elipses se mantiene por ahora el cálculo anterior (`Coordenadas.uvElipse`).
 
 `Gota.parametros`, `Gota.uv` y el color del render salen de la misma costura (una sola t por píxel). `Gota.porRho` (package-private) conserva el criterio de mínimo rho que usa `Composicion` para elegir la gota que manda.

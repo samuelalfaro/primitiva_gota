@@ -1,3 +1,6 @@
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Coordenadas de la tira (t, u, v) de un píxel según el modo de {@link Gota.Costura}. Solo para gotas de círculos.
  * <p>
@@ -22,6 +25,9 @@ final class Costurador {
 
     /** Marco de un círculo de la familia: centro, tangente, normal N = (Ty, -Tx), radio y k = r'/|c'|. */
     private record Fr(double cx, double cy, double tx, double ty, double nx, double ny, double r, double k, double sq) {}
+
+    /** Una solución posible para un píxel y su clave de orden: t en la banda, -rho en la tapa inicial, 1 + rho en la final. */
+    record Candidato(double clave, Coordenadas.Costurado c) {}
 
     private final Gota g;
     private final Gota.Costura modo;
@@ -78,16 +84,37 @@ final class Costurador {
 
     // ---------- Cálculo ----------
 
+    /** Coordenadas con un solo resultado por píxel (solape PLANO): banda de menor w, si no la tapa, si no ORTOGONAL. */
     Coordenadas.Costurado calcula(double x, double y) {
         if (modo == Gota.Costura.ORTOGONAL) return ortogonal().calcula(x, y);
-        double[] b = banda(x, y);                    // {t, w, s} con la raíz de ESPIGA (radio recto)
+        double[] b = null;
+        for (double[] r : raices(x, y)) if (b == null || r[1] < b[1]) b = r;
         if (b != null && modo == Gota.Costura.SUAVIZADO) b = newton(x, y, b);
         if (b != null) return enBanda(b[0], b[1], (int) b[2]);
         for (int e = 0; e < 2; e++) {
-            Coordenadas.Costurado c = tapa(x, y, e);
-            if (c != null) return c;
+            Candidato c = tapa(x, y, e);
+            if (c != null) return c.c();
         }
         return ortogonal().calcula(x, y);            // sin cubrir: unos pocos píxeles del contorno
+    }
+
+    /**
+     * Todas las soluciones del píxel (solape TRAZO, donde el camino puede pasar varias veces por él), sin orden.
+     * Gana la de mayor clave: la banda de mayor t, y las tapas como si prolongaran el trazo (la inicial, más cerca del
+     * centro es posterior; la final, más lejos del centro es posterior).
+     */
+    List<Candidato> candidatos(double x, double y) {
+        List<Candidato> out = new ArrayList<>();
+        if (modo == Gota.Costura.ORTOGONAL) { ortogonal().candidatos(x, y, out); return out; }
+        for (double[] r : raices(x, y)) {
+            double[] b = modo == Gota.Costura.SUAVIZADO ? newton(x, y, r) : r;
+            if (b != null) out.add(new Candidato(b[0], enBanda(b[0], b[1], (int) b[2])));
+        }
+        for (int e = 0; e < 2; e++) {
+            Candidato c = tapa(x, y, e);
+            if (c != null) out.add(c);
+        }
+        return out;
     }
 
     private Coordenadas.Costurado enBanda(double t, double w, int s) {
@@ -95,15 +122,15 @@ final class Costurador {
         return new Coordenadas.Costurado(t, new Coordenadas.Uv(0.5 + 0.5 * s * Gota.acota(w, 0, 1), Gota.acota(v, 0, 1)));
     }
 
-    /** Raíz de t en la que el punto está sobre el radio (recto) de algún lado: {t, w, s}, la de menor w; null si no hay. */
-    private double[] banda(double x, double y) {
-        double[] mejor = null;
+    /** Raíces de t en las que el punto está sobre el radio (recto) de algún lado: {t, w, s}. */
+    private List<double[]> raices(double x, double y) {
+        List<double[]> out = new ArrayList<>();
         for (int s = -1; s <= 1; s += 2) {
             double h0 = 0;
             for (int i = 0; i <= NS; i++) {
                 Fr f = tabla[i];
                 double[] d = costilla(f, s);
-                double dx = x - f.cx, dy = y - f.cy, h = dx * d[1] - dy * d[0];
+                double h = (x - f.cx) * d[1] - (y - f.cy) * d[0];
                 if (i > 0 && (h0 < 0) != (h < 0)) {
                     double lo = (i - 1) / (double) NS, hi = i / (double) NS, flo = h0;
                     for (int it = 0; it < 40; it++) {
@@ -116,13 +143,13 @@ final class Costurador {
                     double t = 0.5 * (lo + hi);
                     Fr fm = marco(t);
                     double[] dm = costilla(fm, s);
-                    double ex = x - fm.cx, ey = y - fm.cy, punto = ex * dm[0] + ey * dm[1], w = Math.hypot(ex, ey) / fm.r;
-                    if (punto >= -1e-9 && w <= 1.03 && (mejor == null || w < mejor[1])) mejor = new double[] { t, Math.min(w, 1), s };
+                    double ex = x - fm.cx, ey = y - fm.cy, w = Math.hypot(ex, ey) / fm.r;
+                    if (ex * dm[0] + ey * dm[1] >= -1e-9 && w <= 1.03) out.add(new double[] { t, Math.min(w, 1), s });
                 }
                 h0 = h;
             }
         }
-        return mejor;
+        return out;
     }
 
     /** Refina (t, w) para que la curva de SUAVIZADO pase por el punto; null si no converge dentro de la banda. */
@@ -157,7 +184,7 @@ final class Costurador {
     }
 
     /** Tapa del extremo e (0 inicial, 1 final): sector polar entre las dos curvas, desde el centro; null si el punto no cae. */
-    private Coordenadas.Costurado tapa(double x, double y, int e) {
+    private Candidato tapa(double x, double y, int e) {
         Fr f = tabla[e == 0 ? 0 : NS];
         double dx = x - f.cx, dy = y - f.cy, rho = Math.hypot(dx, dy) / f.r;
         if (rho > 1.002) return null;
@@ -174,7 +201,7 @@ final class Costurador {
         double l = w * Math.cos(th), a = w * Math.sin(th), s1 = Math.sqrt(Math.max(0, 1 - l * l));
         double p = s1 > 1e-9 ? Gota.acota(a / s1, 0, 1) : 0;
         double v = e == 0 ? g.v1 * (1 - p) : g.v3 + (1 - g.v3) * p;
-        return new Coordenadas.Costurado(e, new Coordenadas.Uv((l + 1) / 2, v));
+        return new Candidato(e == 0 ? -rho : 1 + rho, new Coordenadas.Costurado(e, new Coordenadas.Uv((l + 1) / 2, v)));
     }
 
     private Ortogonal ortogonal() {
@@ -224,28 +251,54 @@ final class Costurador {
             return t;
         }
 
-        Coordenadas.Costurado calcula(double x, double y) {
-            double t = masCercano(x, y);
+        Coordenadas.Costurado calcula(double x, double y) { return en(x, y, masCercano(x, y), false).c(); }
+
+        /** Mínimos locales de la distancia al camino (con los extremos): uno por cada paso del trazo por el punto. */
+        void candidatos(double x, double y, List<Candidato> out) {
+            int n = 128;
+            double[] d = new double[n + 1];
+            for (int i = 0; i <= n; i++) d[i] = d2(x, y, i / (double) n);
+            for (int i = 0; i <= n; i++) {
+                if (!((i == 0 || d[i] < d[i - 1]) && (i == n || d[i] <= d[i + 1]))) continue;
+                double t = i == 0 ? 0 : i == n ? 1 : refina(x, y, (i - 1) / (double) n, (i + 1) / (double) n);
+                Candidato c = en(x, y, t, true);
+                if (c != null) out.add(c);
+            }
+        }
+
+        private double refina(double x, double y, double lo, double hi) {
+            double gr = 0.6180339887498949, c = hi - gr * (hi - lo), d = lo + gr * (hi - lo), fc = d2(x, y, c), fd = d2(x, y, d);
+            for (int it = 0; it < 40; it++) {
+                if (fc < fd) { hi = d; d = c; fd = fc; c = hi - gr * (hi - lo); fc = d2(x, y, c); }
+                else { lo = c; c = d; fc = fd; d = lo + gr * (hi - lo); fd = d2(x, y, d); }
+            }
+            return (lo + hi) / 2;
+        }
+
+        /** Coordenadas respecto al pie t; con estricto, null si el punto queda fuera de la banda o de la tapa de ese pie. */
+        private Candidato en(double x, double y, double t, boolean estricto) {
             Fr f = marco(t);
-            double r = Math.max(f.r, 1e-9), dx = x - f.cx, dy = y - f.cy;
+            double r = Math.max(f.r, 1e-9), dx = x - f.cx, dy = y - f.cy, rho = Math.hypot(dx, dy) / r;
             double A = (dx * f.tx + dy * f.ty) / r, S = (dx * f.nx + dy * f.ny) / r;
             if (t == 0 || t == 1) {
                 double b = t == 0 ? -A : A;                                  // profundidad hacia el exterior del extremo
                 if (b >= 0) {
+                    if (estricto && rho > 1.02) return null;
                     int i = t == 0 ? 0 : M;
                     double den = Math.max(1, S >= 0 ? hw[1][i] / r : hw[0][i] / r);
                     double l = Gota.acota(S / den, -1, 1), s1 = Math.sqrt(Math.max(0, 1 - l * l));
                     double a = Gota.acota(b, 0, s1), w = s1 > 1e-9 ? a / s1 : 0;
                     double v = t == 0 ? g.v1 * (1 - w) : g.v3 + (1 - g.v3) * w;
-                    return new Coordenadas.Costurado(t, new Coordenadas.Uv((l + 1) / 2, v));
+                    return new Candidato(t == 0 ? -rho : 1 + rho, new Coordenadas.Costurado(t, new Coordenadas.Uv((l + 1) / 2, v)));
                 }
             }
             double fi = t * M;
             int i0 = Math.min(M - 1, (int) fi), side = S >= 0 ? 1 : 0;
             double fr = fi - i0, h = hw[side][i0] * (1 - fr) + hw[side][i0 + 1] * fr;
+            if (estricto && Math.abs(S) * r > h * 1.02) return null;
             double q = Gota.acota(S * r / h, -1, 1);
             double v = t < g.tm ? g.v1 + (g.v2 - g.v1) * t / g.tm : g.v2 + (g.v3 - g.v2) * (t - g.tm) / (1 - g.tm);
-            return new Coordenadas.Costurado(t, new Coordenadas.Uv(0.5 + 0.5 * q, Gota.acota(v, 0, 1)));
+            return new Candidato(t, new Coordenadas.Costurado(t, new Coordenadas.Uv(0.5 + 0.5 * q, Gota.acota(v, 0, 1))));
         }
     }
 }

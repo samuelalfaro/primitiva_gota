@@ -30,14 +30,20 @@ public final class Coordenadas {
 
     Coordenadas(Gota g) { this.g = g; }
 
-    /** true si la tira se calcula con los modos de costura (círculos con solape PLANO); si no, con el cálculo por t. */
-    boolean usaCostura() { return !g.elipses && g.solape == Gota.Solape.PLANO; }
+    /** true si la tira se calcula con los modos de costura (gotas de círculos); las elipses siguen con el cálculo por t. */
+    boolean usaCostura() { return !g.elipses; }
 
-    Costurado costurado(double x, double y) {
+    private Costurador costurador() {
         Costurador c = costurador;
         if (c == null) synchronized (this) { if ((c = costurador) == null) costurador = c = new Costurador(g, g.costura); }
-        return c.calcula(x, y);
+        return c;
     }
+
+    /** Solución única del píxel (solape PLANO). */
+    Costurado costurado(double x, double y) { return costurador().calcula(x, y); }
+
+    /** Todas las soluciones del píxel, con su clave de orden (solape TRAZO). */
+    java.util.List<Costurador.Candidato> candidatos(double x, double y) { return costurador().candidatos(x, y); }
 
     Muestra muestra(double x, double y, double t) {
         double r = Math.max(g.rad(t), 1e-9);
@@ -62,22 +68,6 @@ public final class Coordenadas {
     // u cruza de lado a lado: 1/2 sobre el camino, 0 y 1 en los bordes. Es una coordenada con signo,
     // lineal en la distancia lateral, así que no tiene arista en el eje (a diferencia de rho).
     // Orientación: u crece hacia la izquierda del sentido de avance en pantalla.
-
-    Uv uv(double x, double y, double t) {
-        if (g.elipses) return uvElipse(x, y, t);
-        double eps = 2.0 / g.muestras;
-        if (t <= eps) {
-            Uv c = tapa(x, y, 0);
-            if (c != null) return c;
-        } else if (t >= 1 - eps) {
-            Uv c = tapa(x, y, 1);
-            if (c != null) return c;
-        }
-        double[] m = marco(x, y, t);
-        double u = 0.5 + 0.5 * Gota.acota(m[1] / Math.sqrt(1 - m[3] * m[3]), -1, 1);
-        double v = t < g.tm ? g.v1 + (g.v2 - g.v1) * t / g.tm : g.v2 + (g.v3 - g.v2) * (t - g.tm) / (1 - g.tm);
-        return new Uv(u, Gota.acota(v, 0, 1));
-    }
 
     // ---------- Tira de textura con elipses ----------
     //
@@ -197,7 +187,7 @@ public final class Coordenadas {
         return fin == 0 ? Q >= 0 : Q <= 0;
     }
 
-    private Uv tapa(double x, double y, int fin, boolean elipse) {
+    private Uv tapa(double x, double y, int fin) {
         double t = fin, b = g.rad(t);
         if (b <= 1e-9) return null;
         double[] d = dinamica(t, Double.NaN);
@@ -239,13 +229,13 @@ public final class Coordenadas {
         return new Uv(u, Gota.acota(v, 0, 1));
     }
 
-    private Uv uvElipse(double x, double y, double t) {
+    Uv uvElipse(double x, double y, double t) {
         double eps = 2.0 / g.muestras;
         if (t <= eps) {
-            Uv c = tapa(x, y, 0, true);
+            Uv c = tapa(x, y, 0);
             if (c != null) return c;
         } else if (t >= 1 - eps) {
-            Uv c = tapa(x, y, 1, true);
+            Uv c = tapa(x, y, 1);
             if (c != null) return c;
         }
         double b = Math.max(g.rad(t), 1e-9), a = g.lam(t) * b;
@@ -262,62 +252,6 @@ public final class Coordenadas {
         double u = 0.5 + 0.5 * Gota.acota(S / ext, -1, 1);
         double v = t < g.tm ? g.v1 + (g.v2 - g.v1) * t / g.tm : g.v2 + (g.v3 - g.v2) * (t - g.tm) / (1 - g.tm);
         return new Uv(u, Gota.acota(v, 0, 1));
-    }
-
-    /**
-     * Tapa en el extremo fin (0 o 1), o null si el punto no cae en ella. Un punto está en la tapa si
-     * su mejor tramo es el propio extremo (derivada de la regla de t* con el signo adecuado).
-     * La profundidad w va de 0 en el borde con el cuerpo a 1 en el arco exterior.
-     */
-    private Uv tapa(double x, double y, int fin) {
-        double[] m = marco(x, y, fin);
-        double a = m[0], s = m[1], rho = m[2], k = m[3];
-        double dir = fin == 0 ? 1 : -1;
-        double kk = k * dir;                    // pendiente del radio vista desde el propio extremo
-        double b = -a * dir;                    // distancia más allá del centro, hacia fuera
-        boolean trazo = g.solape == Gota.Solape.TRAZO;
-        double e = b - kk * (trazo ? rho : rho * rho);
-        if (e < 0) return null;
-        double bb = trazo
-                ? kk * Math.abs(s) / Math.sqrt(1 - kk * kk)
-                : (kk == 0 ? 0 : (1 - Math.sqrt(Math.max(0, 1 - 4 * kk * kk * s * s))) / (2 * kk));
-        double bo = Math.sqrt(Math.max(0, 1 - s * s));
-        double den = bo - bb;
-        double w = den > 1e-9 ? Gota.acota((b - bb) / den, 0, 1) : 1;
-        double u = 0.5 + 0.5 * Gota.acota(s / Math.sqrt(1 - k * k), -1, 1);
-        double v = fin == 0 ? g.v1 * (1 - w) : g.v3 + (1 - g.v3) * w;
-        return new Uv(u, Gota.acota(v, 0, 1));
-    }
-
-    /** Marco del círculo en t: {avance, lateral, rho, k}; avance y lateral normalizados por r, k = r'/|c'|. */
-    private double[] marco(double x, double y, double t) {
-        double r = Math.max(g.rad(t), 1e-9);
-        double dx = x - g.cx(t), dy = y - g.cy(t);
-        double tt = t;
-        double vx = g.elipses ? g.ddx(tt) : g.dcx(tt), vy = g.elipses ? g.ddy(tt) : g.dcy(tt), sp = Math.hypot(vx, vy);
-        if (!g.elipses && sp < 1e-9) {             // tirador nulo: dirección tomada un poco más adentro
-            tt = t < 0.5 ? t + 1e-3 : t - 1e-3;
-            vx = g.dcx(tt); vy = g.dcy(tt); sp = Math.hypot(vx, vy);
-        }
-        double tx = 1, ty = 0, k = 0;
-        if (g.elipses) {
-            // la orientación sale de D (regularizada); la pendiente k = r'/|c'| usa la velocidad real del camino
-            tx = vx / sp; ty = vy / sp;
-            double spk = Math.hypot(g.dcx(tt), g.dcy(tt));
-            if (spk < 1e-9) { tt = t < 0.5 ? t + 1e-3 : t - 1e-3; spk = Math.hypot(g.dcx(tt), g.dcy(tt)); }
-            if (spk > 1e-9) k = g.drad(tt) / spk;
-            sp = spk > 1e-9 ? spk : 0;
-        } else if (sp > 1e-9) { tx = vx / sp; ty = vy / sp; k = g.drad(tt) / sp; }
-        double axial = (dx * tx + dy * ty) / (g.elipses ? r * g.lam(t) : r);   // con elipses, normalizado por el radio tangente a
-        if (sp > 1e-9 && g.tramos.length == 2 && tt == g.tm) {
-            // Codo del perfil: el círculo central aporta un arco al contorno, cuyo contacto va de
-            // axial = -kIzq a axial = -kDer. Dentro del arco, k es el que cumple axial = -k.
-            double kI = g.tramos[0].drad(g.tm) / sp, kD = g.tramos[1].drad(g.tm) / sp;
-            k = Gota.acota(-axial, Math.min(kI, kD), Math.max(kI, kD));
-        }
-        k = Gota.acota(k, -0.999, 0.999);
-        double lat = (dx * ty - dy * tx) / r;
-        return new double[] { axial, lat, g.elipses ? Math.hypot(axial, lat) : Math.hypot(dx, dy) / r, k };
     }
 
     /**

@@ -464,7 +464,7 @@ public final class Gota {
      * Es la misma t de la que salen las coordenadas de la tira ({@link #uv}), así que colores y texturas coinciden.
      */
     public Coordenadas.Muestra parametros(double x, double y) {
-        if (coord.usaCostura()) return coord.muestra(x, y, coord.costurado(x, y).t());
+        if (coord.usaCostura()) return coord.muestra(x, y, ganador(x, y).t());
         return porRho(x, y);
     }
 
@@ -482,19 +482,29 @@ public final class Gota {
 
     /** Coordenadas de textura de la tira en el punto (valores en [0, 1] dentro de la gota). */
     public Coordenadas.Uv uv(double x, double y) {
-        if (coord.usaCostura()) return coord.costurado(x, y).uv();
-        return coord.uv(x, y, porRho(x, y).t());
+        if (coord.usaCostura()) return ganador(x, y).uv();
+        return coord.uvElipse(x, y, porRho(x, y).t());
+    }
+
+    /** Coordenadas del píxel (solo círculos): la única solución en PLANO; en TRAZO la de mayor clave (la más tardía del trazo). */
+    private Coordenadas.Costurado ganador(double x, double y) {
+        if (solape == Solape.TRAZO) {
+            Costurador.Candidato mejor = null;
+            for (Costurador.Candidato c : coord.candidatos(x, y)) if (mejor == null || c.clave() > mejor.clave()) mejor = c;
+            if (mejor != null) return mejor.c();
+        }
+        return coord.costurado(x, y);
     }
 
     /** Color del relleno en el píxel, con las coordenadas (muestra y tira) calculadas una sola vez. */
     int color(Relleno rel, double x, double y) {
         if (coord.usaCostura()) {
-            Coordenadas.Costurado c = coord.costurado(x, y);
+            Coordenadas.Costurado c = ganador(x, y);
             Coordenadas.Muestra m = coord.muestra(x, y, c.t());
             return rel.usaUv() ? rel.argb(m, c.uv()) : rel.argb(m);
         }
         Coordenadas.Muestra m = porRho(x, y);
-        return rel.usaUv() ? rel.argb(m, coord.uv(x, y, m.t())) : rel.argb(m);
+        return rel.usaUv() ? rel.argb(m, coord.uvElipse(x, y, m.t())) : rel.argb(m);
     }
 
     // ---------- Render ----------
@@ -674,16 +684,33 @@ public final class Gota {
     }
 
     private int pintaTrazo(int dst, double x, double y, Relleno relleno, boolean usa, boolean usaUv) {
-        for (double[] hb : hebras(x, y, BANDA)) {        // t creciente: la posterior tapa a la anterior
+        java.util.List<Costurador.Candidato> cs = null;
+        java.util.List<double[]> capas = hebras(x, y, BANDA);
+        for (int h = 0; h < capas.size(); h++) {         // t creciente: la posterior tapa a la anterior
+            double[] hb = capas.get(h);
             double cob = Math.max(0, Math.min(1, 0.5 - hb[1]));
             if (cob <= 0) continue;
             int color;
-            if (usaUv) {
-                color = relleno.argb(coord.muestra(x, y, hb[0]), coord.uv(x, y, hb[0]));
-            } else if (usa) {
-                color = relleno.argb(coord.muestra(x, y, hb[0]));
-            } else {
+            if (!usa && !usaUv) {
                 color = relleno.argb(0, 0);
+            } else if (coord.usaCostura()) {
+                // lo dibujado hasta esta capa: la solución de mayor clave por debajo del punto medio con la capa siguiente;
+                // la última capa se queda con la mayor de todas (también las tapas finales)
+                if (cs == null) cs = coord.candidatos(x, y);
+                double limite = h == capas.size() - 1 ? Double.POSITIVE_INFINITY : 0.5 * (hb[0] + capas.get(h + 1)[0]);
+                double kb = Double.NEGATIVE_INFINITY, kmin = Double.POSITIVE_INFINITY;
+                Coordenadas.Costurado best = null, primero = null;
+                for (Costurador.Candidato c : cs) {
+                    if (c.clave() <= limite && c.clave() > kb) { best = c.c(); kb = c.clave(); }
+                    if (c.clave() < kmin) { primero = c.c(); kmin = c.clave(); }
+                }
+                if (best == null) best = primero != null ? primero : coord.costurado(x, y);
+                Coordenadas.Muestra m = coord.muestra(x, y, best.t());
+                color = usaUv ? relleno.argb(m, best.uv()) : relleno.argb(m);
+            } else if (usaUv) {
+                color = relleno.argb(coord.muestra(x, y, hb[0]), coord.uvElipse(x, y, hb[0]));
+            } else {
+                color = relleno.argb(coord.muestra(x, y, hb[0]));
             }
             dst = componer(dst, color, cob);
         }
