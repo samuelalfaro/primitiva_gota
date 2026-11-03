@@ -52,3 +52,5 @@ semidisco. Ver `Coordenadas.discoTapa` y `Colores.Lateral`.
 (`gota.conCostura(...)`; por defecto ESPIGA): ORTOGONAL (líneas de t constante normales al camino, tapas semidiscos),
 ESPIGA (cada mitad es el radio al punto de tangencia, tapas polares) y SUAVIZADO (como ESPIGA, con Hermites C1 en el eje).
 Solo para círculos con solape PLANO; con elipses o TRAZO se mantiene por ahora el cálculo anterior.
+
+`Gota.parametros`, `Gota.uv` y el color del render salen de la misma costura (una sola t por píxel). `Gota.porRho` (package-private) conserva el criterio de mínimo rho que usa `Composicion` para elegir la gota que manda.

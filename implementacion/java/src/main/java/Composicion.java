@@ -272,8 +272,7 @@ public final class Composicion {
                 if (ev[1] < 0) continue;
                 Gota g = gotas.get((int) ev[1]);
                 Gota.Relleno rl = rel.get((int) ev[1]);
-                Coordenadas.Muestra m = g.parametros(x, y);
-                int c = rl.usaUv() ? rl.argb(m, g.uv(x, y)) : rl.argb(m);
+                int c = g.color(rl, x, y);
                 int idx = base + j * stride + i;
                 datos[idx] = sobre(datos[idx], c, ev[0]);
             }
@@ -307,7 +306,7 @@ public final class Composicion {
         if (cob <= 0) return new double[] { 0, -1 };
         for (int k = 0; k < gotas.size(); k++) {
             if (s[k] >= 0.75 + suaviza) continue;
-            double rho = gotas.get(k).parametros(x, y).rho();
+            double rho = gotas.get(k).porRho(x, y).rho();
             if (rho < rmin) { rmin = rho; mejor = k; }
         }
         return new double[] { cob, mejor };

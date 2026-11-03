@@ -459,7 +459,17 @@ public final class Gota {
      */
     public double sdf(double x, double y) { return minimizar(x, y, false)[1]; }
 
+    /**
+     * Muestra del píxel: el círculo de la familia al que la costura (ver {@link Costura}) asigna el punto.
+     * Es la misma t de la que salen las coordenadas de la tira ({@link #uv}), así que colores y texturas coinciden.
+     */
     public Coordenadas.Muestra parametros(double x, double y) {
+        if (coord.usaCostura()) return coord.muestra(x, y, coord.costurado(x, y).t());
+        return porRho(x, y);
+    }
+
+    /** Muestra del círculo en el que el píxel está más centrado (mínimo de rho): decide qué gota manda en una composición. */
+    Coordenadas.Muestra porRho(double x, double y) {
         if (solape == Solape.TRAZO) {   // la capa más tardía que contiene el punto
             java.util.List<double[]> hs = hebras(x, y, 0);
             if (!hs.isEmpty()) {
@@ -473,7 +483,18 @@ public final class Gota {
     /** Coordenadas de textura de la tira en el punto (valores en [0, 1] dentro de la gota). */
     public Coordenadas.Uv uv(double x, double y) {
         if (coord.usaCostura()) return coord.costurado(x, y).uv();
-        return coord.uv(x, y, parametros(x, y).t());
+        return coord.uv(x, y, porRho(x, y).t());
+    }
+
+    /** Color del relleno en el píxel, con las coordenadas (muestra y tira) calculadas una sola vez. */
+    int color(Relleno rel, double x, double y) {
+        if (coord.usaCostura()) {
+            Coordenadas.Costurado c = coord.costurado(x, y);
+            Coordenadas.Muestra m = coord.muestra(x, y, c.t());
+            return rel.usaUv() ? rel.argb(m, c.uv()) : rel.argb(m);
+        }
+        Coordenadas.Muestra m = porRho(x, y);
+        return rel.usaUv() ? rel.argb(m, coord.uv(x, y, m.t())) : rel.argb(m);
     }
 
     // ---------- Render ----------
@@ -514,20 +535,7 @@ public final class Gota {
                 if (interiorValido && dentro(x, y, INT)) cob = 1;     // a más de BANDA de profundidad
                 else cob = Math.max(0, Math.min(1, 0.5 - sdf(x, y)));  // franja del borde
                 if (cob <= 0) continue;
-                int color;
-                if (usaUv) {
-                    if (coord.usaCostura()) {
-                        Coordenadas.Costurado c = coord.costurado(x, y);
-                        color = rel.argb(coord.muestra(x, y, c.t()), c.uv());
-                    } else {
-                        Coordenadas.Muestra m = parametros(x, y);
-                        color = rel.argb(m, coord.uv(x, y, m.t()));
-                    }
-                } else if (usa) {
-                    color = rel.argb(parametros(x, y));
-                } else {
-                    color = rel.argb(0, 0);
-                }
+                int color = usa || usaUv ? color(rel, x, y) : rel.argb(0, 0);
                 datos[idx] = componer(datos[idx], color, cob);
             }
         });
