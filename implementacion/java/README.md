@@ -51,6 +51,8 @@ semidisco. Ver `Coordenadas.discoTapa` y `Colores.Lateral`.
 `Gota.Costura` decide cómo se reparte la tira entre cuerpo y tapas, igual para colores y texturas
 (`gota.conCostura(...)`; por defecto ESPIGA): ORTOGONAL (líneas de t constante normales al camino, tapas semidiscos),
 ESPIGA (cada mitad es el radio al punto de tangencia, tapas polares) y SUAVIZADO (como ESPIGA, con Hermites C1 en el eje).
-Valen para círculos, con solape PLANO y TRAZO. En TRAZO el píxel puede tener varias soluciones (el camino pasa varias veces por él) y manda la de mayor clave: t en la banda, y las tapas como si prolongaran el trazo (la inicial, más cerca del centro es posterior; la final, más lejos del centro es posterior). Con elipses se mantiene por ahora el cálculo anterior (`Coordenadas.uvElipse`).
+Valen para círculos y elipses, con solape PLANO y TRAZO (con elipses, las costillas van a los puntos de contacto con el contorno y las tapas se muestrean con la norma elíptica). En TRAZO el píxel puede tener varias soluciones (el camino pasa varias veces por él) y manda la de mayor clave: t en la banda, y las tapas como si prolongaran el trazo (la inicial, más cerca del centro es posterior; la final, más lejos del centro es posterior).
 
 `Gota.parametros`, `Gota.uv` y el color del render salen de la misma costura (una sola t por píxel). `Gota.porRho` (package-private) conserva el criterio de mínimo rho que usa `Composicion` para elegir la gota que manda.
+
+El ejemplo `CosturasDemo` (`./ejemplos.sh CosturasDemo`) genera cuatro imágenes con los tres modos sobre gotas de círculos y de elipses, con una textura de referencia y con un degradado: `costuras_circulos_texturas`, `costuras_circulos_degradados`, `costuras_elipses_texturas` y `costuras_elipses_degradados`.
