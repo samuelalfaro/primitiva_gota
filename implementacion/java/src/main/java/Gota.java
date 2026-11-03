@@ -49,6 +49,20 @@ public final class Gota {
         }
     }
 
+    /**
+     * Dónde caen las costuras entre las zonas de la tira (cuerpo y tapas), común a colores y texturas: cómo se reparte
+     * el interior en líneas de t constante, que van del contorno al eje y al otro contorno.
+     * Solo para gotas de círculos con solape PLANO; con elipses o TRAZO se mantiene el cálculo anterior.
+     */
+    public enum Costura {
+        /** Las líneas de t constante son normales al camino; las tapas son semidiscos. */
+        ORTOGONAL,
+        /** Por defecto. Cada mitad de la línea es el radio al punto de tangencia (recta, en espiga); tapas polares. */
+        ESPIGA,
+        /** Como ESPIGA pero cada mitad es un Hermite (normal en el eje, radio en el contorno): sin picos en el eje. */
+        SUAVIZADO
+    }
+
     /** Cómo se resuelve el color donde el camino se cruza consigo mismo o los círculos se solapan. */
     public enum Solape {
         /**
@@ -220,6 +234,7 @@ public final class Gota {
     private final Rectangle2D.Double bounds;
     final int muestras;
     final Solape solape;
+    final Costura costura;
     private final Coordenadas coord;   // coordenadas intrínsecas de esta gota
     final double v1, v2, v3;   // cortes de la tira: fin de la tapa 1, v en t = tm, inicio de la tapa 2
 
@@ -344,12 +359,13 @@ public final class Gota {
         bounds = new Rectangle2D.Double(minX - rmax, minY - rmax, maxX - minX + 2 * rmax, maxY - minY + 2 * rmax);
         muestras = (int) Math.max(32, Math.min(512, largo / 2 + 16));
         solape = Solape.PLANO;
+        costura = Costura.ESPIGA;
         coord = new Coordenadas(this);
         // v lineal en t a lo largo del cuerpo: el corte central cae donde t = tm (con tm = 1/2, v2 = 1/2)
         this.v1 = 0.25; this.v3 = 0.75; this.v2 = 0.25 + 0.5 * tm;
     }
 
-    private Gota(Gota o, Solape s, double v1, double v2, double v3) {
+    private Gota(Gota o, Solape s, Costura c, double v1, double v2, double v3) {
         px = o.px; py = o.py;
         r1 = o.r1; r2 = o.r2; rm = o.rm; tm = o.tm; suav = o.suav;
         tramos = o.tramos;
@@ -358,12 +374,16 @@ public final class Gota {
         bounds = o.bounds;
         muestras = o.muestras;
         solape = java.util.Objects.requireNonNull(s, "solape");
+        costura = java.util.Objects.requireNonNull(c, "costura");
         this.v1 = v1; this.v2 = v2; this.v3 = v3;
         coord = new Coordenadas(this);
     }
 
     /** Copia de esta gota con otro modo de solape (la geometría es idéntica). */
-    public Gota conSolape(Solape s) { return new Gota(this, s, v1, v2, v3); }
+    public Gota conSolape(Solape s) { return new Gota(this, s, costura, v1, v2, v3); }
+
+    /** Copia de esta gota con otro modo de costura (la geometría es idéntica). */
+    public Gota conCostura(Costura c) { return new Gota(this, solape, c, v1, v2, v3); }
 
     /**
      * Copia con otro reparto de la textura en la tira. Los tres pesos son la parte de v que ocupan
@@ -375,7 +395,7 @@ public final class Gota {
                 || !Double.isFinite(wTapa1 + wCuerpo + wTapa2))
             throw new IllegalArgumentException("los pesos de la tira deben ser finitos y > 0");
         double s = wTapa1 + wCuerpo + wTapa2, c1 = wTapa1 / s, c3 = (wTapa1 + wCuerpo) / s;
-        return new Gota(this, solape, c1, c1 + (c3 - c1) * tm, c3);
+        return new Gota(this, solape, costura, c1, c1 + (c3 - c1) * tm, c3);
     }
 
     /** Copia con la tira repartida según la longitud real: tapas de longitud r1 y r2, cuerpo del largo del camino. */
@@ -392,6 +412,8 @@ public final class Gota {
     }
 
     public Solape solape() { return solape; }
+
+    public Costura costura() { return costura; }
 
     // ---------- Consultas ----------
 
@@ -437,7 +459,16 @@ public final class Gota {
      */
     public double sdf(double x, double y) { return minimizar(x, y, false)[1]; }
 
+    /**
+     * Muestra del píxel: el círculo de la familia al que la costura (ver {@link Costura}) asigna el punto.
+     * Es la misma t de la que salen las coordenadas de la tira ({@link #uv}), así que colores y texturas coinciden.
+     */
     public Coordenadas.Muestra parametros(double x, double y) {
+        return coord.muestra(x, y, ganador(x, y).t());
+    }
+
+    /** Muestra del círculo en el que el píxel está más centrado (mínimo de rho): decide qué gota manda en una composición. */
+    Coordenadas.Muestra porRho(double x, double y) {
         if (solape == Solape.TRAZO) {   // la capa más tardía que contiene el punto
             java.util.List<double[]> hs = hebras(x, y, 0);
             if (!hs.isEmpty()) {
@@ -450,7 +481,24 @@ public final class Gota {
 
     /** Coordenadas de textura de la tira en el punto (valores en [0, 1] dentro de la gota). */
     public Coordenadas.Uv uv(double x, double y) {
-        return coord.uv(x, y, parametros(x, y).t());
+        return ganador(x, y).uv();
+    }
+
+    /** Coordenadas del píxel: la única solución en PLANO; en TRAZO la de mayor clave (la más tardía del trazo). */
+    private Coordenadas.Costurado ganador(double x, double y) {
+        if (solape == Solape.TRAZO) {
+            Costurador.Candidato mejor = null;
+            for (Costurador.Candidato c : coord.candidatos(x, y)) if (mejor == null || c.clave() > mejor.clave()) mejor = c;
+            if (mejor != null) return mejor.c();
+        }
+        return coord.costurado(x, y);
+    }
+
+    /** Color del relleno en el píxel, con las coordenadas (muestra y tira) calculadas una sola vez. */
+    int color(Relleno rel, double x, double y) {
+        Coordenadas.Costurado c = ganador(x, y);
+        Coordenadas.Muestra m = coord.muestra(x, y, c.t());
+        return rel.usaUv() ? rel.argb(m, c.uv()) : rel.argb(m);
     }
 
     // ---------- Render ----------
@@ -491,15 +539,7 @@ public final class Gota {
                 if (interiorValido && dentro(x, y, INT)) cob = 1;     // a más de BANDA de profundidad
                 else cob = Math.max(0, Math.min(1, 0.5 - sdf(x, y)));  // franja del borde
                 if (cob <= 0) continue;
-                int color;
-                if (usaUv) {
-                    Coordenadas.Muestra m = parametros(x, y);
-                    color = rel.argb(m, coord.uv(x, y, m.t()));
-                } else if (usa) {
-                    color = rel.argb(parametros(x, y));
-                } else {
-                    color = rel.argb(0, 0);
-                }
+                int color = usa || usaUv ? color(rel, x, y) : rel.argb(0, 0);
                 datos[idx] = componer(datos[idx], color, cob);
             }
         });
@@ -638,16 +678,29 @@ public final class Gota {
     }
 
     private int pintaTrazo(int dst, double x, double y, Relleno relleno, boolean usa, boolean usaUv) {
-        for (double[] hb : hebras(x, y, BANDA)) {        // t creciente: la posterior tapa a la anterior
+        java.util.List<Costurador.Candidato> cs = null;
+        java.util.List<double[]> capas = hebras(x, y, BANDA);
+        for (int h = 0; h < capas.size(); h++) {         // t creciente: la posterior tapa a la anterior
+            double[] hb = capas.get(h);
             double cob = Math.max(0, Math.min(1, 0.5 - hb[1]));
             if (cob <= 0) continue;
             int color;
-            if (usaUv) {
-                color = relleno.argb(coord.muestra(x, y, hb[0]), coord.uv(x, y, hb[0]));
-            } else if (usa) {
-                color = relleno.argb(coord.muestra(x, y, hb[0]));
-            } else {
+            if (!usa && !usaUv) {
                 color = relleno.argb(0, 0);
+            } else {
+                // lo dibujado hasta esta capa: la solución de mayor clave por debajo del punto medio con la capa siguiente;
+                // la última capa se queda con la mayor de todas (también las tapas finales)
+                if (cs == null) cs = coord.candidatos(x, y);
+                double limite = h == capas.size() - 1 ? Double.POSITIVE_INFINITY : 0.5 * (hb[0] + capas.get(h + 1)[0]);
+                double kb = Double.NEGATIVE_INFINITY, kmin = Double.POSITIVE_INFINITY;
+                Coordenadas.Costurado best = null, primero = null;
+                for (Costurador.Candidato c : cs) {
+                    if (c.clave() <= limite && c.clave() > kb) { best = c.c(); kb = c.clave(); }
+                    if (c.clave() < kmin) { primero = c.c(); kmin = c.clave(); }
+                }
+                if (best == null) best = primero != null ? primero : coord.costurado(x, y);
+                Coordenadas.Muestra m = coord.muestra(x, y, best.t());
+                color = usaUv ? relleno.argb(m, best.uv()) : relleno.argb(m);
             }
             dst = componer(dst, color, cob);
         }
