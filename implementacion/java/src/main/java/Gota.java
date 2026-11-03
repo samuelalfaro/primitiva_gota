@@ -49,6 +49,20 @@ public final class Gota {
         }
     }
 
+    /**
+     * Dónde caen las costuras entre las zonas de la tira (cuerpo y tapas), común a colores y texturas: cómo se reparte
+     * el interior en líneas de t constante, que van del contorno al eje y al otro contorno.
+     * Solo para gotas de círculos con solape PLANO; con elipses o TRAZO se mantiene el cálculo anterior.
+     */
+    public enum Costura {
+        /** Las líneas de t constante son normales al camino; las tapas son semidiscos. */
+        ORTOGONAL,
+        /** Por defecto. Cada mitad de la línea es el radio al punto de tangencia (recta, en espiga); tapas polares. */
+        ESPIGA,
+        /** Como ESPIGA pero cada mitad es un Hermite (normal en el eje, radio en el contorno): sin picos en el eje. */
+        SUAVIZADO
+    }
+
     /** Cómo se resuelve el color donde el camino se cruza consigo mismo o los círculos se solapan. */
     public enum Solape {
         /**
@@ -220,6 +234,7 @@ public final class Gota {
     private final Rectangle2D.Double bounds;
     final int muestras;
     final Solape solape;
+    final Costura costura;
     private final Coordenadas coord;   // coordenadas intrínsecas de esta gota
     final double v1, v2, v3;   // cortes de la tira: fin de la tapa 1, v en t = tm, inicio de la tapa 2
 
@@ -344,12 +359,13 @@ public final class Gota {
         bounds = new Rectangle2D.Double(minX - rmax, minY - rmax, maxX - minX + 2 * rmax, maxY - minY + 2 * rmax);
         muestras = (int) Math.max(32, Math.min(512, largo / 2 + 16));
         solape = Solape.PLANO;
+        costura = Costura.ESPIGA;
         coord = new Coordenadas(this);
         // v lineal en t a lo largo del cuerpo: el corte central cae donde t = tm (con tm = 1/2, v2 = 1/2)
         this.v1 = 0.25; this.v3 = 0.75; this.v2 = 0.25 + 0.5 * tm;
     }
 
-    private Gota(Gota o, Solape s, double v1, double v2, double v3) {
+    private Gota(Gota o, Solape s, Costura c, double v1, double v2, double v3) {
         px = o.px; py = o.py;
         r1 = o.r1; r2 = o.r2; rm = o.rm; tm = o.tm; suav = o.suav;
         tramos = o.tramos;
@@ -358,12 +374,16 @@ public final class Gota {
         bounds = o.bounds;
         muestras = o.muestras;
         solape = java.util.Objects.requireNonNull(s, "solape");
+        costura = java.util.Objects.requireNonNull(c, "costura");
         this.v1 = v1; this.v2 = v2; this.v3 = v3;
         coord = new Coordenadas(this);
     }
 
     /** Copia de esta gota con otro modo de solape (la geometría es idéntica). */
-    public Gota conSolape(Solape s) { return new Gota(this, s, v1, v2, v3); }
+    public Gota conSolape(Solape s) { return new Gota(this, s, costura, v1, v2, v3); }
+
+    /** Copia de esta gota con otro modo de costura (la geometría es idéntica). */
+    public Gota conCostura(Costura c) { return new Gota(this, solape, c, v1, v2, v3); }
 
     /**
      * Copia con otro reparto de la textura en la tira. Los tres pesos son la parte de v que ocupan
@@ -375,7 +395,7 @@ public final class Gota {
                 || !Double.isFinite(wTapa1 + wCuerpo + wTapa2))
             throw new IllegalArgumentException("los pesos de la tira deben ser finitos y > 0");
         double s = wTapa1 + wCuerpo + wTapa2, c1 = wTapa1 / s, c3 = (wTapa1 + wCuerpo) / s;
-        return new Gota(this, solape, c1, c1 + (c3 - c1) * tm, c3);
+        return new Gota(this, solape, costura, c1, c1 + (c3 - c1) * tm, c3);
     }
 
     /** Copia con la tira repartida según la longitud real: tapas de longitud r1 y r2, cuerpo del largo del camino. */
@@ -392,6 +412,8 @@ public final class Gota {
     }
 
     public Solape solape() { return solape; }
+
+    public Costura costura() { return costura; }
 
     // ---------- Consultas ----------
 
@@ -450,6 +472,7 @@ public final class Gota {
 
     /** Coordenadas de textura de la tira en el punto (valores en [0, 1] dentro de la gota). */
     public Coordenadas.Uv uv(double x, double y) {
+        if (coord.usaCostura()) return coord.costurado(x, y).uv();
         return coord.uv(x, y, parametros(x, y).t());
     }
 
@@ -493,8 +516,13 @@ public final class Gota {
                 if (cob <= 0) continue;
                 int color;
                 if (usaUv) {
-                    Coordenadas.Muestra m = parametros(x, y);
-                    color = rel.argb(m, coord.uv(x, y, m.t()));
+                    if (coord.usaCostura()) {
+                        Coordenadas.Costurado c = coord.costurado(x, y);
+                        color = rel.argb(coord.muestra(x, y, c.t()), c.uv());
+                    } else {
+                        Coordenadas.Muestra m = parametros(x, y);
+                        color = rel.argb(m, coord.uv(x, y, m.t()));
+                    }
                 } else if (usa) {
                     color = rel.argb(parametros(x, y));
                 } else {

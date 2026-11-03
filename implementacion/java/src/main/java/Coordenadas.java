@@ -22,9 +22,22 @@ public final class Coordenadas {
     /** Coordenadas de textura de la tira: v a lo largo de la gota, u de lado a lado. */
     public record Uv(double u, double v) {}
 
+    /** Posición t sobre el camino y coordenadas de la tira de un píxel, según el modo de costura de la gota. */
+    record Costurado(double t, Uv uv) {}
+
     private final Gota g;
+    private volatile Costurador costurador;
 
     Coordenadas(Gota g) { this.g = g; }
+
+    /** true si la tira se calcula con los modos de costura (círculos con solape PLANO); si no, con el cálculo por t. */
+    boolean usaCostura() { return !g.elipses && g.solape == Gota.Solape.PLANO; }
+
+    Costurado costurado(double x, double y) {
+        Costurador c = costurador;
+        if (c == null) synchronized (this) { if ((c = costurador) == null) costurador = c = new Costurador(g, g.costura); }
+        return c.calcula(x, y);
+    }
 
     Muestra muestra(double x, double y, double t) {
         double r = Math.max(g.rad(t), 1e-9);

@@ -9,6 +9,7 @@ Todo está en el paquete por defecto.
 src/main/java      la biblioteca
   Gota.java              la primitiva: círculos/elipses a lo largo de una Bézier cúbica; geometría, SDF y raster
   Coordenadas.java       coordenadas intrínsecas de un píxel de la gota (Muestra, Uv, semidisco de las tapas)
+  Costurador.java        modos de costura de la tira (Gota.Costura: ORTOGONAL, ESPIGA por defecto, SUAVIZADO)
   Colores.java           colores sobre las coordenadas (cadena axial, color lateral, tapas de semidisco)
   Texturas.java          texturas: imagen, textura de referencia 1 x 2 y mapeos (tira, disco) sobre las coordenadas
   Mezcla.java            interpolación entre dos colores (RGB, RGB lineal, HSL, Oklch)
@@ -44,3 +45,10 @@ ComposicionColor combina dos rellenos cualquiera; Composicion une gotas y las pi
 Un solo mapeo: el cuerpo es una tira (u a lo ancho, v a lo largo) y las tapas son semidiscos. El color usa seis colores
 (contra, centro y normal de cada círculo; la punta es la media de normal y contra) y la textura se coloca plana sobre el
 semidisco. Ver `Coordenadas.discoTapa` y `Colores.Lateral`.
+
+## Modos de costura
+
+`Gota.Costura` decide cómo se reparte la tira entre cuerpo y tapas, igual para colores y texturas
+(`gota.conCostura(...)`; por defecto ESPIGA): ORTOGONAL (líneas de t constante normales al camino, tapas semidiscos),
+ESPIGA (cada mitad es el radio al punto de tangencia, tapas polares) y SUAVIZADO (como ESPIGA, con Hermites C1 en el eje).
+Solo para círculos con solape PLANO; con elipses o TRAZO se mantiene por ahora el cálculo anterior.
