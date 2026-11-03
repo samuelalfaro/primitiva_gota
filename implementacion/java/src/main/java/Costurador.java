@@ -190,14 +190,44 @@ final class Costurador {
     Coordenadas.Costurado calcula(double x, double y) {
         if (modo == Gota.Costura.ORTOGONAL) return ortogonal().calcula(x, y);
         double[] b = null;
-        for (double[] r : raices(x, y)) if (b == null || r[1] < b[1]) b = r;
-        if (b != null && modo == Gota.Costura.SUAVIZADO) b = newton(x, y, b);
+        for (double[] r : bandas(x, y)) if (b == null || r[1] < b[1]) b = r;
         if (b != null) return enBanda(b[0], b[1], (int) b[2]);
         for (int e = 0; e < 2; e++) {
             Candidato c = tapa(x, y, e);
             if (c != null) return c.c();
         }
         return ortogonal().calcula(x, y);            // sin cubrir: unos pocos píxeles del contorno
+    }
+
+    /**
+     * Soluciones de banda {t, w, s}. En ESPIGA son las raíces del radio recto. En SUAVIZADO se refinan con Newton
+     * desde esas raíces; las curvas se abomban respecto al radio, así que en la franja entre ambos no hay raíz y se
+     * arranca desde los puntos más cercanos de una malla gruesa de (t, w).
+     */
+    private List<double[]> bandas(double x, double y) {
+        List<double[]> raices = raices(x, y);
+        if (modo != Gota.Costura.SUAVIZADO) return raices;
+        List<double[]> out = new ArrayList<>();
+        for (double[] r : raices) { double[] n = newton(x, y, r); if (n != null) out.add(n); }
+        if (out.isEmpty() && tapa(x, y, 0) == null && tapa(x, y, 1) == null) {   // en una tapa no hay banda que buscar
+            double[][] mejores = new double[3][];
+            double[] dm = { Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE };
+            for (int i = 0; i <= NS; i += 2) for (int s = -1; s <= 1; s += 2) for (double w = 0.15; w < 1; w += 0.2) {
+                double[] q = punto(tabla[i], s, w);
+                double d = (q[0] - x) * (q[0] - x) + (q[1] - y) * (q[1] - y);
+                for (int k = 0; k < 3; k++) if (d < dm[k]) {
+                    for (int m = 2; m > k; m--) { dm[m] = dm[m - 1]; mejores[m] = mejores[m - 1]; }
+                    dm[k] = d; mejores[k] = new double[] { i / (double) NS, w, s };
+                    break;
+                }
+            }
+            for (double[] ini : mejores) {
+                if (ini == null) continue;
+                double[] n = newton(x, y, ini);
+                if (n != null) { out.add(n); break; }
+            }
+        }
+        return out;
     }
 
     /**
@@ -208,10 +238,7 @@ final class Costurador {
     List<Candidato> candidatos(double x, double y) {
         List<Candidato> out = new ArrayList<>();
         if (modo == Gota.Costura.ORTOGONAL) { ortogonal().candidatos(x, y, out); return out; }
-        for (double[] r : raices(x, y)) {
-            double[] b = modo == Gota.Costura.SUAVIZADO ? newton(x, y, r) : r;
-            if (b != null) out.add(new Candidato(b[0], enBanda(b[0], b[1], (int) b[2])));
-        }
+        for (double[] b : bandas(x, y)) out.add(new Candidato(b[0], enBanda(b[0], b[1], (int) b[2])));
         for (int e = 0; e < 2; e++) {
             Candidato c = tapa(x, y, e);
             if (c != null) out.add(c);
