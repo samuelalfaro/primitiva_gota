@@ -223,13 +223,9 @@ $$
 
 En los círculos, donde $a=b=r$, se recupera el sistema de coordenadas circular original. Se utiliza el mismo sistema de coordenadas para ambas geometrías.
 
-### Coordenadas de Textura (Tira)
+### Modos de las Coordenadas
 
 ![](./.README_files/figura-2.png)
-
-**Textura de referencia (cápsula 1×2):**
-
-![](./.README_files/figura-3.png)
 
 La tira utiliza dos coordenadas normalizadas:
 
