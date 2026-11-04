@@ -124,8 +124,8 @@ public class GotaDisco {
     static void orientaciones() {
         Texturas.Disco d1 = new Texturas.Disco(0.5, 0.5, 0.9, 0.5), d2 = new Texturas.Disco(0.5, 0.5, 0.9, 0.5);   // mismo disco: nada depende de t
         // camino horizontal (T = +x): TANGENTE y FIJA coinciden
-        Gota h = Gota.lineal(p(50, 100), 30, p(200, 100), 30, Gota.Perfil.recto());
-        Gota v = Gota.lineal(p(100, 50), 30, p(100, 200), 30, Gota.Perfil.recto());
+        Gota h = Gota.lineal(p(50, 100), 30, p(200, 100), 30, Perfil.recto());
+        Gota v = Gota.lineal(p(100, 50), 30, p(100, 200), 30, Perfil.recto());
         Random rnd = new Random(3);
         int malosH = 0, malosV = 0, malosT = 0, n = 0;
         for (int i = 0; i < 400; i++) {
@@ -167,7 +167,7 @@ public class GotaDisco {
         comprueba("TANGENTE, camino vertical: el sistema local gira con el camino", Math.abs(a[0] - (0.5 + 0.4 * xl)) < 1e-9 && Math.abs(a[1] - (0.5 + 0.4 * yl)) < 1e-9, "");
 
         // elipses: las coordenadas locales son las normalizadas por cada eje, también en FIJA
-        Gota e = Gota.lineal(p(50, 100), 20, p(200, 100), 20, Gota.Perfil.recto().aspecto(2.5));
+        Gota e = Gota.lineal(p(50, 100), 20, p(200, 100), 20, Perfil.recto().aspecto(2.5));
         Relleno re = Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.TANGENTE).para(e);
         int malosE = 0, nE = 0;
         for (int i = 0; i < 300; i++) {
@@ -183,7 +183,7 @@ public class GotaDisco {
         comprueba("elipses: x' = d·T / a y y' = d·N' / b (el disco es el círculo unidad normalizado)", malosE == 0 && nE > 100, nE + " píxeles");
 
         // render con combinar y orden de los parámetros: no revienta con FIJA en un camino curvo en PLANO y TRAZO
-        Gota arco = Gota.curva(p(60, 240), 25, new Gota.Vec(0, -200), p(240, 240), 15, new Gota.Vec(0, -200), Gota.Perfil.recto());
+        Gota arco = Gota.curva(p(60, 240), 25, new Gota.Vec(0, -200), p(240, 240), 15, new Gota.Vec(0, -200), Perfil.recto());
         boolean ok = true;
         for (Solape s : Solape.values()) {
             BufferedImage img = new BufferedImage(300, 300, BufferedImage.TYPE_INT_ARGB);
@@ -205,8 +205,8 @@ public class GotaDisco {
         Texturas.Disco peq = new Texturas.Disco(0.5, 0.5, 0.75, 0.5), giro = new Texturas.Disco(0.5, 0.5, 0.5, 0.75);
         for (int i = 0; i < 6; i++) {
             double ox = (i % 3) * 300, oy = (i / 3) * 300;
-            Gota g = i < 3 ? Gota.lineal(p(ox + 70, oy + 150), 55, p(ox + 230, oy + 150), 35, Gota.Perfil.recto())
-                           : Gota.curva(p(ox + 70, oy + 235), 35, new Gota.Vec(0, -200), p(ox + 230, oy + 235), 25, new Gota.Vec(0, -200), Gota.Perfil.recto());
+            Gota g = i < 3 ? Gota.lineal(p(ox + 70, oy + 150), 55, p(ox + 230, oy + 150), 35, Perfil.recto())
+                           : Gota.curva(p(ox + 70, oy + 235), 35, new Gota.Vec(0, -200), p(ox + 230, oy + 235), 25, new Gota.Vec(0, -200), Perfil.recto());
             Relleno rel = switch (i % 3) {
                 case 0 -> Texturas.disco(tex);
                 case 1 -> Texturas.disco(tex, ins, giro, Texturas.Orientacion.TANGENTE, Mezcla.Tono.CORTO);

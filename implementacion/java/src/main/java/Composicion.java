@@ -393,9 +393,9 @@ public final class Composicion {
         for (int i = 0; i < ars.size(); i++) {
             Ar r = ars.get(i);
             Nodo A = nodos.get(r.a), B = nodos.get(r.b);
-            Gota.Perfil base = Double.isNaN(r.q)
-                    ? Gota.Perfil.recto()
-                    : Gota.Perfil.radioMedio((A.radio + B.radio) / 4 + Math.max(0, r.q) / 2, 0.5, 1);
+            Perfil base = Double.isNaN(r.q)
+                    ? Perfil.recto()
+                    : Perfil.radioMedio((A.radio + B.radio) / 4 + Math.max(0, r.q) / 2, 0.5, 1);
             Gota g = Gota.curva(new Point2D.Double(A.x, A.y), A.radio, r.va, new Point2D.Double(B.x, B.y), B.radio, r.vb,
                     base.aspecto(r.lamA, r.lamB));
             gotas.add(g);

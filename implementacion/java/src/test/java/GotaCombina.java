@@ -105,7 +105,7 @@ public class GotaCombina {
 
     static void enLaGota() {
         Texturas.Textura tx = prueba();
-        Gota g = Gota.lineal(p(60.5, 150.5), 50, p(240.5, 150.5), 20, Gota.Perfil.radioMedio(30, 0.4, 0.5));
+        Gota g = Gota.lineal(p(60.5, 150.5), 50, p(240.5, 150.5), 20, Perfil.radioMedio(30, 0.4, 0.5));
         int cc = 0xFFE05A3C;
 
         // REPLACE con un color sólido == textura sola, píxel a píxel
@@ -141,7 +141,7 @@ public class GotaCombina {
 
         // tira con cortes explícitos: el corte central sigue a tm
         double[] ult = new double[2];
-        Gota gm = Gota.lineal(p(60.5, 150.5), 50, p(240.5, 150.5), 20, Gota.Perfil.radioMedio(30, 0.3, 1));
+        Gota gm = Gota.lineal(p(60.5, 150.5), 50, p(240.5, 150.5), 20, Perfil.radioMedio(30, 0.3, 1));
         Relleno rt = Texturas.tira((u, v) -> { ult[0] = u; ult[1] = v; return 0xFFFFFFFF; }, 0, 0, 1, 1, 0.1, 0.9).para(gm);
         Point2D cm = gm.centro(gm.tm());
         rt.argb(gm.parametros(cm.getX(), cm.getY()), gm.uv(cm.getX(), cm.getY()));
@@ -182,7 +182,7 @@ public class GotaCombina {
         ComposicionColor.Modo[] ms = ComposicionColor.Modo.values();
         for (int i = 0; i < 6; i++) {
             double ox = (i % 3) * 300, oy = (i / 3) * 300;
-            Gota g = Gota.lineal(p(ox + 60, oy + 150), 50, p(ox + 240, oy + 150), 25, Gota.Perfil.radioMedio(36, 0.5, 1));
+            Gota g = Gota.lineal(p(ox + 60, oy + 150), 50, p(ox + 240, oy + 150), 25, Perfil.radioMedio(36, 0.5, 1));
             Relleno color = Colores.cadena(0xFF1E1B4B, 0xFFFFC857, 0xFF2563EB, 0xFF7C2D12);
             ComposicionColor.Modo m = i < 5 ? ms[i] : ComposicionColor.Modo.MODULATE;
             Relleno rel = i < 5 ? ComposicionColor.combinar(color, Texturas.textura(tx), m, 0xFF20C040)

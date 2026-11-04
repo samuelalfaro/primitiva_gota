@@ -22,7 +22,6 @@ public final class Gota implements Geometria {
     private static final int GRADO = 6;          // círculos
     private static final int GRADO_E = 12;       // elipses (aspecto lineal en t)
     private static final int MAX_G = 12;
-    private static final double ASPECTO_MIN = 0.05, ASPECTO_MAX = 20;
     private static final double BANDA = 0.5;   // semiancho del antialiasing, en píxeles
     private static final int PROF_MAX = 24;    // profundidad máxima de subdivisión
     private static final double[][] BIN = new double[MAX_G + 1][MAX_G + 1];
@@ -35,71 +34,6 @@ public final class Gota implements Geometria {
     }
 
     private static final int EXT = 0, CERO = 1, INT = 2;   // banda del antialiasing para la pertenencia
-
-    /**
-     * Perfil del radio entre los extremos: radio rm en la posición tm del camino, y suavizado.
-     * rm >= 0 (mismo dominio que los radios), tm en [0.05, 0.95] (por defecto 1/2), suavizado en [0, 1].
-     * Con rm = (r1 + r2)/2 y tm = 1/2 las tangentes del contorno son rectas; por encima la gota se
-     * hincha y por debajo toma forma de guitarra. Suavizado 1 (por defecto): el radio es una única
-     * cuadrática por (0, r1), (tm, rm), (1, r2). Suavizado 0: el radio va en línea recta de r1 a rm
-     * y de rm a r2, con un codo en tm (el contorno sigue siendo tangente-continuo: en tm aparece un
-     * arco del propio círculo central). Entre ambos, la pendiente en tm de cada lado se interpola.
-     * Los valores fuera de dominio se recortan; los no finitos se rechazan.
-     */
-    public static final class Perfil {
-        private final double valor, tm, suavizado;
-        private final boolean relativo;
-        private final double lam1, lam2;          // aspecto a/b en los extremos (1 = círculo)
-        private final double tang1, tang2;        // radios tangentes absolutos (solo si usaTang)
-        private final boolean usaTang, forzar;             // pruebas: usar el algoritmo de elipses aunque sean círculos
-
-        private Perfil(double valor, boolean relativo, double tm, double suavizado) {
-            this(valor, relativo, tm, suavizado, 1, 1, 0, 0, false, false);
-        }
-
-        private Perfil(double valor, boolean relativo, double tm, double suavizado,
-                       double lam1, double lam2, double tang1, double tang2, boolean usaTang, boolean forzar) {
-            this.valor = valor; this.relativo = relativo; this.tm = tm; this.suavizado = suavizado;
-            this.lam1 = lam1; this.lam2 = lam2; this.tang1 = tang1; this.tang2 = tang2; this.usaTang = usaTang; this.forzar = forzar;
-        }
-
-        public static Perfil radioMedio(double rm) { return new Perfil(rm, false, 0.5, 1); }
-
-        public static Perfil radioMedio(double rm, double tm, double suavizado) {
-            return new Perfil(rm, false, tm, suavizado);
-        }
-
-        /** Radio en tm, relativo: rm = central * (r1 + r2) / 2, con tm = 1/2 y suavizado 1 (modelo anterior). */
-        public static Perfil central(double central) { return new Perfil(central, true, 0.5, 1); }
-
-        /** Tangentes rectas: rm = (r1 + r2) / 2. */
-        public static Perfil recto() { return central(1); }
-
-        /**
-         * Elipses: relación de aspecto lambda = a / b entre el radio tangente al camino (a) y el normal (b, el
-         * radio de siempre) en cada extremo, interpolada linealmente en t. lambda = 1 en ambos extremos son
-         * círculos (algoritmo de grado 6); si no, se usa el algoritmo de elipses (grado 12). Dominio (0.05, 20),
-         * los valores fuera se recortan. Con radio normal 0 en un extremo el aspecto de ese extremo no cuenta.
-         */
-        public Perfil aspecto(double lambda1, double lambda2) {
-            return new Perfil(valor, relativo, tm, suavizado, lambda1, lambda2, 0, 0, false, forzar);
-        }
-
-        public Perfil aspecto(double lambda) { return aspecto(lambda, lambda); }
-
-        /**
-         * Alternativa cómoda: radios tangentes absolutos a1 y a2 en los extremos. Se convierten en aspecto
-         * a / r1 y a / r2 al construir la gota (si el radio normal de un extremo es 0, el aspecto de ese extremo es 1).
-         */
-        public Perfil radiosTangentes(double a1, double a2) {
-            return new Perfil(valor, relativo, tm, suavizado, 1, 1, a1, a2, true, forzar);
-        }
-
-        /** Para pruebas: obliga a usar el algoritmo de elipses (con aspecto 1 debe coincidir con el de círculos). */
-        Perfil forzarElipses() {
-            return new Perfil(valor, relativo, tm, suavizado, lam1, lam2, tang1, tang2, usaTang, true);
-        }
-    }
 
     /** Un trozo del camino [t0, t1] con su cúbica de centros y su cuadrática de radio, en base de Bernstein. */
     static final class Tramo {
@@ -195,22 +129,17 @@ public final class Gota implements Geometria {
     private Gota(Point2D c1, double ra, Vec v1, Point2D c2, double rb, Vec v2, Perfil perfil) {
         java.util.Objects.requireNonNull(perfil, "perfil");
         for (double v : new double[] { c1.getX(), c1.getY(), c2.getX(), c2.getY(), ra, rb,
-                                       perfil.valor, perfil.tm, perfil.suavizado, perfil.lam1, perfil.lam2,
-                                       perfil.usaTang ? perfil.tang1 : 0, perfil.usaTang ? perfil.tang2 : 0,
                                        v1.x(), v1.y(), v2.x(), v2.y() })
             if (!Double.isFinite(v)) throw new IllegalArgumentException("parámetros no finitos");
         this.r1 = Math.max(0, ra);
         this.r2 = Math.max(0, rb);
-        double rmIn = perfil.relativo ? perfil.valor * (this.r1 + this.r2) / 2 : perfil.valor;
-        if (!Double.isFinite(rmIn)) throw new IllegalArgumentException("parámetros no finitos");
-        this.rm = Math.max(0, rmIn);
-        this.tm = Utils.acota(perfil.tm, 0.05, 0.95);
-        this.suav = Utils.acota(perfil.suavizado, 0, 1);
-        double l1 = perfil.usaTang ? (this.r1 > 0 ? perfil.tang1 / this.r1 : 1) : perfil.lam1;
-        double l2 = perfil.usaTang ? (this.r2 > 0 ? perfil.tang2 / this.r2 : 1) : perfil.lam2;
-        this.lam1 = Utils.acota(l1, ASPECTO_MIN, ASPECTO_MAX);
-        this.lam2 = Utils.acota(l2, ASPECTO_MIN, ASPECTO_MAX);
-        this.elipses = perfil.forzar || lam1 != 1 || lam2 != 1;
+        Perfil.Resuelto pr = perfil.resuelve(this.r1, this.r2);
+        this.rm = pr.rm();
+        this.tm = pr.tm();
+        this.suav = pr.suavizado();
+        this.lam1 = pr.lam1();
+        this.lam2 = pr.lam2();
+        this.elipses = pr.elipses();
 
         px = new double[] { c1.getX(), c1.getX() + v1.x(), c2.getX() + v2.x(), c2.getX() };
         py = new double[] { c1.getY(), c1.getY() + v1.y(), c2.getY() + v2.y(), c2.getY() };

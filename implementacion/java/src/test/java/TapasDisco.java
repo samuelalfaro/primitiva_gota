@@ -31,7 +31,7 @@ public class TapasDisco {
     static final int EXT = 0xFF222222;
 
     static Gota recta(double cx, double cy, double r) {
-        return Gota.lineal(p(cx, cy), r, p(cx, cy + 2 * r), r, Gota.Perfil.recto());
+        return Gota.lineal(p(cx, cy), r, p(cx, cy + 2 * r), r, Perfil.recto());
     }
 
     // ---------- Textura ----------
@@ -150,7 +150,7 @@ public class TapasDisco {
 
     static void costura() {
         Gota g = Gota.curva(p(60, 70), 24, new Gota.Vec(110, 0), p(230, 240), 58, new Gota.Vec(0, -120),
-                Gota.Perfil.recto().aspecto(1.6, 0.6));
+                Perfil.recto().aspecto(1.6, 0.6));
         Relleno rel0 = Colores.cadenaLateral(N1, N2, Mezcla.LCH).para(g);
         Cortes cortes = Tira.POR_DEFECTO.cortes(g);
         double c1 = cortes.c1(), c3 = cortes.c3();
@@ -176,7 +176,7 @@ public class TapasDisco {
 
         // en la imagen real: saltos entre píxeles vecinos a ambos lados de la costura
         int W = 320, H = 320;
-        for (Gota gg : new Gota[] { g, Gota.curva(p(60, 70), 24, new Gota.Vec(110, 0), p(230, 240), 58, new Gota.Vec(0, -120), Gota.Perfil.recto()) }) {
+        for (Gota gg : new Gota[] { g, Gota.curva(p(60, 70), 24, new Gota.Vec(110, 0), p(230, 240), 58, new Gota.Vec(0, -120), Perfil.recto()) }) {
             BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
             gg.render(im, Colores.cadenaLateral(N1, N2, Mezcla.RGB));
             int[] d = datos(im);
@@ -198,7 +198,7 @@ public class TapasDisco {
 
     static void casoBasico() throws Exception {
         double E = 40, r1 = 3 * E, r2 = 2 * E, d = 7 * E, cx1 = 150, cy = 170;
-        Gota g = Gota.lineal(p(cx1, cy), r1, p(cx1 + d, cy), r2, Gota.Perfil.recto());
+        Gota g = Gota.lineal(p(cx1, cy), r1, p(cx1 + d, cy), r2, Perfil.recto());
         Mezcla M = Mezcla.RGB;
         Relleno rel = Colores.cadenaLateral(N1, N2, M);
         BufferedImage im = new BufferedImage(560, 340, BufferedImage.TYPE_INT_ARGB);

@@ -62,9 +62,9 @@ public class GotaColorDemo {
         BufferedImage img = new BufferedImage(1200, 600, BufferedImage.TYPE_INT_ARGB);
         Arrays.fill(((DataBufferInt) img.getRaster().getDataBuffer()).getData(), 0xFFFFFFFF);
         for (int col = 0; col < 4; col++) {
-            Gota.lineal(p(col, 0, 70, 150), 60, p(col, 0, 235, 150), 25, Gota.Perfil.central(1.4)).render(img, rellenos[col]);
+            Gota.lineal(p(col, 0, 70, 150), 60, p(col, 0, 235, 150), 25, Perfil.central(1.4)).render(img, rellenos[col]);
             Gota.curva(p(col, 1, 60, 240), 35, new Gota.Vec(0, -200),
-                       p(col, 1, 240, 240), 15, new Gota.Vec(0, -200), Gota.Perfil.central(1.0)).render(img, rellenos[col]);
+                       p(col, 1, 240, 240), 15, new Gota.Vec(0, -200), Perfil.central(1.0)).render(img, rellenos[col]);
         }
         ImageIO.write(img, "png", new File("gota_tonos.png"));
         System.out.println(ok ? "OK" : "HAY FALLOS");

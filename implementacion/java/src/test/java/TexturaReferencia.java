@@ -78,7 +78,7 @@ public class TexturaReferencia {
     }
 
     static Gota recta(double cx, double cy, double r) {
-        return Gota.lineal(p(cx, cy), r, p(cx, cy + 2 * r), r, Gota.Perfil.recto());
+        return Gota.lineal(p(cx, cy), r, p(cx, cy + 2 * r), r, Perfil.recto());
     }
 
     static void identidad() {
@@ -140,7 +140,7 @@ public class TexturaReferencia {
                 o[(20 + j) * (W * 5) + 75 + i] = px;
             }
         Gota recta = recta(150, 70, 50);                         // 2r = 100: la cápsula exacta
-        Gota curva = Gota.curva(p(70, 70), 30, new Gota.Vec(120, 0), p(220, 250), 55, new Gota.Vec(0, -110), Gota.Perfil.recto());
+        Gota curva = Gota.curva(p(70, 70), 30, new Gota.Vec(120, 0), p(220, 250), 55, new Gota.Vec(0, -110), Perfil.recto());
         Relleno[] rel = { Texturas.tira(tex), Texturas.discoCapsula(tex) };
         Gota[] gs = { recta, curva };
         for (int k = 0; k < 4; k++) {

@@ -21,11 +21,11 @@ public class GotaSolape {
     static Gota crea(int caso, int col, int fila) {
         return switch (caso) {
             case 0 -> Gota.curva(p(col, fila, 80, 230), 40, new Gota.Vec(180, -230),
-                                 p(col, fila, 220, 230), 30, new Gota.Vec(-180, -230), Gota.Perfil.central(1.0));
+                                 p(col, fila, 220, 230), 30, new Gota.Vec(-180, -230), Perfil.central(1.0));
             case 1 -> Gota.curva(p(col, fila, 80, 230), 14, new Gota.Vec(180, -230),
-                                 p(col, fila, 220, 230), 10, new Gota.Vec(-180, -230), Gota.Perfil.central(1.0));
-            case 2 -> Gota.lineal(p(col, fila, 120, 150), 70, p(col, fila, 160, 150), 15, Gota.Perfil.central(1.0));
-            default -> Gota.lineal(p(col, fila, 60, 150), 50, p(col, fila, 240, 150), 20, Gota.Perfil.central(1.8));
+                                 p(col, fila, 220, 230), 10, new Gota.Vec(-180, -230), Perfil.central(1.0));
+            case 2 -> Gota.lineal(p(col, fila, 120, 150), 70, p(col, fila, 160, 150), 15, Perfil.central(1.0));
+            default -> Gota.lineal(p(col, fila, 60, 150), 50, p(col, fila, 240, 150), 20, Perfil.central(1.8));
         };
     }
 

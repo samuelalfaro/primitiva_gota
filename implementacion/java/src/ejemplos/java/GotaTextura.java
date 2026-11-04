@@ -53,14 +53,14 @@ public class GotaTextura {
         String[] nombres = { "lineal h=1", "hinchada h=1.8", "guitarra h=0.55",
                              "arco", "punta r2=0", "lazo (TRAZO)" };
         Gota[] g = new Gota[6];
-        g[0] = Gota.lineal(p(0, 60, 150), 50, p(0, 240, 150), 20, Gota.Perfil.central(1.0));
-        g[1] = Gota.lineal(p(1, 60, 150), 50, p(1, 240, 150), 20, Gota.Perfil.central(1.8));
-        g[2] = Gota.lineal(p(2, 60, 150), 50, p(2, 240, 150), 20, Gota.Perfil.central(0.55));
+        g[0] = Gota.lineal(p(0, 60, 150), 50, p(0, 240, 150), 20, Perfil.central(1.0));
+        g[1] = Gota.lineal(p(1, 60, 150), 50, p(1, 240, 150), 20, Perfil.central(1.8));
+        g[2] = Gota.lineal(p(2, 60, 150), 50, p(2, 240, 150), 20, Perfil.central(0.55));
         g[3] = Gota.curva(p(3, 60, 240), 35, new Gota.Vec(0, -200),
-                          p(3, 240, 240), 15, new Gota.Vec(0, -200), Gota.Perfil.central(1.0));
-        g[4] = Gota.lineal(p(4, 90, 150), 60, p(4, 250, 150), 0, Gota.Perfil.central(1.0));
+                          p(3, 240, 240), 15, new Gota.Vec(0, -200), Perfil.central(1.0));
+        g[4] = Gota.lineal(p(4, 90, 150), 60, p(4, 250, 150), 0, Perfil.central(1.0));
         g[5] = Gota.curva(p(5, 80, 230), 40, new Gota.Vec(180, -230),
-                          p(5, 220, 230), 30, new Gota.Vec(-180, -230), Gota.Perfil.central(1.0));
+                          p(5, 220, 230), 30, new Gota.Vec(-180, -230), Perfil.central(1.0));
 
         BufferedImage tex = texturaPrueba();
         ImageIO.write(tex, "png", new File("gota_textura_base.png"));

@@ -112,10 +112,10 @@ public class GotaCadena {
     static void equivalencias() {
         int a = 0xFF2563EB, b = 0xFFFACC15;
         Gota[] gs = {
-            Gota.lineal(p(60, 150), 50, p(240, 150), 20, Gota.Perfil.recto()),
-            Gota.lineal(p(60, 150), 50, p(240, 150), 20, Gota.Perfil.central(1.8)),
-            Gota.curva(p(60, 240), 35, new Gota.Vec(0, -200), p(240, 240), 15, new Gota.Vec(0, -200), Gota.Perfil.recto()),
-            Gota.lineal(p(60, 150), 50, p(240, 150), 20, Gota.Perfil.radioMedio(10, 0.3, 0.2)),
+            Gota.lineal(p(60, 150), 50, p(240, 150), 20, Perfil.recto()),
+            Gota.lineal(p(60, 150), 50, p(240, 150), 20, Perfil.central(1.8)),
+            Gota.curva(p(60, 240), 35, new Gota.Vec(0, -200), p(240, 240), 15, new Gota.Vec(0, -200), Perfil.recto()),
+            Gota.lineal(p(60, 150), 50, p(240, 150), 20, Perfil.radioMedio(10, 0.3, 0.2)),
         };
         int peor = 0;
         for (Gota g : gs) {
@@ -151,7 +151,7 @@ public class GotaCadena {
 
     static void anclas() {
         int e1 = 0xFF1E1B4B, c1 = 0xFFFFE27A, c2 = 0xFF2563EB, e2 = 0xFF7C2D12;
-        Gota g = Gota.lineal(p(60, 150), 50, p(240, 150), 20, Gota.Perfil.recto());
+        Gota g = Gota.lineal(p(60, 150), 50, p(240, 150), 20, Perfil.recto());
         double[] ajustes = { 0.5, 0.2, 0.8, 0.0, 1.0 };
         boolean exactas = true, continuas = true;
         String det = "";
@@ -177,7 +177,7 @@ public class GotaCadena {
     static void unificacion() {
         int e1 = 0xFF1E1B4B, c1 = 0xFFFFE27A, c2 = 0xFF2563EB, e2 = 0xFF7C2D12;
         // cortes no uniformes: v1 = 0.1, v3 = 0.9 (pesos 1 : 8 : 1 -> v1 = 0.1, v3 = 0.9)
-        Gota g = Gota.lineal(p(60.5, 150.5), 50, p(240.5, 150.5), 20, Gota.Perfil.recto());
+        Gota g = Gota.lineal(p(60.5, 150.5), 50, p(240.5, 150.5), 20, Perfil.recto());
         Opciones op = Opciones.POR_DEFECTO.conTira(Tira.pesos(1, 8, 1));
         Cortes cortes = op.tira().cortes(g);
         BufferedImage img = lienzo(300, 300);
@@ -195,7 +195,7 @@ public class GotaCadena {
     }
 
     static void tira() {
-        Gota g = Gota.lineal(p(60.5, 150.5), 50, p(240.5, 150.5), 20, Gota.Perfil.radioMedio(30, 0.3, 0.5));
+        Gota g = Gota.lineal(p(60.5, 150.5), 50, p(240.5, 150.5), 20, Perfil.radioMedio(30, 0.3, 0.5));
         Cortes d = Tira.POR_DEFECTO.cortes(g);
         comprueba("Tira.POR_DEFECTO: v1 = 1/4, v3 = 3/4 y v2 = v1 + (v3 - v1)·tm",
                   d.c1() == 0.25 && d.c3() == 0.75 && d.c2() == 0.25 + 0.5 * g.tm(), String.format("%.4f %.4f %.4f", d.c1(), d.c2(), d.c3()));
@@ -225,7 +225,7 @@ public class GotaCadena {
         boolean ok = true;
         String det = "";
         for (double tm : new double[] { 0.1, 0.3, 0.5, 0.8 }) {
-            Gota g = Gota.lineal(p(60.5, 150.5), 50, p(240.5, 150.5), 20, Gota.Perfil.radioMedio(30, tm, 0.5));
+            Gota g = Gota.lineal(p(60.5, 150.5), 50, p(240.5, 150.5), 20, Perfil.radioMedio(30, tm, 0.5));
             Opciones op = Opciones.POR_DEFECTO.conTira(Tira.pesos(1, 8, 1));
             Cortes k = op.tira().cortes(g);
             Point2D c = g.centro(g.tm());
@@ -247,7 +247,7 @@ public class GotaCadena {
         Arrays.fill(datos(img), 0xFFFFFFFF);
         for (int i = 0; i < ajustes.length; i++) {
             double ox = (i % 3) * 300, oy = (i / 3) * 300;
-            Gota g = Gota.lineal(p(ox + 60, oy + 150), 50, p(ox + 240, oy + 150), 25, Gota.Perfil.central(1.2));
+            Gota g = Gota.lineal(p(ox + 60, oy + 150), 50, p(ox + 240, oy + 150), 25, Perfil.central(1.2));
             g.render(img, Colores.cadena(e1, c1, c2, e2, ajustes[i][0], ajustes[i][1], ajustes[i][2]));
         }
         ImageIO.write(img, "png", new File("gota_cadena.png"));

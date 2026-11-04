@@ -12,7 +12,7 @@ public class GaleriaTapas {
     public static void main(String[] args) throws Exception {
         Texturas.Textura tex = Texturas.referencia();
         int W = 440, H = 400, FONDO = 0xFFF4F1EA;
-        Gota gruesa = Gota.curva(p(80, 90), 34, new Gota.Vec(130, 0), p(300, 290), 62, new Gota.Vec(0, -130), Gota.Perfil.recto());
+        Gota gruesa = Gota.curva(p(80, 90), 34, new Gota.Vec(130, 0), p(300, 290), 62, new Gota.Vec(0, -130), Perfil.recto());
         Colores.Lateral a = new Colores.Lateral(0xFFD7263D, 0xFFFFE9A8, 0xFF2D6CDF);
         Colores.Lateral b = new Colores.Lateral(0xFF1FA39A, 0xFFE8F5D0, 0xFFF28E2B);
         Composicion estT = ComposicionPruebas.estrella(0);

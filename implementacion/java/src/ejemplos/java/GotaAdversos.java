@@ -21,18 +21,18 @@ public class GotaAdversos {
             "concentricos", "radio cero", "tiradores 900", "punta->grueso (arco)"
         };
         Gota[] g = new Gota[8];
-        g[0] = Gota.lineal(p(0, 60, 150), 50, p(0, 240, 150), 30, Gota.Perfil.central(0.5));
-        g[1] = Gota.lineal(p(1, 60, 150), 30, p(1, 240, 150), 15, Gota.Perfil.central(6.0));
+        g[0] = Gota.lineal(p(0, 60, 150), 50, p(0, 240, 150), 30, Perfil.central(0.5));
+        g[1] = Gota.lineal(p(1, 60, 150), 30, p(1, 240, 150), 15, Perfil.central(6.0));
         g[2] = Gota.curva(p(2, 80, 230), 14, new Gota.Vec(180, -230),
-                          p(2, 220, 230), 10, new Gota.Vec(-180, -230), Gota.Perfil.central(1.0));
+                          p(2, 220, 230), 10, new Gota.Vec(-180, -230), Perfil.central(1.0));
         g[3] = Gota.curva(p(3, 80, 230), 40, new Gota.Vec(180, -230),
-                          p(3, 220, 230), 30, new Gota.Vec(-180, -230), Gota.Perfil.central(1.0));
-        g[4] = Gota.lineal(p(4, 150, 150), 30, p(4, 150, 150), 60, Gota.Perfil.central(1.0));
-        g[5] = Gota.lineal(p(5, 60, 150), 0, p(5, 240, 150), 0, Gota.Perfil.central(1.0));
+                          p(3, 220, 230), 30, new Gota.Vec(-180, -230), Perfil.central(1.0));
+        g[4] = Gota.lineal(p(4, 150, 150), 30, p(4, 150, 150), 60, Perfil.central(1.0));
+        g[5] = Gota.lineal(p(5, 60, 150), 0, p(5, 240, 150), 0, Perfil.central(1.0));
         g[6] = Gota.curva(p(6, 60, 60), 10, new Gota.Vec(900, 0),
-                          p(6, 240, 240), 6, new Gota.Vec(0, -900), Gota.Perfil.central(1.0));
+                          p(6, 240, 240), 6, new Gota.Vec(0, -900), Perfil.central(1.0));
         g[7] = Gota.curva(p(7, 60, 240), 0, new Gota.Vec(0, -200),
-                          p(7, 240, 240), 40, new Gota.Vec(0, -200), Gota.Perfil.central(1.0));
+                          p(7, 240, 240), 40, new Gota.Vec(0, -200), Perfil.central(1.0));
 
         Relleno rel = Colores.cuatroColores(0xFFFFE27A, 0xFFFF8A5B, 0xFFC2410C, 0xFF7C1D6F);
         BufferedImage img = new BufferedImage(1200, 600, BufferedImage.TYPE_INT_ARGB);
