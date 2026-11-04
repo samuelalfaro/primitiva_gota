@@ -438,8 +438,10 @@ public final class Gota implements Geometria {
     }
 
     /** Color del relleno en el píxel (con las opciones por defecto). */
-    int color(Relleno rel, double x, double y) {
-        return rel.argb(punto(x, y));
+    int color(Relleno rel, double x, double y) { return color(rel, x, y, Opciones.POR_DEFECTO); }
+
+    int color(Relleno rel, double x, double y, Opciones op) {
+        return rel.argb(punto(x, y, op));
     }
 
     // ---------- Render ----------

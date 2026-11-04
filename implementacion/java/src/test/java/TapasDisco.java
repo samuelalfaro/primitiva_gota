@@ -277,7 +277,7 @@ public class TapasDisco {
                     difAlfa == 0 && pintados > 1000, "píxeles " + pintados + ", alfa distinta " + difAlfa);
         }
         boolean lanza = false;
-        try { cs[0].render(new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB), null); } catch (NullPointerException e) { lanza = true; }
+        try { cs[0].render(new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB), (Texturas.Textura) null); } catch (NullPointerException e) { lanza = true; }
         comprueba("composición: render con textura null se rechaza", lanza, "");
         ImageIO.write(out, "png", new File("tapas_disco.png"));
         comprueba("composición: cadena y estrella se renderizan con tapas de semidisco (tapas_disco.png)", true, "");

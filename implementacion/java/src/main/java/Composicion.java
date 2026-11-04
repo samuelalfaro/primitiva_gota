@@ -228,9 +228,13 @@ public final class Composicion {
     // ---------- Pintado ----------
 
     /** Pinta la composición sobre dst (TYPE_INT_ARGB) con antialiasing y composición alfa, con el color lateral de los nodos. */
-    public void render(BufferedImage dst) {
+    public void render(BufferedImage dst) { render(dst, Opciones.POR_DEFECTO); }
+
+    /** Igual, con las opciones de pintado dadas (costura de la tira y solape). */
+    public void render(BufferedImage dst, Opciones op) {
+        Objects.requireNonNull(op, "opciones");
         construye();
-        pinta(dst, rellenos);
+        pinta(dst, rellenos, op);
     }
 
     /**
@@ -238,15 +242,19 @@ public final class Composicion {
      * El color lo pone, como en el color lateral, la gota de menor ρ en cada píxel, así que las tapas de los nodos
      * compartidos desaparecen y solo quedan las de los extremos libres.
      */
-    public void render(BufferedImage dst, Texturas.Textura tex) {
+    public void render(BufferedImage dst, Texturas.Textura tex) { render(dst, tex, Opciones.POR_DEFECTO); }
+
+    /** Igual, con las opciones de pintado dadas. */
+    public void render(BufferedImage dst, Texturas.Textura tex, Opciones op) {
         Objects.requireNonNull(tex, "textura");
+        Objects.requireNonNull(op, "opciones");
         construye();
         List<Relleno> rs = new ArrayList<>();
         for (int i = 0; i < gotas.size(); i++) rs.add(Texturas.tira(tex));
-        pinta(dst, rs);
+        pinta(dst, rs, op);
     }
 
-    private void pinta(BufferedImage dst, List<Relleno> rellenos) {
+    private void pinta(BufferedImage dst, List<Relleno> rellenos, Opciones op) {
         if (dst.getType() != BufferedImage.TYPE_INT_ARGB)
             throw new IllegalArgumentException("Se requiere BufferedImage.TYPE_INT_ARGB");
         final WritableRaster raster = dst.getRaster();
@@ -268,11 +276,11 @@ public final class Composicion {
         IntStream.range(y0, y1).parallel().forEach(j -> {
             for (int i = x0; i < x1; i++) {
                 double x = i + 0.5, y = j + 0.5;
-                double[] ev = evalua(x, y);
+                double[] ev = evalua(x, y, op);
                 if (ev[1] < 0) continue;
                 Gota g = gotas.get((int) ev[1]);
                 Relleno rl = rel.get((int) ev[1]);
-                int c = g.color(rl, x, y);
+                int c = g.color(rl, x, y, op);
                 int idx = base + j * stride + i;
                 datos[idx] = sobre(datos[idx], c, ev[0]);
             }
@@ -288,7 +296,7 @@ public final class Composicion {
     }
 
     /** {cobertura, gota que manda (o -1)} en (x, y): sdf = unión suave de las sdf, color de la gota de menor ρ. */
-    private double[] evalua(double x, double y) {
+    private double[] evalua(double x, double y, Opciones op) {
         double marg = 2 + suaviza;
         double smin = Double.MAX_VALUE, rmin = Double.MAX_VALUE;
         int mejor = -1;
@@ -306,7 +314,7 @@ public final class Composicion {
         if (cob <= 0) return new double[] { 0, -1 };
         for (int k = 0; k < gotas.size(); k++) {
             if (s[k] >= 0.75 + suaviza) continue;
-            double rho = gotas.get(k).porRho(x, y).rho();
+            double rho = gotas.get(k).porRho(x, y, op.solape()).rho();
             if (rho < rmin) { rmin = rho; mejor = k; }
         }
         return new double[] { cob, mejor };
