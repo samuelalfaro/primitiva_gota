@@ -115,7 +115,7 @@ public class GotaElipses {
         comprueba("elipses con aspecto 1 == círculos: rho mínimo en el interior", difRho == 0, String.format("peor %.1e", peorRho));
 
         // render completo (PLANO y TRAZO) con un relleno que depende de t y rho
-        Relleno rel = (t, rho) -> 0xFF000000 | ((int) (255 * Math.min(1, t)) << 16) | ((int) (255 * Math.min(1, rho)) << 8) | 0x40;
+        Relleno rel = p -> 0xFF000000 | ((int) (255 * Math.min(1, p.muestra().t())) << 16) | ((int) (255 * Math.min(1, p.muestra().rho())) << 8) | 0x40;
         int malos = 0, total = 0;
         for (int gi = 0; gi < 20; gi++) {
             long semilla = rnd.nextLong();

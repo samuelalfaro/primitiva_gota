@@ -45,14 +45,8 @@ public final class ComposicionColor {
 
         @Override public Relleno para(Gota g) { return new Combinado(color.para(g), tex.para(g), modo, entorno); }
 
-        @Override public boolean usaUv() { return true; }
-
-        @Override public int argb(double t, double rho) {
-            throw new UnsupportedOperationException("el relleno combinado necesita la muestra y las coordenadas Uv");
-        }
-
-        @Override public int argb(Coordenadas.Muestra m, Coordenadas.Uv uv) {
-            return aplica(modo, color.argb(m, uv), tex.argb(m, uv), entorno);
+        @Override public int argb(Punto p) {
+            return aplica(modo, color.argb(p), tex.argb(p), entorno);
         }
     }
 

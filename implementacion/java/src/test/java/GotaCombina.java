@@ -167,8 +167,8 @@ public class GotaCombina {
         }
 
         boolean lanza = false;
-        try { ComposicionColor.combinar(Relleno.solido(0), Relleno.solido(0), ComposicionColor.Modo.ADD).argb(0.5, 0.5); } catch (UnsupportedOperationException x) { lanza = true; }
-        comprueba("argb(t, rho) sobre el combinado exige la muestra", lanza, "");
+        try { ComposicionColor.combinar(Relleno.solido(0), Texturas.tira((u, v) -> 0), ComposicionColor.Modo.ADD).argb(0.5, 0.5); } catch (UnsupportedOperationException x) { lanza = true; }
+        comprueba("argb(t, rho) sobre un combinado con textura exige las coordenadas Uv", lanza, "");
     }
 
     static BufferedImage lienzo() { return new BufferedImage(300, 300, BufferedImage.TYPE_INT_ARGB); }

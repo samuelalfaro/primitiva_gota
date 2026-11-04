@@ -170,13 +170,8 @@ public final class Texturas {
             return new Tira(tex, u0, v0, u1, v1, d, new double[] { 0, c1, c2, c3, 1 });
         }
 
-        @Override public boolean usaUv() { return true; }
-
-        @Override public int argb(double t, double rho) {
-            throw new UnsupportedOperationException("la tira necesita las coordenadas Uv: use argb(Muestra, Uv)");
-        }
-
-        @Override public int argb(Coordenadas.Muestra m, Coordenadas.Uv uv) {
+        @Override public int argb(Punto p) {
+            Coordenadas.Uv uv = p.uv();
             if (desde == null)   // sin enlazar con una gota: v tal cual
                 return tex.muestrea(u0 + (u1 - u0) * clamp(uv.u()), v0 + (v1 - v0) * clamp(uv.v()));
             double v = uv.v(), f = 1;
@@ -302,11 +297,10 @@ public final class Texturas {
 
         @Override public Relleno para(Gota g) { return new DiscoRelleno(tex, d1, d2, orientacion, giro, g); }
 
-        @Override public int argb(double t, double rho) {
-            throw new UnsupportedOperationException("el mapeo en disco necesita la muestra completa");
-        }
-
-        @Override public int argb(Coordenadas.Muestra m) {
+        @Override public int argb(Punto p) {
+            Coordenadas.Muestra m = p.muestra();
+            if (Double.isNaN(m.axial()) || Double.isNaN(m.lateral()))
+                throw new UnsupportedOperationException("el mapeo en disco necesita la muestra completa");
             double t = clamp(m.t());
             double cu = d1.cu() + (d2.cu() - d1.cu()) * t, cv = d1.cv() + (d2.cv() - d1.cv()) * t;
             double s = s1 + (s2 - s1) * t;

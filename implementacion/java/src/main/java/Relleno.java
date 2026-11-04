@@ -1,23 +1,22 @@
 /**
- * Cómo se colorea un píxel de una {@link Gota}: recibe la muestra del píxel (y, si la pide, sus coordenadas de la tira)
- * y devuelve un color ARGB. Las fábricas están en {@link Colores} (por color) y {@link Texturas} (por textura);
- * {@link ComposicionColor} combina dos rellenos.
+ * Cómo se colorea un píxel de una {@link Gota}: recibe el {@link Punto} y devuelve un color ARGB. El punto calcula su
+ * muestra y sus coordenadas de textura solo si el relleno las pide. Las fábricas están en {@link Colores} (por color)
+ * y {@link Texturas} (por textura); {@link ComposicionColor} combina dos rellenos.
  */
 @FunctionalInterface
 public interface Relleno {
-    int argb(double t, double rho);
+    int argb(Punto p);
 
-    /** Versión con la muestra completa (axial y lateral incluidos); por defecto usa (t, rho). */
-    default int argb(Coordenadas.Muestra m) { return argb(m.t(), m.rho()); }
+    /** Con la muestra y las coordenadas ya calculadas (útil en pruebas y fuera del render). */
+    default int argb(Coordenadas.Muestra m, Coordenadas.Uv uv) { return argb(Punto.de(m, uv)); }
 
-    /** false si el color no depende de la muestra: el render se ahorra calcularla. */
-    default boolean usaParametros() { return true; }
+    /** Con la muestra ya calculada; los rellenos que necesiten las coordenadas Uv lanzan UnsupportedOperationException. */
+    default int argb(Coordenadas.Muestra m) { return argb(Punto.de(m)); }
 
-    /** true si el color depende de las coordenadas de textura (u, v) de la muestra. */
-    default boolean usaUv() { return false; }
-
-    /** Versión con las coordenadas de textura de la tira; solo se llama si usaUv() es true. */
-    default int argb(Coordenadas.Muestra m, Coordenadas.Uv uv) { return argb(m); }
+    /** Solo con (t, rho); los rellenos que necesiten axial, lateral o Uv lanzan UnsupportedOperationException. */
+    default int argb(double t, double rho) {
+        return argb(Punto.de(new Coordenadas.Muestra(t, rho, Double.NaN, Double.NaN)));
+    }
 
     /**
      * Versión del relleno ya enlazada con la gota que lo va a pintar; render() la llama antes de
@@ -25,10 +24,5 @@ public interface Relleno {
      */
     default Relleno para(Gota g) { return this; }
 
-    static Relleno solido(int color) {
-        return new Relleno() {
-            public int argb(double t, double rho) { return color; }
-            public boolean usaParametros() { return false; }
-        };
-    }
+    static Relleno solido(int color) { return p -> color; }
 }

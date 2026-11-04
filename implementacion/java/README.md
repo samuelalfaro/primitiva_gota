@@ -8,7 +8,8 @@ Todo está en el paquete por defecto.
 ```
 src/main/java      la biblioteca
   Gota.java              la primitiva: círculos/elipses a lo largo de una Bézier cúbica; geometría, SDF y raster
-  Relleno.java           interfaz de un relleno: de la muestra de un píxel a un color ARGB (las fábricas están en Colores y Texturas)
+  Relleno.java           interfaz de un relleno: de un Punto a un color ARGB (las fábricas están en Colores y Texturas)
+  Punto.java             el píxel visto desde la gota: muestra() y uv() se calculan solo si el relleno las pide
   Coordenadas.java       coordenadas intrínsecas de un píxel de la gota (Muestra, Uv, semidisco de las tapas)
   Costura.java           modos de costura de la tira: ORTOGONAL, ESPIGA (por defecto) y SUAVIZADO
   Zonas.java             reparto de la tira en banda y tapas según la costura (lo usa Coordenadas; solo conoce Geometria)

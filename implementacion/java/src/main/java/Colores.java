@@ -45,7 +45,7 @@ public final class Colores {
 
     public static Relleno dosColores(int a, int b, Mezcla m) {
         Objects.requireNonNull(m, "mezcla");
-        return (t, rho) -> m.mezclar(a, b, clamp01(t));
+        return p -> m.mezclar(a, b, clamp01(p.muestra().t()));
     }
 
     /**
@@ -108,14 +108,8 @@ public final class Colores {
             return new Cadena(e1, c1, c2, e2, sEC1, sCC, sCE2, m, g.corte1(), g.corte3());
         }
 
-        @Override public boolean usaUv() { return true; }
-
-        @Override public int argb(double t, double rho) {
-            throw new UnsupportedOperationException("la cadena necesita la coordenada v: use argb(Muestra, Uv)");
-        }
-
-        @Override public int argb(Coordenadas.Muestra mu, Coordenadas.Uv uv) {
-            return colorCadena(e1, c1, c2, e2, sEC1, sCC, sCE2, m, uv.v(), a1, a3);
+        @Override public int argb(Punto p) {
+            return colorCadena(e1, c1, c2, e2, sEC1, sCC, sCE2, m, p.uv().v(), a1, a3);
         }
     }
 
@@ -208,13 +202,8 @@ public final class Colores {
 
         @Override public Relleno para(Gota g) { return new CadenaLateral(n1, n2, sCC, m, g.corte1(), g.corte3()); }
 
-        @Override public boolean usaUv() { return true; }
-
-        @Override public int argb(double t, double rho) {
-            throw new UnsupportedOperationException("la cadena lateral necesita (u, v): use argb(Muestra, Uv)");
-        }
-
-        @Override public int argb(Coordenadas.Muestra mu, Coordenadas.Uv uv) {
+        @Override public int argb(Punto p) {
+            Coordenadas.Uv uv = p.uv();
             double[] d = Coordenadas.discoTapa(uv, a1, a3);
             if (d != null) return (d[2] == 0 ? n1 : n2).enDisco(d[0], d[1], m);
             double u = clamp01(uv.u());
@@ -282,9 +271,9 @@ public final class Colores {
         Objects.requireNonNull(centroBorde, "centroBorde");
         if (!(gamma1 > 0) || !(gamma2 > 0))
             throw new IllegalArgumentException("gamma debe ser > 0");
-        return (t, rho) -> {
-            double tt = clamp01(t);
-            double u = clamp01(rho);
+        return p -> {
+            double tt = clamp01(p.muestra().t());
+            double u = clamp01(p.muestra().rho());
             double g = gamma1 + (gamma2 - gamma1) * tt;
             if (g != 1) u = Math.pow(u, g);
             return centroBorde.mezclar(entreCirculos.mezclar(a, b, tt),

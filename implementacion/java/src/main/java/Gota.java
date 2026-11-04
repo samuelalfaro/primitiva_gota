@@ -452,11 +452,37 @@ public final class Gota implements Geometria {
         return coord.costurado(x, y);
     }
 
-    /** Color del relleno en el píxel, con las coordenadas (muestra y tira) calculadas una sola vez. */
+    /** El punto (x, y) visto desde esta gota: su muestra y sus coordenadas de tira se calculan al pedirlas, una sola vez. */
+    public Punto punto(double x, double y) {
+        return new PuntoPerezoso(x, y, () -> ganador(x, y));
+    }
+
+    /** Color del relleno en el píxel. */
     int color(Relleno rel, double x, double y) {
-        Coordenadas.Costurado c = ganador(x, y);
-        Coordenadas.Muestra m = coord.muestra(x, y, c.t());
-        return rel.usaUv() ? rel.argb(m, c.uv()) : rel.argb(m);
+        return rel.argb(punto(x, y));
+    }
+
+    private final class PuntoPerezoso implements Punto {
+        private final double x, y;
+        private java.util.function.Supplier<Coordenadas.Costurado> fuente;
+        private Coordenadas.Costurado costurado;
+        private Coordenadas.Muestra muestra;
+
+        PuntoPerezoso(double x, double y, java.util.function.Supplier<Coordenadas.Costurado> fuente) {
+            this.x = x; this.y = y; this.fuente = fuente;
+        }
+
+        private Coordenadas.Costurado costurado() {
+            if (costurado == null) { costurado = fuente.get(); fuente = null; }
+            return costurado;
+        }
+
+        @Override public Coordenadas.Muestra muestra() {
+            if (muestra == null) muestra = coord.muestra(x, y, costurado().t());
+            return muestra;
+        }
+
+        @Override public Coordenadas.Uv uv() { return costurado().uv(); }
     }
 
     // ---------- Render ----------
@@ -481,8 +507,6 @@ public final class Gota implements Geometria {
         final int y1 = Math.min(dst.getHeight(), (int) Math.ceil(bounds.getMaxY()));
         if (x0 >= x1 || y0 >= y1) return;
         final Relleno rel = relleno.para(this);
-        final boolean usaUv = rel.usaUv();
-        final boolean usa = rel.usaParametros();
 
         IntStream.range(y0, y1).parallel().forEach(j -> {
             for (int i = x0; i < x1; i++) {
@@ -490,14 +514,14 @@ public final class Gota implements Geometria {
                 final int idx = base + j * stride + i;
                 if (!dentro(x, y, EXT)) continue;                    // a más de BANDA del borde: fuera
                 if (solape == Solape.TRAZO) {
-                    datos[idx] = pintaTrazo(datos[idx], x, y, rel, usa, usaUv);
+                    datos[idx] = pintaTrazo(datos[idx], x, y, rel);
                     continue;
                 }
                 double cob;
                 if (interiorValido && dentro(x, y, INT)) cob = 1;     // a más de BANDA de profundidad
                 else cob = Math.max(0, Math.min(1, 0.5 - sdf(x, y)));  // franja del borde
                 if (cob <= 0) continue;
-                int color = usa || usaUv ? color(rel, x, y) : rel.argb(0, 0);
+                int color = color(rel, x, y);
                 datos[idx] = componer(datos[idx], color, cob);
             }
         });
@@ -635,31 +659,26 @@ public final class Gota implements Geometria {
         return out;
     }
 
-    private int pintaTrazo(int dst, double x, double y, Relleno relleno, boolean usa, boolean usaUv) {
-        java.util.List<Zonas.Candidato> cs = null;
+    private int pintaTrazo(int dst, double x, double y, Relleno relleno) {
+        final java.util.concurrent.atomic.AtomicReference<java.util.List<Zonas.Candidato>> cs = new java.util.concurrent.atomic.AtomicReference<>();
         java.util.List<double[]> capas = hebras(x, y, BANDA);
         for (int h = 0; h < capas.size(); h++) {         // t creciente: la posterior tapa a la anterior
             double[] hb = capas.get(h);
             double cob = Math.max(0, Math.min(1, 0.5 - hb[1]));
             if (cob <= 0) continue;
-            int color;
-            if (!usa && !usaUv) {
-                color = relleno.argb(0, 0);
-            } else {
-                // lo dibujado hasta esta capa: la solución de mayor clave por debajo del punto medio con la capa siguiente;
-                // la última capa se queda con la mayor de todas (también las tapas finales)
-                if (cs == null) cs = coord.candidatos(x, y);
-                double limite = h == capas.size() - 1 ? Double.POSITIVE_INFINITY : 0.5 * (hb[0] + capas.get(h + 1)[0]);
+            final double limite = h == capas.size() - 1 ? Double.POSITIVE_INFINITY : 0.5 * (hb[0] + capas.get(h + 1)[0]);
+            // lo dibujado hasta esta capa: la solución de mayor clave por debajo del punto medio con la capa siguiente;
+            // la última capa se queda con la mayor de todas (también las tapas finales)
+            int color = relleno.argb(new PuntoPerezoso(x, y, () -> {
+                if (cs.get() == null) cs.set(coord.candidatos(x, y));
                 double kb = Double.NEGATIVE_INFINITY, kmin = Double.POSITIVE_INFINITY;
                 Coordenadas.Costurado best = null, primero = null;
-                for (Zonas.Candidato c : cs) {
+                for (Zonas.Candidato c : cs.get()) {
                     if (c.clave() <= limite && c.clave() > kb) { best = c.c(); kb = c.clave(); }
                     if (c.clave() < kmin) { primero = c.c(); kmin = c.clave(); }
                 }
-                if (best == null) best = primero != null ? primero : coord.costurado(x, y);
-                Coordenadas.Muestra m = coord.muestra(x, y, best.t());
-                color = usaUv ? relleno.argb(m, best.uv()) : relleno.argb(m);
-            }
+                return best != null ? best : primero != null ? primero : coord.costurado(x, y);
+            }));
             dst = componer(dst, color, cob);
         }
         return dst;
