@@ -40,14 +40,16 @@ final class Zonas {
 
     private final Geometria g;
     private final Costura modo;
+    private final Cortes cortes;
     private final Fr[] tabla = new Fr[NS + 1];
     private final double[][][] dist = new double[2][2][NW + 1], fase = new double[2][2][NW + 1];   // curva de cada extremo y lado
     private final double[][][] contacto = new double[2][2][];   // elipses: [lado][A, S] en cada muestra NC
     private volatile Ortogonal ort;
 
-    Zonas(Geometria g, Costura modo) {
+    Zonas(Geometria g, Costura modo, Cortes cortes) {
         this.g = g;
         this.modo = modo;
+        this.cortes = cortes;
         if (g.esElipse()) {
             for (int l = 0; l < 2; l++) { contacto[l][0] = new double[NC + 1]; contacto[l][1] = new double[NC + 1]; }
             for (int i = 0; i <= NC; i++) {
@@ -244,7 +246,7 @@ final class Zonas {
     }
 
     private Coordenadas.Costurado enBanda(double t, double w, int s) {
-        double v = t < g.tm() ? g.corte1() + (g.corte2() - g.corte1()) * t / g.tm() : g.corte2() + (g.corte3() - g.corte2()) * (t - g.tm()) / (1 - g.tm());
+        double v = t < g.tm() ? cortes.c1() + (cortes.c2() - cortes.c1()) * t / g.tm() : cortes.c2() + (cortes.c3() - cortes.c2()) * (t - g.tm()) / (1 - g.tm());
         return new Coordenadas.Costurado(t, new Coordenadas.Uv(0.5 + 0.5 * s * Utils.acota(w, 0, 1), Utils.acota(v, 0, 1)));
     }
 
@@ -336,7 +338,7 @@ final class Zonas {
         double w = propio[0];
         double l = w * Math.cos(th), a = w * Math.sin(th), s1 = Math.sqrt(Math.max(0, 1 - l * l));
         double p = s1 > 1e-9 ? Utils.acota(a / s1, 0, 1) : 0;
-        double v = e == 0 ? g.corte1() * (1 - p) : g.corte3() + (1 - g.corte3()) * p;
+        double v = e == 0 ? cortes.c1() * (1 - p) : cortes.c3() + (1 - cortes.c3()) * p;
         return new Candidato(e == 0 ? -rho : 1 + rho, new Coordenadas.Costurado(e, new Coordenadas.Uv((l + 1) / 2, v)));
     }
 
@@ -424,7 +426,7 @@ final class Zonas {
                     double den = Math.max(1, S >= 0 ? hw[1][i] / f.b : hw[0][i] / f.b);
                     double l = Utils.acota(S / den, -1, 1), s1 = Math.sqrt(Math.max(0, 1 - l * l));
                     double a = Utils.acota(b, 0, s1), w = s1 > 1e-9 ? a / s1 : 0;
-                    double v = t == 0 ? g.corte1() * (1 - w) : g.corte3() + (1 - g.corte3()) * w;
+                    double v = t == 0 ? cortes.c1() * (1 - w) : cortes.c3() + (1 - cortes.c3()) * w;
                     return new Candidato(t == 0 ? -rho : 1 + rho, new Coordenadas.Costurado(t, new Coordenadas.Uv((l + 1) / 2, v)));
                 }
             }
@@ -433,7 +435,7 @@ final class Zonas {
             double fr = fi - i0, h = hw[side][i0] * (1 - fr) + hw[side][i0 + 1] * fr;
             if (estricto && Math.abs(Sp) > h * 1.02) return null;
             double q = Utils.acota(Sp / h, -1, 1);
-            double v = t < g.tm() ? g.corte1() + (g.corte2() - g.corte1()) * t / g.tm() : g.corte2() + (g.corte3() - g.corte2()) * (t - g.tm()) / (1 - g.tm());
+            double v = t < g.tm() ? cortes.c1() + (cortes.c2() - cortes.c1()) * t / g.tm() : cortes.c2() + (cortes.c3() - cortes.c2()) * (t - g.tm()) / (1 - g.tm());
             return new Candidato(t, new Coordenadas.Costurado(t, new Coordenadas.Uv(0.5 + 0.5 * q, Utils.acota(v, 0, 1))));
         }
     }

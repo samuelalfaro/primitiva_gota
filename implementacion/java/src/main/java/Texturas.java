@@ -135,7 +135,7 @@ public final class Texturas {
      */
     public static Relleno tira(Textura tex) {
         Objects.requireNonNull(tex, "textura");
-        return new Tira(tex, 0, 0, 1, 1, null, null);   // sin remapeo: usa los cortes de la gota tal cual
+        return new TiraRelleno(tex, 0, 0, 1, 1, null, null);   // sin remapeo: usa los cortes de la tira tal cual
     }
 
     /**
@@ -148,26 +148,27 @@ public final class Texturas {
         Objects.requireNonNull(tex, "textura");
         if (!(0 <= corte1 && corte1 <= corte3 && corte3 <= 1))
             throw new IllegalArgumentException("los cortes deben cumplir 0 <= c1 <= c3 <= 1");
-        return new Tira(tex, u0, v0, u1, v1, null, new double[] { corte1, corte3 });
+        return new TiraRelleno(tex, u0, v0, u1, v1, null, new double[] { corte1, corte3 });
     }
 
-    private static final class Tira implements Relleno {
+    private static final class TiraRelleno implements Relleno {
         private final Textura tex;
         private final double u0, v0, u1, v1;
-        private final double[] desde, hasta;   // cortes de la gota -> cortes de la textura (null sin remapeo)
+        private final double[] desde, hasta;   // cortes de la tira -> cortes de la textura (null sin remapeo)
 
-        Tira(Textura tex, double u0, double v0, double u1, double v1, double[] desde, double[] hasta) {
+        TiraRelleno(Textura tex, double u0, double v0, double u1, double v1, double[] desde, double[] hasta) {
             this.tex = tex; this.u0 = u0; this.v0 = v0; this.u1 = u1; this.v1 = v1;
             this.desde = desde; this.hasta = hasta;
         }
 
-        @Override public Relleno para(Gota g) {
-            double[] d = { 0, g.corte1(), g.corte2(), g.corte3(), 1 };
-            if (hasta == null) return new Tira(tex, u0, v0, u1, v1, d, d);
+        @Override public Relleno para(Gota g, Opciones op) {
+            Cortes k = op.tira().cortes(g);
+            double[] d = { 0, k.c1(), k.c2(), k.c3(), 1 };
+            if (hasta == null) return new TiraRelleno(tex, u0, v0, u1, v1, d, d);
             double c1 = hasta[0], c3 = hasta[1];
-            double den = g.corte3() - g.corte1();
-            double c2 = den > 0 ? c1 + (c3 - c1) * (g.corte2() - g.corte1()) / den : c1;
-            return new Tira(tex, u0, v0, u1, v1, d, new double[] { 0, c1, c2, c3, 1 });
+            double den = k.c3() - k.c1();
+            double c2 = den > 0 ? c1 + (c3 - c1) * (k.c2() - k.c1()) / den : c1;
+            return new TiraRelleno(tex, u0, v0, u1, v1, d, new double[] { 0, c1, c2, c3, 1 });
         }
 
         @Override public int argb(Punto p) {
@@ -295,7 +296,7 @@ public final class Texturas {
             th2 = Math.toDegrees(Math.atan2(dv2, du2));
         }
 
-        @Override public Relleno para(Gota g) { return new DiscoRelleno(tex, d1, d2, orientacion, giro, g); }
+        @Override public Relleno para(Gota g, Opciones op) { return new DiscoRelleno(tex, d1, d2, orientacion, giro, g); }
 
         @Override public int argb(Punto p) {
             Coordenadas.Muestra m = p.muestra();

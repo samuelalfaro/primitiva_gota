@@ -175,8 +175,10 @@ public final class Gota implements Geometria {
     final double[] dxq, dyq;        // dirección D(t) del camino: cuadrática regularizada (solo elipses)
     private final Rectangle2D.Double bounds;
     final int muestras;
-    private final Coordenadas[] coords;   // coordenadas intrínsecas de esta gota, una por modo de costura
-    final double v1, v2, v3;   // cortes de la tira: fin de la tapa 1, v en t = tm, inicio de la tapa 2
+    /** Coordenadas intrínsecas de esta gota, una por combinación de costura y tira (se crean al pedirlas). */
+    private final java.util.concurrent.ConcurrentMap<Clave, Coordenadas> coords = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private record Clave(Costura costura, Tira tira) {}
 
     // ---------- Fábricas ----------
 
@@ -298,56 +300,11 @@ public final class Gota implements Geometria {
         double rmax = rc * (elipses ? Math.max(1, Math.max(lam1, lam2)) : 1) + 1;
         bounds = new Rectangle2D.Double(minX - rmax, minY - rmax, maxX - minX + 2 * rmax, maxY - minY + 2 * rmax);
         muestras = (int) Math.max(32, Math.min(512, largo / 2 + 16));
-        coords = creaCoordenadas();
-        // v lineal en t a lo largo del cuerpo: el corte central cae donde t = tm (con tm = 1/2, v2 = 1/2)
-        this.v1 = 0.25; this.v3 = 0.75; this.v2 = 0.25 + 0.5 * tm;
     }
 
-    private Gota(Gota o, double v1, double v2, double v3) {
-        px = o.px; py = o.py;
-        r1 = o.r1; r2 = o.r2; rm = o.rm; tm = o.tm; suav = o.suav;
-        tramos = o.tramos;
-        interiorValido = o.interiorValido;
-        elipses = o.elipses; lam1 = o.lam1; lam2 = o.lam2; dxq = o.dxq; dyq = o.dyq;
-        bounds = o.bounds;
-        muestras = o.muestras;
-        this.v1 = v1; this.v2 = v2; this.v3 = v3;
-        coords = creaCoordenadas();
-    }
-
-    private Coordenadas[] creaCoordenadas() {
-        Costura[] cs = Costura.values();
-        Coordenadas[] r = new Coordenadas[cs.length];
-        for (Costura c : cs) r[c.ordinal()] = new Coordenadas(this, c);
-        return r;
-    }
-
-    private Coordenadas coordenadas(Costura c) { return coords[c.ordinal()]; }
-
-    /**
-     * Copia con otro reparto de la textura en la tira. Los tres pesos son la parte de v que ocupan
-     * la tapa trasera, el cuerpo y la tapa delantera (por defecto 1 : 2 : 1). Dentro del cuerpo, v es
-     * lineal en t y el corte central cae donde t = tm: tm manda sobre el corte central.
-     */
-    public Gota conTira(double wTapa1, double wCuerpo, double wTapa2) {
-        if (!(wTapa1 > 0) || !(wCuerpo > 0) || !(wTapa2 > 0)
-                || !Double.isFinite(wTapa1 + wCuerpo + wTapa2))
-            throw new IllegalArgumentException("los pesos de la tira deben ser finitos y > 0");
-        double s = wTapa1 + wCuerpo + wTapa2, c1 = wTapa1 / s, c3 = (wTapa1 + wCuerpo) / s;
-        return new Gota(this, c1, c1 + (c3 - c1) * tm, c3);
-    }
-
-    /** Copia con la tira repartida según la longitud real: tapas de longitud r1 y r2, cuerpo del largo del camino. */
-    public Gota conTiraProporcional() {
-        double largo = 0;
-        Point2D prev = centro(0);
-        for (int i = 1; i <= 400; i++) {
-            Point2D c = centro(i / 400.0);
-            largo += prev.distance(c);
-            prev = c;
-        }
-        double mini = 1e-3 * (r1 + r2 + largo + 1e-9);
-        return conTira(Math.max(r1, mini), Math.max(largo, mini), Math.max(r2, mini));
+    private Coordenadas coordenadas(Opciones op) {
+        return coords.computeIfAbsent(new Clave(op.costura(), op.tira()),
+                k -> new Coordenadas(this, k.costura(), k.tira().cortes(this)));
     }
 
     // ---------- Consultas ----------
@@ -362,15 +319,6 @@ public final class Gota implements Geometria {
 
     /** Suavizado efectivo del perfil, en [0, 1]. */
     public double suavizado() { return suav; }
-
-    /** Corte de la tira entre la tapa trasera y el cuerpo: v en el centro del primer círculo. */
-    @Override public double corte1() { return v1; }
-
-    /** Corte central de la tira: v en t = tm (siempre sigue a tm). */
-    @Override public double corte2() { return v2; }
-
-    /** Corte de la tira entre el cuerpo y la tapa delantera: v en el centro del segundo círculo. */
-    @Override public double corte3() { return v3; }
 
     /** true si la gota usa elipses (algún aspecto distinto de 1); con false son círculos. */
     @Override public boolean esElipse() { return elipses; }
@@ -427,14 +375,14 @@ public final class Gota implements Geometria {
 
     /** Coordenadas del píxel como un todo, según el solape y la costura. */
     private Coordenadas.Costurado ganador(double x, double y, Opciones op) {
-        return op.solape().ganador(coordenadas(op.costura()), x, y);
+        return op.solape().ganador(coordenadas(op), x, y);
     }
 
     /** El punto (x, y) visto desde esta gota: su muestra y sus coordenadas de tira se calculan al pedirlas, una sola vez. */
     public Punto punto(double x, double y) { return punto(x, y, Opciones.POR_DEFECTO); }
 
     public Punto punto(double x, double y, Opciones op) {
-        return coordenadas(op.costura()).punto(x, y, () -> ganador(x, y, op));
+        return coordenadas(op).punto(x, y, () -> ganador(x, y, op));
     }
 
     /** Color del relleno en el píxel (con las opciones por defecto). */
@@ -468,9 +416,9 @@ public final class Gota implements Geometria {
         final int y0 = Math.max(0, (int) Math.floor(bounds.getMinY()));
         final int y1 = Math.min(dst.getHeight(), (int) Math.ceil(bounds.getMaxY()));
         if (x0 >= x1 || y0 >= y1) return;
-        final Relleno rel = relleno.para(this);
+        final Relleno rel = relleno.para(this, op);
         final Solape solape = op.solape();
-        final Coordenadas coord = coordenadas(op.costura());
+        final Coordenadas coord = coordenadas(op);
 
         IntStream.range(y0, y1).parallel().forEach(j -> {
             for (int i = x0; i < x1; i++) {

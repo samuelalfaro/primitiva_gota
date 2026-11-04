@@ -31,6 +31,7 @@ public class GotaCadena {
         anclas();
         unificacion();
         tmManda();
+        tira();
         galeria();
         csv();
         System.out.printf("%d pruebas, %d fallos%n", pruebas, fallos);
@@ -176,29 +177,60 @@ public class GotaCadena {
     static void unificacion() {
         int e1 = 0xFF1E1B4B, c1 = 0xFFFFE27A, c2 = 0xFF2563EB, e2 = 0xFF7C2D12;
         // cortes no uniformes: v1 = 0.1, v3 = 0.9 (pesos 1 : 8 : 1 -> v1 = 0.1, v3 = 0.9)
-        Gota g = Gota.lineal(p(60.5, 150.5), 50, p(240.5, 150.5), 20, Gota.Perfil.recto()).conTira(1, 8, 1);
+        Gota g = Gota.lineal(p(60.5, 150.5), 50, p(240.5, 150.5), 20, Gota.Perfil.recto());
+        Opciones op = Opciones.POR_DEFECTO.conTira(Tira.pesos(1, 8, 1));
+        Cortes cortes = op.tira().cortes(g);
         BufferedImage img = lienzo(300, 300);
-        g.render(img, Colores.cadena(e1, c1, c2, e2));
+        g.render(img, Colores.cadena(e1, c1, c2, e2), op);
         int pix1 = datos(img)[150 * 300 + 60], pix2 = datos(img)[150 * 300 + 240];   // centros exactos de los círculos
-        comprueba("la cadena sigue los cortes de la gota: el color de cada centro es exacto (v1 = " +
-                  String.format("%.3f", g.corte1()) + ", v3 = " + String.format("%.3f", g.corte3()) + ")",
+        comprueba("la cadena sigue los cortes de la tira: el color de cada centro es exacto (v1 = " +
+                  String.format("%.3f", cortes.c1()) + ", v3 = " + String.format("%.3f", cortes.c3()) + ")",
                   pix1 == c1 && pix2 == c2, String.format("%08X %08X", pix1, pix2));
 
 
         // en TRAZO también: el color de v es el mismo que el de la textura
         BufferedImage img3 = lienzo(300, 300);
-        g.render(img3, Colores.cadena(e1, c1, c2, e2), Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
+        g.render(img3, Colores.cadena(e1, c1, c2, e2), op.conSolape(Solape.TRAZO));
         comprueba("modo TRAZO: mismo color exacto en los centros", datos(img3)[150 * 300 + 60] == c1 && datos(img3)[150 * 300 + 240] == c2, "");
+    }
+
+    static void tira() {
+        Gota g = Gota.lineal(p(60.5, 150.5), 50, p(240.5, 150.5), 20, Gota.Perfil.radioMedio(30, 0.3, 0.5));
+        Cortes d = Tira.POR_DEFECTO.cortes(g);
+        comprueba("Tira.POR_DEFECTO: v1 = 1/4, v3 = 3/4 y v2 = v1 + (v3 - v1)·tm",
+                  d.c1() == 0.25 && d.c3() == 0.75 && d.c2() == 0.25 + 0.5 * g.tm(), String.format("%.4f %.4f %.4f", d.c1(), d.c2(), d.c3()));
+        Cortes p = Tira.pesos(1, 8, 1).cortes(g);
+        comprueba("Tira.pesos(1, 8, 1): v1 = 0.1 y v3 = 0.9", Math.abs(p.c1() - 0.1) < 1e-12 && Math.abs(p.c3() - 0.9) < 1e-12, "");
+        boolean lanza = true;
+        for (double[] w : new double[][] { { 0, 1, 1 }, { 1, -1, 1 }, { 1, 1, Double.NaN }, { 1, Double.POSITIVE_INFINITY, 1 } })
+            try { Tira.pesos(w[0], w[1], w[2]); lanza = false; } catch (IllegalArgumentException e) { }
+        comprueba("Tira.pesos rechaza pesos no positivos o no finitos", lanza, "");
+        // gota recta de radios 50 y 20 y largo 180: pesos 50 : 180 : 20
+        Cortes q = Tira.proporcional().cortes(g);
+        double total = 50 + 180 + 20;
+        comprueba("Tira.proporcional: tapas y cuerpo en proporción a sus longitudes",
+                  Math.abs(q.c1() - 50 / total) < 1e-9 && Math.abs(q.c3() - 230 / total) < 1e-9, String.format("%.4f %.4f", q.c1(), q.c3()));
+        comprueba("Opciones.conTira cambia solo la tira", Opciones.POR_DEFECTO.conTira(Tira.proporcional()).costura() == Costura.ESPIGA
+                  && Opciones.POR_DEFECTO.conTira(Tira.proporcional()).solape() == Solape.PLANO, "");
+        boolean nulo = false;
+        try { Opciones.POR_DEFECTO.conTira(null); } catch (NullPointerException e) { nulo = true; }
+        comprueba("opciones con tira nula: NullPointerException", nulo, "");
+        // el reparto cambia las coordenadas sin tocar la forma
+        Point2D c = g.centro(0.15);   // en la primera mitad del cuerpo (tm = 0.3): v difiere entre repartos
+        double vd = g.uv(c.getX(), c.getY()).v(), vp = g.uv(c.getX(), c.getY(), Opciones.POR_DEFECTO.conTira(Tira.pesos(1, 8, 1))).v();
+        comprueba("la tira cambia la v de un punto del cuerpo y no la pertenencia", Math.abs(vd - vp) > 0.05 && g.contiene(c.getX(), c.getY()), String.format("v = %.3f / %.3f", vd, vp));
     }
 
     static void tmManda() {
         boolean ok = true;
         String det = "";
         for (double tm : new double[] { 0.1, 0.3, 0.5, 0.8 }) {
-            Gota g = Gota.lineal(p(60.5, 150.5), 50, p(240.5, 150.5), 20, Gota.Perfil.radioMedio(30, tm, 0.5)).conTira(1, 8, 1);
+            Gota g = Gota.lineal(p(60.5, 150.5), 50, p(240.5, 150.5), 20, Gota.Perfil.radioMedio(30, tm, 0.5));
+            Opciones op = Opciones.POR_DEFECTO.conTira(Tira.pesos(1, 8, 1));
+            Cortes k = op.tira().cortes(g);
             Point2D c = g.centro(g.tm());
-            double v = g.uv(c.getX(), c.getY()).v(), esperado = g.corte1() + (g.corte3() - g.corte1()) * g.tm();
-            if (Math.abs(g.corte2() - esperado) > 1e-12 || Math.abs(v - esperado) > 1e-3) { ok = false; det += String.format(" tm=%.1f v=%.4f esp=%.4f", tm, v, esperado); }
+            double v = g.uv(c.getX(), c.getY(), op).v(), esperado = k.c1() + (k.c3() - k.c1()) * g.tm();
+            if (Math.abs(k.c2() - esperado) > 1e-12 || Math.abs(v - esperado) > 1e-3) { ok = false; det += String.format(" tm=%.1f v=%.4f esp=%.4f", tm, v, esperado); }
         }
         comprueba("tm manda: el corte central v2 = v1 + (v3 - v1)·tm y el centro en t = tm tiene v = v2", ok, det);
     }

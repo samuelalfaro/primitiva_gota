@@ -272,7 +272,7 @@ public final class Composicion {
         final int y1 = Math.min(dst.getHeight(), (int) Math.ceil(bounds.getMaxY() + marg));
         if (x0 >= x1 || y0 >= y1) return;
         final List<Relleno> rel = new ArrayList<>();
-        for (int i = 0; i < gotas.size(); i++) rel.add(rellenos.get(i).para(gotas.get(i)));
+        for (int i = 0; i < gotas.size(); i++) rel.add(rellenos.get(i).para(gotas.get(i), op));
         IntStream.range(y0, y1).parallel().forEach(j -> {
             for (int i = x0; i < x1; i++) {
                 double x = i + 0.5, y = j + 0.5;

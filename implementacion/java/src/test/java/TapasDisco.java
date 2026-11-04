@@ -152,7 +152,8 @@ public class TapasDisco {
         Gota g = Gota.curva(p(60, 70), 24, new Gota.Vec(110, 0), p(230, 240), 58, new Gota.Vec(0, -120),
                 Gota.Perfil.recto().aspecto(1.6, 0.6));
         Relleno rel0 = Colores.cadenaLateral(N1, N2, Mezcla.LCH).para(g);
-        double c1 = g.corte1(), c3 = g.corte3();
+        Cortes cortes = Tira.POR_DEFECTO.cortes(g);
+        double c1 = cortes.c1(), c3 = cortes.c3();
         int maxA = 0, maxB = 0;
         Coordenadas.Muestra m0 = new Coordenadas.Muestra(0, 0.5, 0, 0);
         for (int i = 0; i <= 200; i++) {
@@ -168,8 +169,8 @@ public class TapasDisco {
         int mt = 0;
         for (int i = 0; i <= 200; i++) {
             double u = i / 200.0;
-            mt = Math.max(mt, maxCanal(tr.argb(m0, new Coordenadas.Uv(u, g.corte1())), tr.argb(m0, new Coordenadas.Uv(u, g.corte1() - 1e-9))));
-            mt = Math.max(mt, maxCanal(tr.argb(m0, new Coordenadas.Uv(u, g.corte3())), tr.argb(m0, new Coordenadas.Uv(u, g.corte3() + 1e-9))));
+            mt = Math.max(mt, maxCanal(tr.argb(m0, new Coordenadas.Uv(u, c1)), tr.argb(m0, new Coordenadas.Uv(u, c1 - 1e-9))));
+            mt = Math.max(mt, maxCanal(tr.argb(m0, new Coordenadas.Uv(u, c3)), tr.argb(m0, new Coordenadas.Uv(u, c3 + 1e-9))));
         }
         comprueba("costura (textura): sin salto en v1 y v3", mt <= 2, "salto máx " + mt);
 
@@ -180,11 +181,12 @@ public class TapasDisco {
             gg.render(im, Colores.cadenaLateral(N1, N2, Mezcla.RGB));
             int[] d = datos(im);
             int mx = 0;
+            Cortes kk = Tira.POR_DEFECTO.cortes(gg);
             for (int j = 0; j < H; j++)
                 for (int i = 0; i + 1 < W; i++) {
                     if (gg.sdf(i + 0.5, j + 0.5) > -3 || gg.sdf(i + 1.5, j + 0.5) > -3) continue;
                     double va = gg.uv(i + 0.5, j + 0.5).v(), vb = gg.uv(i + 1.5, j + 0.5).v();
-                    boolean costura = (va < gg.corte1()) != (vb < gg.corte1()) || (va > gg.corte3()) != (vb > gg.corte3());
+                    boolean costura = (va < kk.c1()) != (vb < kk.c1()) || (va > kk.c3()) != (vb > kk.c3());
                     if (costura) mx = Math.max(mx, maxCanal(d[j * W + i], d[j * W + i + 1]));
                 }
             comprueba("imagen " + (gg.esElipse() ? "elíptica" : "circular") + " con pendiente de radio: salto en la costura <= 40",

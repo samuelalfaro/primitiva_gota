@@ -82,12 +82,13 @@ public class GotaTextura {
 
         // Reparto proporcional de la tira: solo cambian los cortes
         // Pesos 50 : largo/2 : largo/2 : 20 sobre la gota recta, así que los cortes son v1 = 50/total y v2 = (50 + largo/2)/total
-        Gota prop = g[0].conTiraProporcional();
+        Gota prop = g[0];
+        Opciones opProp = Opciones.POR_DEFECTO.conTira(Tira.proporcional());
         double largo = g[0].centro(0).distance(g[0].centro(1)), total = 50 + largo + 20;
         double e1 = 50 / total, e2 = (50 + largo / 2) / total, e3 = (50 + largo) / total;
         Point2D c0 = prop.centro(0), cm = prop.centro(0.5), c1 = prop.centro(1);
-        double a1 = prop.uv(c0.getX(), c0.getY()).v(), a2 = prop.uv(cm.getX(), cm.getY()).v(),
-               a3 = prop.uv(c1.getX(), c1.getY()).v();
+        double a1 = prop.uv(c0.getX(), c0.getY(), opProp).v(), a2 = prop.uv(cm.getX(), cm.getY(), opProp).v(),
+               a3 = prop.uv(c1.getX(), c1.getY(), opProp).v();
         boolean okProp = Math.abs(a1 - e1) < 0.01 && Math.abs(a2 - e2) < 0.01 && Math.abs(a3 - e3) < 0.01;
         System.out.printf("proporcional: cortes v=(%.3f, %.3f, %.3f), esperados (%.3f, %.3f, %.3f) %s%n",
                 a1, a2, a3, e1, e2, e3, okProp ? "ok" : "REVISAR");

@@ -43,7 +43,7 @@ public final class ComposicionColor {
             this.color = color; this.tex = tex; this.modo = modo; this.entorno = entorno;
         }
 
-        @Override public Relleno para(Gota g) { return new Combinado(color.para(g), tex.para(g), modo, entorno); }
+        @Override public Relleno para(Gota g, Opciones op) { return new Combinado(color.para(g, op), tex.para(g, op), modo, entorno); }
 
         @Override public int argb(Punto p) {
             return aplica(modo, color.argb(p), tex.argb(p), entorno);

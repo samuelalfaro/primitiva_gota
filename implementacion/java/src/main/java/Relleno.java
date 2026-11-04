@@ -19,10 +19,13 @@ public interface Relleno {
     }
 
     /**
-     * Versión del relleno ya enlazada con la gota que lo va a pintar; render() la llama antes de
-     * barrer. Los rellenos que dependen de la tira (cadena axial) toman de ella sus cortes.
+     * Versión del relleno ya enlazada con la gota que lo va a pintar y con las opciones de pintado; render() la llama
+     * antes de barrer. Los rellenos que dependen de la tira (cadena axial, textura) toman de las opciones sus cortes.
      */
-    default Relleno para(Gota g) { return this; }
+    default Relleno para(Gota g, Opciones op) { return this; }
+
+    /** Igual, con las opciones por defecto. */
+    default Relleno para(Gota g) { return para(g, Opciones.POR_DEFECTO); }
 
     static Relleno solido(int color) { return p -> color; }
 }

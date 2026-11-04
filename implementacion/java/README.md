@@ -14,7 +14,9 @@ src/main/java      la biblioteca
   Costura.java           modos de costura de la tira: ORTOGONAL, ESPIGA (por defecto) y SUAVIZADO
   Zonas.java             reparto de la tira en banda y tapas según la costura (lo usa Coordenadas; solo conoce Geometria)
   Geometria.java         consulta de solo lectura de la geometría de una gota (la implementa Gota)
-  Opciones.java          record (costura, solape) que se pasa a render, parametros, uv y punto; por defecto ESPIGA y PLANO
+  Opciones.java          record (costura, solape, tira) que se pasa a render, parametros, uv y punto; por defecto ESPIGA, PLANO y la tira 1 : 2 : 1
+  Tira.java              reparto del eje v entre tapas y cuerpo: pesos(a, b, c), proporcional() o POR_DEFECTO; produce los Cortes
+  Cortes.java            record (c1, c2, c3) con los cortes de v de la tira
   Solape.java            PLANO o TRAZO: cómo se resuelven los solapes; produce las capas (cobertura + Punto) que pinta el render, independiente de Costura
   Utils.java             funciones numéricas auxiliares
   Colores.java           colores sobre las coordenadas (cadena axial, color lateral, tapas de semidisco)

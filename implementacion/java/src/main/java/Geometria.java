@@ -1,7 +1,7 @@
 /**
  * Consulta de solo lectura de la geometría de una gota: el camino (una Bézier cúbica de centros), los radios y los
- * aspectos de las elipses a lo largo del parámetro t en [0, 1], el reparto de la tira y la pertenencia de un punto.
- * Es lo único que necesitan {@link Coordenadas} y el reparto de la tira en zonas para repartir el interior de la gota, y también lo que
+ * aspectos de las elipses a lo largo del parámetro t en [0, 1] y la pertenencia de un punto.
+ * Es lo único que necesitan {@link Coordenadas} y las zonas de la tira para repartir el interior de la gota, y también lo que
  * necesitaría cualquier otro dibujo de la primitiva (por ejemplo, un modo de alambre).
  * Todas las coordenadas están en el espacio de la imagen.
  */
@@ -36,13 +36,8 @@ public interface Geometria {
     /** Tangente unitaria del camino en t (con elipses, la dirección del eje). */
     double[] tangente(double t);
 
-    /** Posición efectiva de rm sobre el camino: es también el corte central de la tira. */
+    /** Posición efectiva de rm sobre el camino: es también donde cae el corte central de la tira. */
     double tm();
-
-    /** Cortes de la tira (v): fin de la tapa trasera, centro y comienzo de la tapa delantera. */
-    double corte1();
-    double corte2();
-    double corte3();
 
     /** Pertenencia exacta de un punto a la gota. */
     boolean contiene(double x, double y);

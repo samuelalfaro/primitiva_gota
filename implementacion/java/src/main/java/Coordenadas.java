@@ -27,13 +27,17 @@ public final class Coordenadas {
 
     private final Geometria g;
     private final Costura modo;
+    private final Cortes cortes;
     private volatile Zonas zonas;
 
-    Coordenadas(Geometria g, Costura modo) { this.g = g; this.modo = modo; }
+    Coordenadas(Geometria g, Costura modo, Cortes cortes) { this.g = g; this.modo = modo; this.cortes = cortes; }
+
+    /** Cortes del eje v de la tira con los que se calculan estas coordenadas. */
+    Cortes cortes() { return cortes; }
 
     private Zonas zonas() {
         Zonas c = zonas;
-        if (c == null) synchronized (this) { if ((c = zonas) == null) zonas = c = new Zonas(g, modo); }
+        if (c == null) synchronized (this) { if ((c = zonas) == null) zonas = c = new Zonas(g, modo, cortes); }
         return c;
     }
 

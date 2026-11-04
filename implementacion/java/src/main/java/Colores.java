@@ -104,8 +104,9 @@ public final class Colores {
             this.m = m; this.a1 = a1; this.a3 = a3;
         }
 
-        @Override public Relleno para(Gota g) {
-            return new Cadena(e1, c1, c2, e2, sEC1, sCC, sCE2, m, g.corte1(), g.corte3());
+        @Override public Relleno para(Gota g, Opciones op) {
+            Cortes c = op.tira().cortes(g);
+            return new Cadena(e1, c1, c2, e2, sEC1, sCC, sCE2, m, c.c1(), c.c3());
         }
 
         @Override public int argb(Punto p) {
@@ -200,7 +201,10 @@ public final class Colores {
             this.n1 = n1; this.n2 = n2; this.sCC = sCC; this.m = m; this.a1 = a1; this.a3 = a3;
         }
 
-        @Override public Relleno para(Gota g) { return new CadenaLateral(n1, n2, sCC, m, g.corte1(), g.corte3()); }
+        @Override public Relleno para(Gota g, Opciones op) {
+            Cortes c = op.tira().cortes(g);
+            return new CadenaLateral(n1, n2, sCC, m, c.c1(), c.c3());
+        }
 
         @Override public int argb(Punto p) {
             Coordenadas.Uv uv = p.uv();
