@@ -14,6 +14,7 @@ src/main/java      la biblioteca
   Costura.java           modos de costura de la tira: ORTOGONAL, ESPIGA (por defecto) y SUAVIZADO
   Zonas.java             reparto de la tira en banda y tapas según la costura (lo usa Coordenadas; solo conoce Geometria)
   Geometria.java         consulta de solo lectura de la geometría de una gota (la implementa Gota)
+  Opciones.java          record (costura, solape) que se pasa a render, parametros, uv y punto; por defecto ESPIGA y PLANO
   Solape.java            PLANO o TRAZO: cómo se resuelven los solapes; produce las capas (cobertura + Punto) que pinta el render, independiente de Costura
   Utils.java             funciones numéricas auxiliares
   Colores.java           colores sobre las coordenadas (cadena axial, color lateral, tapas de semidisco)
@@ -58,7 +59,7 @@ semidisco. Ver `Coordenadas.discoTapa` y `Colores.Lateral`.
 ## Modos de costura
 
 `Costura` decide cómo se reparte la tira entre cuerpo y tapas, igual para colores y texturas
-(`gota.conCostura(...)`; por defecto ESPIGA): ORTOGONAL (líneas de t constante normales al camino, tapas semidiscos),
+(`gota.render(dst, relleno, Opciones.POR_DEFECTO.conCostura(...))`; por defecto ESPIGA): ORTOGONAL (líneas de t constante normales al camino, tapas semidiscos),
 ESPIGA (cada mitad es el radio al punto de tangencia, tapas polares) y SUAVIZADO (como ESPIGA, con Hermites C1 en el eje).
 Valen para círculos y elipses, con solape PLANO y TRAZO (con elipses, las costillas van a los puntos de contacto con el contorno y las tapas se muestrean con la norma elíptica). En TRAZO el píxel puede tener varias soluciones (el camino pasa varias veces por él) y manda la de mayor clave: t en la banda, y las tapas como si prolongaran el trazo (la inicial, más cerca del centro es posterior; la final, más lejos del centro es posterior).
 

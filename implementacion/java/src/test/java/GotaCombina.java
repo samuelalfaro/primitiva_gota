@@ -150,20 +150,22 @@ public class GotaCombina {
         // multitextura (combinaciones anidadas) en PLANO y en TRAZO: cada píxel sigue la fórmula encadenada
         Relleno multi = ComposicionColor.combinar(ComposicionColor.combinar(Relleno.solido(cc), Texturas.textura(tx), ComposicionColor.Modo.MODULATE),
                                                Texturas.textura(tx), ComposicionColor.Modo.ADD);
-        for (Gota gg : new Gota[] { g, g.conSolape(Solape.TRAZO) }) {
+        for (Solape sol : new Solape[] { Solape.PLANO, Solape.TRAZO }) {
+            Gota gg = g;
+            Opciones op = Opciones.POR_DEFECTO.conSolape(sol);
             Relleno m2 = multi.para(gg), t2 = Texturas.textura(tx).para(gg);
             int malos = 0, n = 0;
             for (int y = 100; y < 200; y += 3)
                 for (int x = 10; x < 260; x += 3) {
                     if (!gg.contiene(x + 0.5, y + 0.5)) continue;
-                    Coordenadas.Muestra mu = gg.parametros(x + 0.5, y + 0.5);
-                    Coordenadas.Uv uv = gg.uv(x + 0.5, y + 0.5);
+                    Coordenadas.Muestra mu = gg.parametros(x + 0.5, y + 0.5, op);
+                    Coordenadas.Uv uv = gg.uv(x + 0.5, y + 0.5, op);
                     int tt = t2.argb(mu, uv);
                     int esperado = ref(ComposicionColor.Modo.ADD, ref(ComposicionColor.Modo.MODULATE, cc, tt, 0), tt, 0);
                     n++;
                     if (!cerca(m2.argb(mu, uv), esperado, 1)) malos++;
                 }
-            comprueba("multitextura en " + gg.solape() + ": MODULATE y luego ADD por píxel", malos == 0 && n > 500, n + " píxeles, " + malos + " malos");
+            comprueba("multitextura en " + sol + ": MODULATE y luego ADD por píxel", malos == 0 && n > 500, n + " píxeles, " + malos + " malos");
         }
 
         boolean lanza = false;

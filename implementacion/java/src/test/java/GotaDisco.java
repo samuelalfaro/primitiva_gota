@@ -188,8 +188,9 @@ public class GotaDisco {
         for (Solape s : Solape.values()) {
             BufferedImage img = new BufferedImage(300, 300, BufferedImage.TYPE_INT_ARGB);
             try {
-                arco.conSolape(s).render(img, ComposicionColor.combinar(Colores.cadena(0xFF1E1B4B, 0xFFFFE27A, 0xFF2563EB, 0xFF7C2D12),
-                        Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.FIJA), ComposicionColor.Modo.MODULATE));
+                arco.render(img, ComposicionColor.combinar(Colores.cadena(0xFF1E1B4B, 0xFFFFE27A, 0xFF2563EB, 0xFF7C2D12),
+                        Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.FIJA), ComposicionColor.Modo.MODULATE),
+                        Opciones.POR_DEFECTO.conSolape(s));
             } catch (RuntimeException ex) { ok = false; }
         }
         comprueba("combinar(cadena, disco FIJA) se renderiza en PLANO y TRAZO sobre un arco", ok, "");

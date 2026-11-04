@@ -319,11 +319,13 @@ public class GotaRegresion {
         Gota curva = Gota.curva(p(30, 150), 25, new Gota.Vec(0, -120), p(150, 150), 15, new Gota.Vec(0, -120), Gota.Perfil.central(1.3));
         Relleno rel = Colores.conGamma(0xFFFFE27A, 0xFF2563EB, 0xFFC2410C, 0xFF1E1B4B, 2.0, 0.7);
         boolean iguales = true;
-        for (Gota gg : new Gota[] { curva, curva.conSolape(Solape.TRAZO) }) {
+        for (Solape sol : Solape.values()) {
+            Gota gg = curva;
+            Opciones op = Opciones.POR_DEFECTO.conSolape(sol);
             BufferedImage a1 = fondoRuido(200, 180, 7), a2 = fondoRuido(200, 180, 7);
-            gg.render(a1, rel);
+            gg.render(a1, rel, op);
             ForkJoinPool una = new ForkJoinPool(1);
-            try { una.submit(() -> gg.render(a2, rel)).get(); } finally { una.shutdown(); }
+            try { una.submit(() -> gg.render(a2, rel, op)).get(); } finally { una.shutdown(); }
             if (!Arrays.equals(datos(a1), datos(a2))) iguales = false;
         }
         comprueba("render paralelo == render con un solo hilo (PLANO y TRAZO, fondo con ruido)", iguales, "");

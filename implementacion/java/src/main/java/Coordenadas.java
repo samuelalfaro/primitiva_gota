@@ -71,7 +71,10 @@ public final class Coordenadas {
         @Override public Uv uv() { return costurado().uv(); }
     }
 
-    Muestra muestra(double x, double y, double t) {
+    Muestra muestra(double x, double y, double t) { return muestra(g, x, y, t); }
+
+    /** La muestra solo depende de la geometría, no de la costura. */
+    static Muestra muestra(Geometria g, double x, double y, double t) {
         double r = Math.max(g.rad(t), 1e-9);
         double dx = x - g.cx(t), dy = y - g.cy(t);
         double[] tg = g.tangente(t);

@@ -121,8 +121,8 @@ public class GotaElipses {
             long semilla = rnd.nextLong();
             for (Solape s : Solape.values()) {
                 BufferedImage i1 = new BufferedImage(260, 260, BufferedImage.TYPE_INT_ARGB), i2 = new BufferedImage(260, 260, BufferedImage.TYPE_INT_ARGB);
-                aleatoria(new Random(semilla), false).conSolape(s).render(i1, rel);
-                aleatoria(new Random(semilla), true).conSolape(s).render(i2, rel);
+                aleatoria(new Random(semilla), false).render(i1, rel, Opciones.POR_DEFECTO.conSolape(s));
+                aleatoria(new Random(semilla), true).render(i2, rel, Opciones.POR_DEFECTO.conSolape(s));
                 int[] a = datos(i1), c = datos(i2);
                 for (int i = 0; i < a.length; i++) {
                     if (a[i] == 0 && c[i] == 0) continue;
@@ -341,11 +341,12 @@ public class GotaElipses {
         int tot = 0, malContorno = 0, saltos = 0, lineas = 0, malExterior = 0;
         double peorContorno = 0, peorSalto = 0, peorExt = 0;
         for (Solape sol : Solape.values()) {
+            Opciones op = Opciones.POR_DEFECTO.conSolape(sol);
             for (int gi = 0; gi < 8; gi++) {
                 Gota.Perfil p0 = pf[gi % 4];
                 if (gi >= 4 && gi % 4 == 2) p0 = Gota.Perfil.central(0.8).aspecto(1.6, 1.6);   // arcos: con a >> radio de curvatura el contorno lo dibujan las puntas
                 Gota g = (gi < 4 ? Gota.lineal(p(60, 150), 40, p(240, 150), 18, p0)
-                                 : Gota.curva(p(60, 240), 30, new Gota.Vec(0, -200), p(240, 240), 15, new Gota.Vec(0, -200), p0)).conSolape(sol);
+                                 : Gota.curva(p(60, 240), 30, new Gota.Vec(0, -200), p(240, 240), 15, new Gota.Vec(0, -200), p0));
                 // contorno del cuerpo: desde puntos del camino hacia fuera, u debe valer 0 o 1
                 Random rnd = new Random(gi * 7 + 1);
                 for (int k = 0; k < 60; k++) {
@@ -360,9 +361,9 @@ public class GotaElipses {
                         if (g.contiene(ax + mid * dx, ay + mid * dy)) lo = mid; else hi = mid;
                     }
                     double qx = ax + (lo - 1e-6) * dx, qy = ay + (lo - 1e-6) * dy;
-                    Coordenadas.Muestra m = g.parametros(qx, qy);
+                    Coordenadas.Muestra m = g.parametros(qx, qy, op);
                     if (m.t() < 0.06 || m.t() > 0.94) continue;
-                    Coordenadas.Uv uv = g.uv(qx, qy);
+                    Coordenadas.Uv uv = g.uv(qx, qy, op);
                     double e = Math.min(Math.abs(uv.u()), Math.abs(uv.u() - 1));
                     tot++;
                     peorContorno = Math.max(peorContorno, e);
@@ -382,8 +383,8 @@ public class GotaElipses {
                             double A = fin == 0 ? -dep : dep;
                             double qx = c.getX() + A * tx + S * nx, qy = c.getY() + A * ty + S * ny;
                             if (!g.contiene(qx, qy)) { previo = Double.NaN; tPrev = Double.NaN; continue; }
-                            Coordenadas.Uv uv = g.uv(qx, qy);
-                            double tn = g.parametros(qx, qy).t();
+                            Coordenadas.Uv uv = g.uv(qx, qy, op);
+                            double tn = g.parametros(qx, qy, op).t();
                             if (!Double.isNaN(tPrev) && Math.abs(tn - tPrev) > 0.02) previo = Double.NaN;   // costura del propio reparto (t*) entre capas: la uv la sigue
                             tPrev = tn;
                             if (Double.isNaN(previo) && dep > depOut - 0.01) {
