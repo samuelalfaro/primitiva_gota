@@ -319,7 +319,7 @@ public class GotaRegresion {
         Gota curva = Gota.curva(p(30, 150), 25, new Gota.Vec(0, -120), p(150, 150), 15, new Gota.Vec(0, -120), Gota.Perfil.central(1.3));
         Relleno rel = Colores.conGamma(0xFFFFE27A, 0xFF2563EB, 0xFFC2410C, 0xFF1E1B4B, 2.0, 0.7);
         boolean iguales = true;
-        for (Gota gg : new Gota[] { curva, curva.conSolape(Gota.Solape.TRAZO) }) {
+        for (Gota gg : new Gota[] { curva, curva.conSolape(Solape.TRAZO) }) {
             BufferedImage a1 = fondoRuido(200, 180, 7), a2 = fondoRuido(200, 180, 7);
             gg.render(a1, rel);
             ForkJoinPool una = new ForkJoinPool(1);

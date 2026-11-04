@@ -185,7 +185,7 @@ public class GotaDisco {
         // render con combinar y orden de los parámetros: no revienta con FIJA en un camino curvo en PLANO y TRAZO
         Gota arco = Gota.curva(p(60, 240), 25, new Gota.Vec(0, -200), p(240, 240), 15, new Gota.Vec(0, -200), Gota.Perfil.recto());
         boolean ok = true;
-        for (Gota.Solape s : Gota.Solape.values()) {
+        for (Solape s : Solape.values()) {
             BufferedImage img = new BufferedImage(300, 300, BufferedImage.TYPE_INT_ARGB);
             try {
                 arco.conSolape(s).render(img, ComposicionColor.combinar(Colores.cadena(0xFF1E1B4B, 0xFFFFE27A, 0xFF2563EB, 0xFF7C2D12),

@@ -36,7 +36,7 @@ public class GotaSolape {
         Arrays.fill(((DataBufferInt) img.getRaster().getDataBuffer()).getData(), 0xFFFFFFFF);
         for (int c = 0; c < 4; c++) {
             crea(c, c, 0).render(img, rel);
-            crea(c, c, 1).conSolape(Gota.Solape.TRAZO).render(img, rel);
+            crea(c, c, 1).conSolape(Solape.TRAZO).render(img, rel);
         }
         ImageIO.write(img, "png", new File("gota_solape.png"));
 
@@ -50,7 +50,7 @@ public class GotaSolape {
             g.render(a, rel);
             double msPlano = (System.nanoTime() - t0) / 1e6;
             t0 = System.nanoTime();
-            g.conSolape(Gota.Solape.TRAZO).render(b, rel);
+            g.conSolape(Solape.TRAZO).render(b, rel);
             double msTrazo = (System.nanoTime() - t0) / 1e6;
             int[] da = ((DataBufferInt) a.getRaster().getDataBuffer()).getData();
             int[] db = ((DataBufferInt) b.getRaster().getDataBuffer()).getData();

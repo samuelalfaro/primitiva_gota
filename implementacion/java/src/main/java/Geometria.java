@@ -46,4 +46,16 @@ public interface Geometria {
 
     /** Pertenencia exacta de un punto a la gota. */
     boolean contiene(double x, double y);
+
+    /** Una pasada del camino sobre un punto: su parámetro t y la distancia con signo al borde de esa pasada. */
+    record Hebra(double t, double distancia) {
+        /** Fracción del píxel que cubre la pasada (antialiasing de medio píxel a cada lado del borde). */
+        public double cobertura() { return Math.max(0, Math.min(1, 0.5 - distancia)); }
+    }
+
+    /** Fracción del píxel centrado en (x, y) que cubre la unión de la gota, en [0, 1]. */
+    double cobertura(double x, double y);
+
+    /** Las pasadas del camino que cubren (aunque sea en parte) el píxel (x, y), en orden de t creciente. */
+    java.util.List<Hebra> hebras(double x, double y);
 }

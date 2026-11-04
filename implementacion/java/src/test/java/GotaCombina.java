@@ -150,7 +150,7 @@ public class GotaCombina {
         // multitextura (combinaciones anidadas) en PLANO y en TRAZO: cada píxel sigue la fórmula encadenada
         Relleno multi = ComposicionColor.combinar(ComposicionColor.combinar(Relleno.solido(cc), Texturas.textura(tx), ComposicionColor.Modo.MODULATE),
                                                Texturas.textura(tx), ComposicionColor.Modo.ADD);
-        for (Gota gg : new Gota[] { g, g.conSolape(Gota.Solape.TRAZO) }) {
+        for (Gota gg : new Gota[] { g, g.conSolape(Solape.TRAZO) }) {
             Relleno m2 = multi.para(gg), t2 = Texturas.textura(tx).para(gg);
             int malos = 0, n = 0;
             for (int y = 100; y < 200; y += 3)

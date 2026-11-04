@@ -60,7 +60,7 @@ public class GotaTextura {
                           p(3, 240, 240), 15, new Gota.Vec(0, -200), Gota.Perfil.central(1.0));
         g[4] = Gota.lineal(p(4, 90, 150), 60, p(4, 250, 150), 0, Gota.Perfil.central(1.0));
         g[5] = Gota.curva(p(5, 80, 230), 40, new Gota.Vec(180, -230),
-                          p(5, 220, 230), 30, new Gota.Vec(-180, -230), Gota.Perfil.central(1.0)).conSolape(Gota.Solape.TRAZO);
+                          p(5, 220, 230), 30, new Gota.Vec(-180, -230), Gota.Perfil.central(1.0)).conSolape(Solape.TRAZO);
 
         BufferedImage tex = texturaPrueba();
         ImageIO.write(tex, "png", new File("gota_textura_base.png"));

@@ -19,20 +19,6 @@ public final class Gota implements Geometria {
     /** Vector relativo (tirador respecto a su centro). */
     public record Vec(double x, double y) {}
 
-    /** Cómo se resuelve el color donde el camino se cruza consigo mismo o los círculos se solapan. */
-    public enum Solape {
-        /**
-         * Primitiva plana (por defecto): un único color por píxel, el del círculo en el que el píxel
-         * está más centrado (mínimo de rho). Deja costuras duras donde dos tramos compiten.
-         */
-        PLANO,
-        /**
-         * Trazo: cada tramo del camino es una capa. Las de t mayor tapan completamente a las
-         * anteriores, con antialiasing propio por capa.
-         */
-        TRAZO
-    }
-
     private static final int GRADO = 6;          // círculos
     private static final int GRADO_E = 12;       // elipses (aspecto lineal en t)
     private static final int MAX_G = 12;
@@ -428,9 +414,9 @@ public final class Gota implements Geometria {
     /** Muestra del círculo en el que el píxel está más centrado (mínimo de rho): decide qué gota manda en una composición. */
     Coordenadas.Muestra porRho(double x, double y) {
         if (solape == Solape.TRAZO) {   // la capa más tardía que contiene el punto
-            java.util.List<double[]> hs = hebras(x, y, 0);
+            java.util.List<Hebra> hs = hebras(x, y, 0);
             if (!hs.isEmpty()) {
-                return coord.muestra(x, y, hs.get(hs.size() - 1)[0]);
+                return coord.muestra(x, y, hs.get(hs.size() - 1).t());
             }
         }
         double t = minimizar(x, y, true)[0];
@@ -442,47 +428,17 @@ public final class Gota implements Geometria {
         return ganador(x, y).uv();
     }
 
-    /** Coordenadas del píxel: la única solución en PLANO; en TRAZO la de mayor clave (la más tardía del trazo). */
-    private Coordenadas.Costurado ganador(double x, double y) {
-        if (solape == Solape.TRAZO) {
-            Zonas.Candidato mejor = null;
-            for (Zonas.Candidato c : coord.candidatos(x, y)) if (mejor == null || c.clave() > mejor.clave()) mejor = c;
-            if (mejor != null) return mejor.c();
-        }
-        return coord.costurado(x, y);
-    }
+    /** Coordenadas del píxel como un todo, según el solape. */
+    private Coordenadas.Costurado ganador(double x, double y) { return solape.ganador(coord, x, y); }
 
     /** El punto (x, y) visto desde esta gota: su muestra y sus coordenadas de tira se calculan al pedirlas, una sola vez. */
     public Punto punto(double x, double y) {
-        return new PuntoPerezoso(x, y, () -> ganador(x, y));
+        return coord.punto(x, y, () -> ganador(x, y));
     }
 
     /** Color del relleno en el píxel. */
     int color(Relleno rel, double x, double y) {
         return rel.argb(punto(x, y));
-    }
-
-    private final class PuntoPerezoso implements Punto {
-        private final double x, y;
-        private java.util.function.Supplier<Coordenadas.Costurado> fuente;
-        private Coordenadas.Costurado costurado;
-        private Coordenadas.Muestra muestra;
-
-        PuntoPerezoso(double x, double y, java.util.function.Supplier<Coordenadas.Costurado> fuente) {
-            this.x = x; this.y = y; this.fuente = fuente;
-        }
-
-        private Coordenadas.Costurado costurado() {
-            if (costurado == null) { costurado = fuente.get(); fuente = null; }
-            return costurado;
-        }
-
-        @Override public Coordenadas.Muestra muestra() {
-            if (muestra == null) muestra = coord.muestra(x, y, costurado().t());
-            return muestra;
-        }
-
-        @Override public Coordenadas.Uv uv() { return costurado().uv(); }
     }
 
     // ---------- Render ----------
@@ -510,21 +466,23 @@ public final class Gota implements Geometria {
 
         IntStream.range(y0, y1).parallel().forEach(j -> {
             for (int i = x0; i < x1; i++) {
-                double x = i + 0.5, y = j + 0.5;
                 final int idx = base + j * stride + i;
-                if (!dentro(x, y, EXT)) continue;                    // a más de BANDA del borde: fuera
-                if (solape == Solape.TRAZO) {
-                    datos[idx] = pintaTrazo(datos[idx], x, y, rel);
-                    continue;
-                }
-                double cob;
-                if (interiorValido && dentro(x, y, INT)) cob = 1;     // a más de BANDA de profundidad
-                else cob = Math.max(0, Math.min(1, 0.5 - sdf(x, y)));  // franja del borde
-                if (cob <= 0) continue;
-                int color = color(rel, x, y);
-                datos[idx] = componer(datos[idx], color, cob);
+                solape.capas(this, coord, i + 0.5, j + 0.5,
+                        capa -> datos[idx] = componer(datos[idx], rel.argb(capa.punto()), capa.cobertura()));
             }
         });
+    }
+
+    /** Fracción del píxel que cubre la unión de la gota (0 a más de BANDA del borde, 1 a más de BANDA de profundidad). */
+    @Override public double cobertura(double x, double y) {
+        if (!dentro(x, y, EXT)) return 0;
+        if (interiorValido && dentro(x, y, INT)) return 1;
+        return Math.max(0, Math.min(1, 0.5 - sdf(x, y)));        // franja del borde
+    }
+
+    @Override public java.util.List<Hebra> hebras(double x, double y) {
+        if (!dentro(x, y, EXT)) return java.util.List.of();
+        return hebras(x, y, BANDA);
     }
 
     // ---------- Pertenencia en base de Bernstein ----------
@@ -641,11 +599,11 @@ public final class Gota implements Geometria {
      * Mínimos locales de g(t) = |p - c(t)| - r(t) con g < limite, como {t, g} en orden de t creciente.
      * Cada uno es un tramo del camino que pasa cerca de p.
      */
-    private java.util.List<double[]> hebras(double x, double y, double limite) {
+    private java.util.List<Hebra> hebras(double x, double y, double limite) {
         int n = muestras;
         double[] g = new double[n + 1];
         for (int i = 0; i <= n; i++) g[i] = f(x, y, i / (double) n, false);
-        java.util.List<double[]> out = new java.util.ArrayList<>();
+        java.util.List<Hebra> out = new java.util.ArrayList<>();
         for (int i = 0; i <= n; i++) {
             boolean izq = i == 0 || g[i] < g[i - 1];     // '<' a un lado: una sola muestra por meseta
             boolean der = i == n || g[i] <= g[i + 1];
@@ -654,34 +612,9 @@ public final class Gota implements Geometria {
             double[] m = dorada(x, y, a, b, false);
             double t = i / (double) n, v = g[i];
             if (m[1] < v) { t = m[0]; v = m[1]; }
-            if (v < limite) out.add(new double[] { ajusta(t), v });
+            if (v < limite) out.add(new Hebra(ajusta(t), v));
         }
         return out;
-    }
-
-    private int pintaTrazo(int dst, double x, double y, Relleno relleno) {
-        final java.util.concurrent.atomic.AtomicReference<java.util.List<Zonas.Candidato>> cs = new java.util.concurrent.atomic.AtomicReference<>();
-        java.util.List<double[]> capas = hebras(x, y, BANDA);
-        for (int h = 0; h < capas.size(); h++) {         // t creciente: la posterior tapa a la anterior
-            double[] hb = capas.get(h);
-            double cob = Math.max(0, Math.min(1, 0.5 - hb[1]));
-            if (cob <= 0) continue;
-            final double limite = h == capas.size() - 1 ? Double.POSITIVE_INFINITY : 0.5 * (hb[0] + capas.get(h + 1)[0]);
-            // lo dibujado hasta esta capa: la solución de mayor clave por debajo del punto medio con la capa siguiente;
-            // la última capa se queda con la mayor de todas (también las tapas finales)
-            int color = relleno.argb(new PuntoPerezoso(x, y, () -> {
-                if (cs.get() == null) cs.set(coord.candidatos(x, y));
-                double kb = Double.NEGATIVE_INFINITY, kmin = Double.POSITIVE_INFINITY;
-                Coordenadas.Costurado best = null, primero = null;
-                for (Zonas.Candidato c : cs.get()) {
-                    if (c.clave() <= limite && c.clave() > kb) { best = c.c(); kb = c.clave(); }
-                    if (c.clave() < kmin) { primero = c.c(); kmin = c.clave(); }
-                }
-                return best != null ? best : primero != null ? primero : coord.costurado(x, y);
-            }));
-            dst = componer(dst, color, cob);
-        }
-        return dst;
     }
 
     // ---------- Elipses: orientación, aspecto y distancia ----------

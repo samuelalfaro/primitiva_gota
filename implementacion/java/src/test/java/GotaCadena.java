@@ -186,7 +186,7 @@ public class GotaCadena {
 
 
         // en TRAZO también: el color de v es el mismo que el de la textura
-        Gota gt = g.conSolape(Gota.Solape.TRAZO);
+        Gota gt = g.conSolape(Solape.TRAZO);
         BufferedImage img3 = lienzo(300, 300);
         gt.render(img3, Colores.cadena(e1, c1, c2, e2));
         comprueba("modo TRAZO: mismo color exacto en los centros", datos(img3)[150 * 300 + 60] == c1 && datos(img3)[150 * 300 + 240] == c2, "");

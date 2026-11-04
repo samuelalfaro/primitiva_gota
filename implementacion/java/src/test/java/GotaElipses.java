@@ -119,7 +119,7 @@ public class GotaElipses {
         int malos = 0, total = 0;
         for (int gi = 0; gi < 20; gi++) {
             long semilla = rnd.nextLong();
-            for (Gota.Solape s : Gota.Solape.values()) {
+            for (Solape s : Solape.values()) {
                 BufferedImage i1 = new BufferedImage(260, 260, BufferedImage.TYPE_INT_ARGB), i2 = new BufferedImage(260, 260, BufferedImage.TYPE_INT_ARGB);
                 aleatoria(new Random(semilla), false).conSolape(s).render(i1, rel);
                 aleatoria(new Random(semilla), true).conSolape(s).render(i2, rel);
@@ -340,7 +340,7 @@ public class GotaElipses {
         };
         int tot = 0, malContorno = 0, saltos = 0, lineas = 0, malExterior = 0;
         double peorContorno = 0, peorSalto = 0, peorExt = 0;
-        for (Gota.Solape sol : Gota.Solape.values()) {
+        for (Solape sol : Solape.values()) {
             for (int gi = 0; gi < 8; gi++) {
                 Gota.Perfil p0 = pf[gi % 4];
                 if (gi >= 4 && gi % 4 == 2) p0 = Gota.Perfil.central(0.8).aspecto(1.6, 1.6);   // arcos: con a >> radio de curvatura el contorno lo dibujan las puntas

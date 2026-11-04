@@ -43,6 +43,34 @@ public final class Coordenadas {
     /** Todas las soluciones del píxel, con su clave de orden (solape TRAZO). */
     java.util.List<Zonas.Candidato> candidatos(double x, double y) { return zonas().candidatos(x, y); }
 
+    /** El punto (x, y) con las coordenadas que elija la fuente; muestra y uv se calculan al pedirlas, una sola vez. */
+    Punto punto(double x, double y, java.util.function.Supplier<Costurado> fuente) {
+        return new PuntoPerezoso(x, y, fuente);
+    }
+
+    private final class PuntoPerezoso implements Punto {
+        private final double x, y;
+        private java.util.function.Supplier<Costurado> fuente;
+        private Costurado costurado;
+        private Muestra muestra;
+
+        PuntoPerezoso(double x, double y, java.util.function.Supplier<Costurado> fuente) {
+            this.x = x; this.y = y; this.fuente = fuente;
+        }
+
+        private Costurado costurado() {
+            if (costurado == null) { costurado = fuente.get(); fuente = null; }
+            return costurado;
+        }
+
+        @Override public Muestra muestra() {
+            if (muestra == null) muestra = Coordenadas.this.muestra(x, y, costurado().t());
+            return muestra;
+        }
+
+        @Override public Uv uv() { return costurado().uv(); }
+    }
+
     Muestra muestra(double x, double y, double t) {
         double r = Math.max(g.rad(t), 1e-9);
         double dx = x - g.cx(t), dy = y - g.cy(t);
