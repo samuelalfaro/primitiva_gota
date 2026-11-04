@@ -53,18 +53,18 @@ public class GotaTextura {
         String[] nombres = { "lineal h=1", "hinchada h=1.8", "guitarra h=0.55",
                              "arco", "punta r2=0", "lazo (TRAZO)" };
         Gota[] g = new Gota[6];
-        g[0] = Gota.lineal(p(0, 60, 150), 50, p(0, 240, 150), 20, Gota.Perfil.central(1.0));
-        g[1] = Gota.lineal(p(1, 60, 150), 50, p(1, 240, 150), 20, Gota.Perfil.central(1.8));
-        g[2] = Gota.lineal(p(2, 60, 150), 50, p(2, 240, 150), 20, Gota.Perfil.central(0.55));
+        g[0] = Gota.lineal(p(0, 60, 150), 50, p(0, 240, 150), 20, Perfil.central(1.0));
+        g[1] = Gota.lineal(p(1, 60, 150), 50, p(1, 240, 150), 20, Perfil.central(1.8));
+        g[2] = Gota.lineal(p(2, 60, 150), 50, p(2, 240, 150), 20, Perfil.central(0.55));
         g[3] = Gota.curva(p(3, 60, 240), 35, new Gota.Vec(0, -200),
-                          p(3, 240, 240), 15, new Gota.Vec(0, -200), Gota.Perfil.central(1.0));
-        g[4] = Gota.lineal(p(4, 90, 150), 60, p(4, 250, 150), 0, Gota.Perfil.central(1.0));
+                          p(3, 240, 240), 15, new Gota.Vec(0, -200), Perfil.central(1.0));
+        g[4] = Gota.lineal(p(4, 90, 150), 60, p(4, 250, 150), 0, Perfil.central(1.0));
         g[5] = Gota.curva(p(5, 80, 230), 40, new Gota.Vec(180, -230),
-                          p(5, 220, 230), 30, new Gota.Vec(-180, -230), Gota.Perfil.central(1.0)).conSolape(Gota.Solape.TRAZO);
+                          p(5, 220, 230), 30, new Gota.Vec(-180, -230), Perfil.central(1.0));
 
         BufferedImage tex = texturaPrueba();
         ImageIO.write(tex, "png", new File("gota_textura_base.png"));
-        Gota.Relleno rel = Texturas.textura(Texturas.deImagen(tex));
+        Relleno rel = Texturas.textura(Texturas.deImagen(tex));
 
         BufferedImage img = new BufferedImage(900, 600, BufferedImage.TYPE_INT_ARGB);
         Arrays.fill(((DataBufferInt) img.getRaster().getDataBuffer()).getData(), 0xFFFFFFFF);
@@ -72,21 +72,23 @@ public class GotaTextura {
         boolean ok = true;
         for (int i = 0; i < g.length; i++) {
             long t0 = System.nanoTime();
-            g[i].render(img, rel);
+            Opciones op = i == 5 ? Opciones.POR_DEFECTO.conSolape(Solape.TRAZO) : Opciones.POR_DEFECTO;
+            g[i].render(img, rel, op);
             double ms = (System.nanoTime() - t0) / 1e6;
             boolean estricto = i < 5;
-            ok &= revisa(nombres[i], g[i], ms, estricto, i != 5, i != 4, i == 1 ? 0.30 : 0.15, i == 4);
+            ok &= revisa(nombres[i], g[i], ms, estricto, i != 5, i != 4, i == 1 ? 0.30 : 0.15, i == 4, op);
         }
         ImageIO.write(img, "png", new File("gota_textura.png"));
 
         // Reparto proporcional de la tira: solo cambian los cortes
         // Pesos 50 : largo/2 : largo/2 : 20 sobre la gota recta, así que los cortes son v1 = 50/total y v2 = (50 + largo/2)/total
-        Gota prop = g[0].conTiraProporcional();
+        Gota prop = g[0];
+        Opciones opProp = Opciones.POR_DEFECTO.conTira(Tira.proporcional());
         double largo = g[0].centro(0).distance(g[0].centro(1)), total = 50 + largo + 20;
         double e1 = 50 / total, e2 = (50 + largo / 2) / total, e3 = (50 + largo) / total;
         Point2D c0 = prop.centro(0), cm = prop.centro(0.5), c1 = prop.centro(1);
-        double a1 = prop.uv(c0.getX(), c0.getY()).v(), a2 = prop.uv(cm.getX(), cm.getY()).v(),
-               a3 = prop.uv(c1.getX(), c1.getY()).v();
+        double a1 = prop.uv(c0.getX(), c0.getY(), opProp).v(), a2 = prop.uv(cm.getX(), cm.getY(), opProp).v(),
+               a3 = prop.uv(c1.getX(), c1.getY(), opProp).v();
         boolean okProp = Math.abs(a1 - e1) < 0.01 && Math.abs(a2 - e2) < 0.01 && Math.abs(a3 - e3) < 0.01;
         System.out.printf("proporcional: cortes v=(%.3f, %.3f, %.3f), esperados (%.3f, %.3f, %.3f) %s%n",
                 a1, a2, a3, e1, e2, e3, okProp ? "ok" : "REVISAR");
@@ -97,7 +99,7 @@ public class GotaTextura {
 
     /** Devuelve true si todo va bien. Los saltos y las puntas solo se exigen en las formas sin cruces. */
     static boolean revisa(String nombre, Gota g, double ms, boolean estricto, boolean puntas, boolean puntaFrente,
-                          double umbral, boolean excluirPunta) {
+                          double umbral, boolean excluirPunta, Opciones op) {
         var b = g.bounds();
         int x0 = (int) Math.floor(b.getMinX()), x1 = (int) Math.ceil(b.getMaxX());
         int y0 = (int) Math.floor(b.getMinY()), y1 = (int) Math.ceil(b.getMaxY());
@@ -109,7 +111,7 @@ public class GotaTextura {
                 U[y][x] = V[y][x] = Double.NaN;
                 double px = x0 + x + 0.5, py = y0 + y + 0.5;
                 if (!g.contiene(px, py)) continue;
-                Coordenadas.Uv uv = g.uv(px, py);
+                Coordenadas.Uv uv = g.uv(px, py, op);
                 U[y][x] = uv.u(); V[y][x] = uv.v();
                 dentro++;
                 if (uv.u() < -1e-9 || uv.u() > 1 + 1e-9 || uv.v() < -1e-9 || uv.v() > 1 + 1e-9
@@ -139,15 +141,15 @@ public class GotaTextura {
         String clave = "";
         if (estricto) {
             Point2D c0 = g.centro(0), cm = g.centro(0.5), c1 = g.centro(1);
-            bien &= cerca(g.uv(c0.getX(), c0.getY()), 0.5, 0.25);
-            bien &= cerca(g.uv(cm.getX(), cm.getY()), 0.5, 0.5);
-            if (puntaFrente) bien &= cerca(g.uv(c1.getX(), c1.getY()), 0.5, 0.75);
+            bien &= cerca(g.uv(c0.getX(), c0.getY(), op), 0.5, 0.25);
+            bien &= cerca(g.uv(cm.getX(), cm.getY(), op), 0.5, 0.5);
+            if (puntaFrente) bien &= cerca(g.uv(c1.getX(), c1.getY(), op), 0.5, 0.75);
             if (puntas) {
                 Point2D d = g.centro(0.001);
                 double tx = d.getX() - c0.getX(), ty = d.getY() - c0.getY(), n = Math.hypot(tx, ty);
                 tx /= n; ty /= n;
                 double r1 = g.radio(0) - 0.5;
-                Coordenadas.Uv t1 = g.uv(c0.getX() - tx * r1, c0.getY() - ty * r1);
+                Coordenadas.Uv t1 = g.uv(c0.getX() - tx * r1, c0.getY() - ty * r1, op);
                 bien &= t1.v() < 0.02 && Math.abs(t1.u() - 0.5) < 0.02;
                 clave = String.format(" | punta trasera uv=(%.3f, %.3f)", t1.u(), t1.v());
                 if (puntaFrente) {
@@ -155,7 +157,7 @@ public class GotaTextura {
                     double ux = c1.getX() - e.getX(), uy = c1.getY() - e.getY(), m = Math.hypot(ux, uy);
                     ux /= m; uy /= m;
                     double r2 = g.radio(1) - 0.5;
-                    Coordenadas.Uv t2 = g.uv(c1.getX() + ux * r2, c1.getY() + uy * r2);
+                    Coordenadas.Uv t2 = g.uv(c1.getX() + ux * r2, c1.getY() + uy * r2, op);
                     bien &= t2.v() > 0.98 && Math.abs(t2.u() - 0.5) < 0.02;
                     clave += String.format(" | punta delantera uv=(%.3f, %.3f)", t2.u(), t2.v());
                 }

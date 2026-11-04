@@ -9,7 +9,7 @@ public class ArcoDemo {
     public static void main(String[] args) throws Exception {
         Colores.Lateral a = new Colores.Lateral(0xFFD7263D, 0xFFFFE9A8, 0xFF2D6CDF);
         Colores.Lateral b = new Colores.Lateral(0xFF1FA39A, 0xFFE8F5D0, 0xFFF28E2B);
-        Gota g = Gota.lineal(new Point2D.Double(130, 120), 90, new Point2D.Double(310, 120), 60, Gota.Perfil.recto());
+        Gota g = Gota.lineal(new Point2D.Double(130, 120), 90, new Point2D.Double(310, 120), 60, Perfil.recto());
         BufferedImage out = new BufferedImage(1320, 250, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(((DataBufferInt) out.getRaster().getDataBuffer()).getData(), 0xFFF4F1EA);
         double[] s = { 0.25, 0.5, 0.75 };

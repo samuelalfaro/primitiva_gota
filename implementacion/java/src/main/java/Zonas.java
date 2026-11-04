@@ -2,7 +2,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Coordenadas de la tira (t, u, v) de un píxel según el modo de {@link Gota.Costura}, para círculos y para elipses
+ * Coordenadas de la tira (t, u, v) de un píxel según el modo de {@link Costura}, para círculos y para elipses
  * (en las elipses, las distancias de las tapas son normas elípticas y las costillas van a los puntos de contacto con el
  * contorno, que no son simétricos).
  * <p>
@@ -18,7 +18,7 @@ import java.util.List;
  * En las tapas de ESPIGA y SUAVIZADO el punto se muestrea en polares desde el centro, con el ángulo repartido
  * linealmente por el sector, y se lleva al semidisco unidad (l, a) que las texturas y los colores esperan.
  */
-final class Costurador {
+final class Zonas {
 
     private static final int NS = 256;           // muestras de t para localizar las raíces
     private static final int NW = 128;           // muestras del contorno al eje de la curva de un extremo
@@ -38,17 +38,19 @@ final class Costurador {
     /** Una solución posible para un píxel y su clave de orden: t en la banda, -rho en la tapa inicial, 1 + rho en la final. */
     record Candidato(double clave, Coordenadas.Costurado c) {}
 
-    private final Gota g;
-    private final Gota.Costura modo;
+    private final Geometria g;
+    private final Costura modo;
+    private final Cortes cortes;
     private final Fr[] tabla = new Fr[NS + 1];
     private final double[][][] dist = new double[2][2][NW + 1], fase = new double[2][2][NW + 1];   // curva de cada extremo y lado
     private final double[][][] contacto = new double[2][2][];   // elipses: [lado][A, S] en cada muestra NC
     private volatile Ortogonal ort;
 
-    Costurador(Gota g, Gota.Costura modo) {
+    Zonas(Geometria g, Costura modo, Cortes cortes) {
         this.g = g;
         this.modo = modo;
-        if (g.elipses) {
+        this.cortes = cortes;
+        if (g.esElipse()) {
             for (int l = 0; l < 2; l++) { contacto[l][0] = new double[NC + 1]; contacto[l][1] = new double[NC + 1]; }
             for (int i = 0; i <= NC; i++) {
                 double t = i / (double) NC, b = Math.max(g.rad(t), 1e-9);
@@ -62,7 +64,7 @@ final class Costurador {
             }
         }
         for (int i = 0; i <= NS; i++) tabla[i] = marco(i / (double) NS);
-        if (modo != Gota.Costura.ORTOGONAL) {
+        if (modo != Costura.ORTOGONAL) {
             for (int e = 0; e < 2; e++) {
                 Fr f = tabla[e == 0 ? 0 : NS];
                 double sg = e == 0 ? -1 : 1;
@@ -80,9 +82,9 @@ final class Costurador {
     // ---------- Geometría de las líneas de t constante ----------
 
     private Fr marco(double t) {
-        t = Gota.acota(t, 0, 1);
-        if (g.elipses) {
-            double b = Math.max(g.rad(t), 1e-9), a = g.lam(t) * b;
+        t = Utils.acota(t, 0, 1);
+        if (g.esElipse()) {
+            double b = Math.max(g.rad(t), 1e-9), a = g.aspecto(t) * b;
             double[] T = g.dirD(t);
             double nx = T[1], ny = -T[0];
             double f = t * NC;
@@ -101,7 +103,7 @@ final class Costurador {
             double tt = t < 0.5 ? t + 1e-3 : t - 1e-3;
             x = g.dcx(tt); y = g.dcy(tt); n = Math.max(Math.hypot(x, y), 1e-12);
         }
-        double tx = x / n, ty = y / n, r = g.rad(t), k = Gota.acota(g.drad(t) / n, -0.999, 0.999), sq = Math.sqrt(1 - k * k);
+        double tx = x / n, ty = y / n, r = g.rad(t), k = Utils.acota(g.drad(t) / n, -0.999, 0.999), sq = Math.sqrt(1 - k * k);
         double nx = ty, ny = -tx;
         double[] ox = new double[2], oy = new double[2];
         for (int l = 0; l < 2; l++) {
@@ -115,7 +117,7 @@ final class Costurador {
     private double[] punto(Fr f, int s, double w) {
         int l = s > 0 ? 1 : 0;
         double rx = f.ox[l], ry = f.oy[l];
-        if (modo == Gota.Costura.ESPIGA) return new double[] { f.cx + w * rx, f.cy + w * ry };
+        if (modo == Costura.ESPIGA) return new double[] { f.cx + w * rx, f.cy + w * ry };
         double px = f.cx + rx, py = f.cy + ry, len = Math.max(Math.hypot(rx, ry), 1e-12), m = HM * len;
         double h00 = 2 * w * w * w - 3 * w * w + 1, h10 = w * w * w - 2 * w * w + w;
         double h01 = -2 * w * w * w + 3 * w * w, h11 = w * w * w - w * w;
@@ -141,16 +143,13 @@ final class Costurador {
             tt = t < 0.5 ? t + 1e-3 : t - 1e-3;
             vx = g.dcx(tt); vy = g.dcy(tt);
         }
-        double dx = g.ddx(tt), dy = g.ddy(tt), n = Math.hypot(dx, dy);
-        double tx = dx / n, ty = dy / n;
+        double[] d = g.dirD(tt);
+        double tx = d[0], ty = d[1];
         double vT = vx * tx + vy * ty, vN = vx * ty - vy * tx;
-        double u = 1 - tt;
-        double dxp = 2 * (u * (g.dxq[1] - g.dxq[0]) + tt * (g.dxq[2] - g.dxq[1]));
-        double dyp = 2 * (u * (g.dyq[1] - g.dyq[0]) + tt * (g.dyq[2] - g.dyq[1]));
-        double omega = (dx * dyp - dy * dxp) / (n * n);
+        double omega = g.giroD(tt);
         double b = Math.max(g.rad(t), 1e-9);
         double bpv = g.drad(tt);
-        double lamv = g.lam(t), ap = (g.lam2 - g.lam1) * b + lamv * bpv;
+        double lamv = g.aspecto(t), ap = g.dAspecto(t) * b + lamv * bpv;
         return new double[] { vT, vN, omega, bpv, ap, b, lamv * b };
     }
 
@@ -188,7 +187,7 @@ final class Costurador {
 
     /** Coordenadas con un solo resultado por píxel (solape PLANO): banda de menor w, si no la tapa, si no ORTOGONAL. */
     Coordenadas.Costurado calcula(double x, double y) {
-        if (modo == Gota.Costura.ORTOGONAL) return ortogonal().calcula(x, y);
+        if (modo == Costura.ORTOGONAL) return ortogonal().calcula(x, y);
         double[] b = null;
         for (double[] r : bandas(x, y)) if (b == null || r[1] < b[1]) b = r;
         if (b != null) return enBanda(b[0], b[1], (int) b[2]);
@@ -206,7 +205,7 @@ final class Costurador {
      */
     private List<double[]> bandas(double x, double y) {
         List<double[]> raices = raices(x, y);
-        if (modo != Gota.Costura.SUAVIZADO) return raices;
+        if (modo != Costura.SUAVIZADO) return raices;
         List<double[]> out = new ArrayList<>();
         for (double[] r : raices) { double[] n = newton(x, y, r); if (n != null) out.add(n); }
         if (out.isEmpty() && tapa(x, y, 0) == null && tapa(x, y, 1) == null) {   // en una tapa no hay banda que buscar
@@ -237,7 +236,7 @@ final class Costurador {
      */
     List<Candidato> candidatos(double x, double y) {
         List<Candidato> out = new ArrayList<>();
-        if (modo == Gota.Costura.ORTOGONAL) { ortogonal().candidatos(x, y, out); return out; }
+        if (modo == Costura.ORTOGONAL) { ortogonal().candidatos(x, y, out); return out; }
         for (double[] b : bandas(x, y)) out.add(new Candidato(b[0], enBanda(b[0], b[1], (int) b[2])));
         for (int e = 0; e < 2; e++) {
             Candidato c = tapa(x, y, e);
@@ -247,8 +246,8 @@ final class Costurador {
     }
 
     private Coordenadas.Costurado enBanda(double t, double w, int s) {
-        double v = t < g.tm ? g.v1 + (g.v2 - g.v1) * t / g.tm : g.v2 + (g.v3 - g.v2) * (t - g.tm) / (1 - g.tm);
-        return new Coordenadas.Costurado(t, new Coordenadas.Uv(0.5 + 0.5 * s * Gota.acota(w, 0, 1), Gota.acota(v, 0, 1)));
+        double v = t < g.tm() ? cortes.c1() + (cortes.c2() - cortes.c1()) * t / g.tm() : cortes.c2() + (cortes.c3() - cortes.c2()) * (t - g.tm()) / (1 - g.tm());
+        return new Coordenadas.Costurado(t, new Coordenadas.Uv(0.5 + 0.5 * s * Utils.acota(w, 0, 1), Utils.acota(v, 0, 1)));
     }
 
     /** Raíces de t en las que el punto está sobre la costilla (recta) de algún lado: {t, w, s}. */
@@ -286,10 +285,10 @@ final class Costurador {
         double t = ini[0], w = ini[1];
         double[] r = resto(x, y, t, w, s);
         for (int it = 0; it < 14; it++) {
-            if (Math.abs(r[0]) < 1e-4 && Math.abs(r[1]) < 1e-4) return new double[] { t, Gota.acota(w, 0, 1), s };
+            if (Math.abs(r[0]) < 1e-4 && Math.abs(r[1]) < 1e-4) return new double[] { t, Utils.acota(w, 0, 1), s };
             double ht = 1e-4, hw = 1e-4;
-            double[] a = resto(x, y, Gota.acota(t + ht, 0, 1), w, s), b = resto(x, y, Gota.acota(t - ht, 0, 1), w, s);
-            double dt = Gota.acota(t + ht, 0, 1) - Gota.acota(t - ht, 0, 1);
+            double[] a = resto(x, y, Utils.acota(t + ht, 0, 1), w, s), b = resto(x, y, Utils.acota(t - ht, 0, 1), w, s);
+            double dt = Utils.acota(t + ht, 0, 1) - Utils.acota(t - ht, 0, 1);
             double[] c = resto(x, y, t, w + hw, s), d = resto(x, y, t, w - hw, s);
             double j00 = (a[0] - b[0]) / dt, j10 = (a[1] - b[1]) / dt, j01 = (c[0] - d[0]) / (2 * hw), j11 = (c[1] - d[1]) / (2 * hw);
             double det = j00 * j11 - j01 * j10;
@@ -297,13 +296,13 @@ final class Costurador {
             double st = (r[0] * j11 - r[1] * j01) / det, sw = (j00 * r[1] - j10 * r[0]) / det;
             double paso = 1;
             for (int k = 0; k < 5; k++) {
-                double nt = Gota.acota(t - paso * st, 0, 1), nw = Gota.acota(w - paso * sw, 0, 1.03);
+                double nt = Utils.acota(t - paso * st, 0, 1), nw = Utils.acota(w - paso * sw, 0, 1.03);
                 double[] n = resto(x, y, nt, nw, s);
                 if (Math.hypot(n[0], n[1]) < Math.hypot(r[0], r[1]) || k == 4) { t = nt; w = nw; r = n; break; }
                 paso /= 2;
             }
         }
-        return Math.abs(r[0]) < 1e-3 && Math.abs(r[1]) < 1e-3 ? new double[] { t, Gota.acota(w, 0, 1), s } : null;
+        return Math.abs(r[0]) < 1e-3 && Math.abs(r[1]) < 1e-3 ? new double[] { t, Utils.acota(w, 0, 1), s } : null;
     }
 
     private double[] resto(double x, double y, double t, double w, int s) {
@@ -338,8 +337,8 @@ final class Costurador {
         double th = Math.PI * (mas[1] - phi) / (mas[1] + menos[1]);    // 0 sobre la curva del lado +, pi sobre la del lado -
         double w = propio[0];
         double l = w * Math.cos(th), a = w * Math.sin(th), s1 = Math.sqrt(Math.max(0, 1 - l * l));
-        double p = s1 > 1e-9 ? Gota.acota(a / s1, 0, 1) : 0;
-        double v = e == 0 ? g.v1 * (1 - p) : g.v3 + (1 - g.v3) * p;
+        double p = s1 > 1e-9 ? Utils.acota(a / s1, 0, 1) : 0;
+        double v = e == 0 ? cortes.c1() * (1 - p) : cortes.c3() + (1 - cortes.c3()) * p;
         return new Candidato(e == 0 ? -rho : 1 + rho, new Coordenadas.Costurado(e, new Coordenadas.Uv((l + 1) / 2, v)));
     }
 
@@ -425,9 +424,9 @@ final class Costurador {
                     if (estricto && rho > 1.02) return null;
                     int i = t == 0 ? 0 : M;
                     double den = Math.max(1, S >= 0 ? hw[1][i] / f.b : hw[0][i] / f.b);
-                    double l = Gota.acota(S / den, -1, 1), s1 = Math.sqrt(Math.max(0, 1 - l * l));
-                    double a = Gota.acota(b, 0, s1), w = s1 > 1e-9 ? a / s1 : 0;
-                    double v = t == 0 ? g.v1 * (1 - w) : g.v3 + (1 - g.v3) * w;
+                    double l = Utils.acota(S / den, -1, 1), s1 = Math.sqrt(Math.max(0, 1 - l * l));
+                    double a = Utils.acota(b, 0, s1), w = s1 > 1e-9 ? a / s1 : 0;
+                    double v = t == 0 ? cortes.c1() * (1 - w) : cortes.c3() + (1 - cortes.c3()) * w;
                     return new Candidato(t == 0 ? -rho : 1 + rho, new Coordenadas.Costurado(t, new Coordenadas.Uv((l + 1) / 2, v)));
                 }
             }
@@ -435,9 +434,9 @@ final class Costurador {
             int i0 = Math.min(M - 1, (int) fi), side = S >= 0 ? 1 : 0;
             double fr = fi - i0, h = hw[side][i0] * (1 - fr) + hw[side][i0 + 1] * fr;
             if (estricto && Math.abs(Sp) > h * 1.02) return null;
-            double q = Gota.acota(Sp / h, -1, 1);
-            double v = t < g.tm ? g.v1 + (g.v2 - g.v1) * t / g.tm : g.v2 + (g.v3 - g.v2) * (t - g.tm) / (1 - g.tm);
-            return new Candidato(t, new Coordenadas.Costurado(t, new Coordenadas.Uv(0.5 + 0.5 * q, Gota.acota(v, 0, 1))));
+            double q = Utils.acota(Sp / h, -1, 1);
+            double v = t < g.tm() ? cortes.c1() + (cortes.c2() - cortes.c1()) * t / g.tm() : cortes.c2() + (cortes.c3() - cortes.c2()) * (t - g.tm()) / (1 - g.tm());
+            return new Candidato(t, new Coordenadas.Costurado(t, new Coordenadas.Uv(0.5 + 0.5 * q, Utils.acota(v, 0, 1))));
         }
     }
 }

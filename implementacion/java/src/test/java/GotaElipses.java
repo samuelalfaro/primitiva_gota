@@ -71,17 +71,17 @@ public class GotaElipses {
         Gota.Vec v2 = new Gota.Vec((rnd.nextDouble() - 0.5) * 300, (rnd.nextDouble() - 0.5) * 300);
         double tm = 0.05 + rnd.nextDouble() * 0.9, suav = rnd.nextInt(3) == 0 ? 1 : rnd.nextDouble();
         boolean medio = rnd.nextBoolean(), recta = rnd.nextBoolean();
-        Gota.Perfil pf = medio ? Gota.Perfil.radioMedio(h * (r1 + r2) / 2, tm, suav) : Gota.Perfil.central(h);
+        Perfil pf = medio ? Perfil.radioMedio(h * (r1 + r2) / 2, tm, suav) : Perfil.central(h);
         return aleatoriaCon(c1, r1, v1, c2, r2, v2, pf, recta, forzar);
     }
 
-    static Gota aleatoriaCon(Point2D c1, double r1, Gota.Vec v1, Point2D c2, double r2, Gota.Vec v2, Gota.Perfil pf, boolean recta, boolean forzar) {
+    static Gota aleatoriaCon(Point2D c1, double r1, Gota.Vec v1, Point2D c2, double r2, Gota.Vec v2, Perfil pf, boolean recta, boolean forzar) {
         if (forzar) pf = forzarElipses(pf);
         return recta ? Gota.lineal(c1, r1, c2, r2, pf) : Gota.curva(c1, r1, v1, c2, r2, v2, pf);
     }
 
     /** Perfil.forzarElipses es privado del paquete: se llama a través de reflexión mínima no hace falta, mismo paquete. */
-    static Gota.Perfil forzarElipses(Gota.Perfil pf) { return pf.forzarElipses(); }
+    static Perfil forzarElipses(Perfil pf) { return pf.forzarElipses(); }
 
     static void equivalenciaConCirculos() {
         Random rnd = new Random(2024);
@@ -115,14 +115,14 @@ public class GotaElipses {
         comprueba("elipses con aspecto 1 == círculos: rho mínimo en el interior", difRho == 0, String.format("peor %.1e", peorRho));
 
         // render completo (PLANO y TRAZO) con un relleno que depende de t y rho
-        Gota.Relleno rel = (t, rho) -> 0xFF000000 | ((int) (255 * Math.min(1, t)) << 16) | ((int) (255 * Math.min(1, rho)) << 8) | 0x40;
+        Relleno rel = p -> 0xFF000000 | ((int) (255 * Math.min(1, p.muestra().t())) << 16) | ((int) (255 * Math.min(1, p.muestra().rho())) << 8) | 0x40;
         int malos = 0, total = 0;
         for (int gi = 0; gi < 20; gi++) {
             long semilla = rnd.nextLong();
-            for (Gota.Solape s : Gota.Solape.values()) {
+            for (Solape s : Solape.values()) {
                 BufferedImage i1 = new BufferedImage(260, 260, BufferedImage.TYPE_INT_ARGB), i2 = new BufferedImage(260, 260, BufferedImage.TYPE_INT_ARGB);
-                aleatoria(new Random(semilla), false).conSolape(s).render(i1, rel);
-                aleatoria(new Random(semilla), true).conSolape(s).render(i2, rel);
+                aleatoria(new Random(semilla), false).render(i1, rel, Opciones.POR_DEFECTO.conSolape(s));
+                aleatoria(new Random(semilla), true).render(i2, rel, Opciones.POR_DEFECTO.conSolape(s));
                 int[] a = datos(i1), c = datos(i2);
                 for (int i = 0; i < a.length; i++) {
                     if (a[i] == 0 && c[i] == 0) continue;
@@ -169,7 +169,7 @@ public class GotaElipses {
         double[] lams = { 0.3, 1, 2, 3.5 };
         for (double lam : lams) {
             double a = lam * b;
-            Gota g = Gota.lineal(p(50, 80), b, p(50 + L, 80), b, Gota.Perfil.central(1).aspecto(lam));
+            Gota g = Gota.lineal(p(50, 80), b, p(50 + L, 80), b, Perfil.central(1).aspecto(lam));
             Random rnd = new Random(7);
             int n = 0, malos = 0;
             double peorSdf = 0;
@@ -221,8 +221,8 @@ public class GotaElipses {
             Gota.Vec v1 = new Gota.Vec((rnd.nextDouble() - 0.5) * 220, (rnd.nextDouble() - 0.5) * 220);
             Gota.Vec v2 = new Gota.Vec((rnd.nextDouble() - 0.5) * 220, (rnd.nextDouble() - 0.5) * 220);
             double l1 = Math.exp((rnd.nextDouble() - 0.5) * 2.4), l2 = Math.exp((rnd.nextDouble() - 0.5) * 2.4);
-            Gota.Perfil pf = rnd.nextBoolean() ? Gota.Perfil.central(0.6 + rnd.nextDouble() * 1.6).aspecto(l1, l2)
-                                               : Gota.Perfil.radioMedio((r1 + r2) / 2 * (0.4 + rnd.nextDouble() * 1.8), 0.15 + rnd.nextDouble() * 0.7, rnd.nextDouble()).aspecto(l1, l2);
+            Perfil pf = rnd.nextBoolean() ? Perfil.central(0.6 + rnd.nextDouble() * 1.6).aspecto(l1, l2)
+                                               : Perfil.radioMedio((r1 + r2) / 2 * (0.4 + rnd.nextDouble() * 1.8), 0.15 + rnd.nextDouble() * 0.7, rnd.nextDouble()).aspecto(l1, l2);
             Gota g = rnd.nextInt(3) == 0 ? Gota.lineal(c1, r1, c2, r2, pf) : Gota.curva(c1, r1, v1, c2, r2, v2, pf);
             var bd = g.bounds();
             for (int k = 0; k < 250; k++) {
@@ -240,7 +240,7 @@ public class GotaElipses {
     // ---------- degenerados ----------
 
     static void degenerados() {
-        Gota.Perfil pe = Gota.Perfil.central(1).aspecto(3, 0.5);
+        Perfil pe = Perfil.central(1).aspecto(3, 0.5);
         Gota[] gs = {
             Gota.lineal(p(100, 100), 20, p(100, 100), 12, pe),                                                      // centros coincidentes
             Gota.curva(p(40, 150), 15, new Gota.Vec(0, 0), p(200, 150), 10, new Gota.Vec(0, 0), pe),                 // tiradores nulos
@@ -256,7 +256,7 @@ public class GotaElipses {
             Gota g = gs[i];
             var b = g.bounds();
             BufferedImage img = new BufferedImage(300, 300, BufferedImage.TYPE_INT_ARGB);
-            g.render(img, Gota.Relleno.solido(0xFF336699));
+            g.render(img, Relleno.solido(0xFF336699));
             int cubiertos = 0;
             for (int px : datos(img)) if ((px >>> 24) != 0) cubiertos++;
             int caja = (int) (Math.min(300, b.getMaxX()) - Math.max(0, b.getMinX())) * (int) (Math.min(300, b.getMaxY()) - Math.max(0, b.getMinY()));
@@ -281,8 +281,8 @@ public class GotaElipses {
 
     static void uvYRender() {
         Gota[] gs = {
-            Gota.lineal(p(60, 150), 40, p(240, 150), 18, Gota.Perfil.central(1.2).aspecto(2, 0.6)),
-            Gota.curva(p(60, 240), 30, new Gota.Vec(0, -200), p(240, 240), 15, new Gota.Vec(0, -200), Gota.Perfil.recto().aspecto(0.5, 2.5)),
+            Gota.lineal(p(60, 150), 40, p(240, 150), 18, Perfil.central(1.2).aspecto(2, 0.6)),
+            Gota.curva(p(60, 240), 30, new Gota.Vec(0, -200), p(240, 240), 15, new Gota.Vec(0, -200), Perfil.recto().aspecto(0.5, 2.5)),
         };
         for (int gi = 0; gi < gs.length; gi++) {
             Gota g = gs[gi];
@@ -300,8 +300,8 @@ public class GotaElipses {
         }
 
         // aspecto 1 forzado: la uv coincide con la de círculos (salvo la regularización de 1e-5 rad)
-        Gota gc = Gota.lineal(p(60, 150), 50, p(240, 150), 20, Gota.Perfil.central(1.4));
-        Gota ge = Gota.lineal(p(60, 150), 50, p(240, 150), 20, Gota.Perfil.central(1.4).forzarElipses());
+        Gota gc = Gota.lineal(p(60, 150), 50, p(240, 150), 20, Perfil.central(1.4));
+        Gota ge = Gota.lineal(p(60, 150), 50, p(240, 150), 20, Perfil.central(1.4).forzarElipses());
         var b = gc.bounds();
         int n = 0, malos = 0;
         double peor = 0;
@@ -318,15 +318,15 @@ public class GotaElipses {
         exactitudUv();
 
         // aspecto, radio tangente y esElipse
-        Gota g = Gota.lineal(p(0, 0), 10, p(100, 0), 20, Gota.Perfil.central(1).aspecto(1, 3));
+        Gota g = Gota.lineal(p(0, 0), 10, p(100, 0), 20, Perfil.central(1).aspecto(1, 3));
         comprueba("radioTangente(t) = aspecto(t)·radio(t); extremos a = lambda·r", g.esElipse() && Math.abs(g.radioTangente(0) - 10) < 1e-12
                   && Math.abs(g.radioTangente(1) - 60) < 1e-12 && Math.abs(g.aspecto(0.5) - 2) < 1e-12, "");
-        Gota h = Gota.lineal(p(0, 0), 10, p(100, 0), 20, Gota.Perfil.central(1).radiosTangentes(25, 30));
+        Gota h = Gota.lineal(p(0, 0), 10, p(100, 0), 20, Perfil.central(1).radiosTangentes(25, 30));
         comprueba("radiosTangentes(a1, a2): aspecto = a / r en cada extremo", Math.abs(h.radioTangente(0) - 25) < 1e-9 && Math.abs(h.radioTangente(1) - 30) < 1e-9, "");
         boolean lanza = false;
-        try { Gota.lineal(p(0, 0), 10, p(100, 0), 20, Gota.Perfil.central(1).aspecto(Double.NaN, 1)); } catch (IllegalArgumentException e) { lanza = true; }
+        try { Gota.lineal(p(0, 0), 10, p(100, 0), 20, Perfil.central(1).aspecto(Double.NaN, 1)); } catch (IllegalArgumentException e) { lanza = true; }
         comprueba("aspecto no finito lanza IllegalArgumentException", lanza, "");
-        Gota cl = Gota.lineal(p(0, 0), 10, p(100, 0), 20, Gota.Perfil.central(1).aspecto(100, -3));
+        Gota cl = Gota.lineal(p(0, 0), 10, p(100, 0), 20, Perfil.central(1).aspecto(100, -3));
         comprueba("aspecto fuera de dominio se recorta a (0.05, 20)", Math.abs(cl.aspecto(0) - 20) < 1e-12 && Math.abs(cl.aspecto(1) - 0.05) < 1e-12, "");
     }
 
@@ -334,18 +334,19 @@ public class GotaElipses {
     // ---------- exactitud de la uv con aspecto distinto de 1 ----------
 
     static void exactitudUv() {
-        Gota.Perfil[] pf = {
-            Gota.Perfil.central(1.2).aspecto(2, 0.6), Gota.Perfil.recto().aspecto(0.5, 2.5), Gota.Perfil.central(0.8).aspecto(3, 3),
-            Gota.Perfil.radioMedio(14, 0.35, 0.3).aspecto(1.8, 0.7),
+        Perfil[] pf = {
+            Perfil.central(1.2).aspecto(2, 0.6), Perfil.recto().aspecto(0.5, 2.5), Perfil.central(0.8).aspecto(3, 3),
+            Perfil.radioMedio(14, 0.35, 0.3).aspecto(1.8, 0.7),
         };
         int tot = 0, malContorno = 0, saltos = 0, lineas = 0, malExterior = 0;
         double peorContorno = 0, peorSalto = 0, peorExt = 0;
-        for (Gota.Solape sol : Gota.Solape.values()) {
+        for (Solape sol : Solape.values()) {
+            Opciones op = Opciones.POR_DEFECTO.conSolape(sol);
             for (int gi = 0; gi < 8; gi++) {
-                Gota.Perfil p0 = pf[gi % 4];
-                if (gi >= 4 && gi % 4 == 2) p0 = Gota.Perfil.central(0.8).aspecto(1.6, 1.6);   // arcos: con a >> radio de curvatura el contorno lo dibujan las puntas
+                Perfil p0 = pf[gi % 4];
+                if (gi >= 4 && gi % 4 == 2) p0 = Perfil.central(0.8).aspecto(1.6, 1.6);   // arcos: con a >> radio de curvatura el contorno lo dibujan las puntas
                 Gota g = (gi < 4 ? Gota.lineal(p(60, 150), 40, p(240, 150), 18, p0)
-                                 : Gota.curva(p(60, 240), 30, new Gota.Vec(0, -200), p(240, 240), 15, new Gota.Vec(0, -200), p0)).conSolape(sol);
+                                 : Gota.curva(p(60, 240), 30, new Gota.Vec(0, -200), p(240, 240), 15, new Gota.Vec(0, -200), p0));
                 // contorno del cuerpo: desde puntos del camino hacia fuera, u debe valer 0 o 1
                 Random rnd = new Random(gi * 7 + 1);
                 for (int k = 0; k < 60; k++) {
@@ -360,9 +361,9 @@ public class GotaElipses {
                         if (g.contiene(ax + mid * dx, ay + mid * dy)) lo = mid; else hi = mid;
                     }
                     double qx = ax + (lo - 1e-6) * dx, qy = ay + (lo - 1e-6) * dy;
-                    Coordenadas.Muestra m = g.parametros(qx, qy);
+                    Coordenadas.Muestra m = g.parametros(qx, qy, op);
                     if (m.t() < 0.06 || m.t() > 0.94) continue;
-                    Coordenadas.Uv uv = g.uv(qx, qy);
+                    Coordenadas.Uv uv = g.uv(qx, qy, op);
                     double e = Math.min(Math.abs(uv.u()), Math.abs(uv.u() - 1));
                     tot++;
                     peorContorno = Math.max(peorContorno, e);
@@ -382,8 +383,8 @@ public class GotaElipses {
                             double A = fin == 0 ? -dep : dep;
                             double qx = c.getX() + A * tx + S * nx, qy = c.getY() + A * ty + S * ny;
                             if (!g.contiene(qx, qy)) { previo = Double.NaN; tPrev = Double.NaN; continue; }
-                            Coordenadas.Uv uv = g.uv(qx, qy);
-                            double tn = g.parametros(qx, qy).t();
+                            Coordenadas.Uv uv = g.uv(qx, qy, op);
+                            double tn = g.parametros(qx, qy, op).t();
                             if (!Double.isNaN(tPrev) && Math.abs(tn - tPrev) > 0.02) previo = Double.NaN;   // costura del propio reparto (t*) entre capas: la uv la sigue
                             tPrev = tn;
                             if (Double.isNaN(previo) && dep > depOut - 0.01) {
@@ -411,8 +412,8 @@ public class GotaElipses {
         double[][] ls = { { 1, 1 }, { 0.5, 0.5 }, { 2, 2 }, { 0.4, 2.5 }, { 1, 3 }, { 3, 0.6 } };
         for (int i = 0; i < 6; i++) {
             double ox = (i % 3) * 300, oy = (i / 3) * 300;
-            Gota g = i < 3 ? Gota.lineal(p(ox + 80, oy + 150), 30, p(ox + 220, oy + 150), 20, Gota.Perfil.recto().aspecto(ls[i][0], ls[i][1]))
-                           : Gota.curva(p(ox + 70, oy + 230), 22, new Gota.Vec(0, -170), p(ox + 230, oy + 230), 14, new Gota.Vec(0, -170), Gota.Perfil.recto().aspecto(ls[i][0], ls[i][1]));
+            Gota g = i < 3 ? Gota.lineal(p(ox + 80, oy + 150), 30, p(ox + 220, oy + 150), 20, Perfil.recto().aspecto(ls[i][0], ls[i][1]))
+                           : Gota.curva(p(ox + 70, oy + 230), 22, new Gota.Vec(0, -170), p(ox + 230, oy + 230), 14, new Gota.Vec(0, -170), Perfil.recto().aspecto(ls[i][0], ls[i][1]));
             g.render(img, Colores.cadena(0xFF1E1B4B, 0xFFFFE27A, 0xFF2563EB, 0xFF7C2D12));
         }
         ImageIO.write(img, "png", new File("gota_elipses.png"));

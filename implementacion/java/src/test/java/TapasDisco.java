@@ -31,7 +31,7 @@ public class TapasDisco {
     static final int EXT = 0xFF222222;
 
     static Gota recta(double cx, double cy, double r) {
-        return Gota.lineal(p(cx, cy), r, p(cx, cy + 2 * r), r, Gota.Perfil.recto());
+        return Gota.lineal(p(cx, cy), r, p(cx, cy + 2 * r), r, Perfil.recto());
     }
 
     // ---------- Textura ----------
@@ -77,7 +77,7 @@ public class TapasDisco {
     static void identidadColor() {
         double r = 40, cx = 100, cy = 100;
         Gota g = recta(cx, cy, r);
-        Gota.Relleno rel = Colores.cadenaLateral(N1, N2, Mezcla.RGB);
+        Relleno rel = Colores.cadenaLateral(N1, N2, Mezcla.RGB);
         BufferedImage im = new BufferedImage(220, 300, BufferedImage.TYPE_INT_ARGB);
         g.render(im, rel);
         int[] d = datos(im);
@@ -150,9 +150,10 @@ public class TapasDisco {
 
     static void costura() {
         Gota g = Gota.curva(p(60, 70), 24, new Gota.Vec(110, 0), p(230, 240), 58, new Gota.Vec(0, -120),
-                Gota.Perfil.recto().aspecto(1.6, 0.6));
-        Gota.Relleno rel0 = Colores.cadenaLateral(N1, N2, Mezcla.LCH).para(g);
-        double c1 = g.corte1(), c3 = g.corte3();
+                Perfil.recto().aspecto(1.6, 0.6));
+        Relleno rel0 = Colores.cadenaLateral(N1, N2, Mezcla.LCH).para(g);
+        Cortes cortes = Tira.POR_DEFECTO.cortes(g);
+        double c1 = cortes.c1(), c3 = cortes.c3();
         int maxA = 0, maxB = 0;
         Coordenadas.Muestra m0 = new Coordenadas.Muestra(0, 0.5, 0, 0);
         for (int i = 0; i <= 200; i++) {
@@ -164,27 +165,28 @@ public class TapasDisco {
         // la textura de referencia es discontinua en los cortes a propósito (cuatro fondos): se usa una continua
         Texturas.Textura tex = (u, v) -> 0xFF000000 | ((int) (255 * Math.min(1, Math.max(0, u))) << 16)
                 | ((int) (255 * Math.min(1, Math.max(0, v))) << 8) | (int) (255 * Math.min(1, Math.max(0, 0.5 * u + 0.5 * v)));
-        Gota.Relleno tr = Texturas.tira(tex).para(g);
+        Relleno tr = Texturas.tira(tex).para(g);
         int mt = 0;
         for (int i = 0; i <= 200; i++) {
             double u = i / 200.0;
-            mt = Math.max(mt, maxCanal(tr.argb(m0, new Coordenadas.Uv(u, g.corte1())), tr.argb(m0, new Coordenadas.Uv(u, g.corte1() - 1e-9))));
-            mt = Math.max(mt, maxCanal(tr.argb(m0, new Coordenadas.Uv(u, g.corte3())), tr.argb(m0, new Coordenadas.Uv(u, g.corte3() + 1e-9))));
+            mt = Math.max(mt, maxCanal(tr.argb(m0, new Coordenadas.Uv(u, c1)), tr.argb(m0, new Coordenadas.Uv(u, c1 - 1e-9))));
+            mt = Math.max(mt, maxCanal(tr.argb(m0, new Coordenadas.Uv(u, c3)), tr.argb(m0, new Coordenadas.Uv(u, c3 + 1e-9))));
         }
         comprueba("costura (textura): sin salto en v1 y v3", mt <= 2, "salto máx " + mt);
 
         // en la imagen real: saltos entre píxeles vecinos a ambos lados de la costura
         int W = 320, H = 320;
-        for (Gota gg : new Gota[] { g, Gota.curva(p(60, 70), 24, new Gota.Vec(110, 0), p(230, 240), 58, new Gota.Vec(0, -120), Gota.Perfil.recto()) }) {
+        for (Gota gg : new Gota[] { g, Gota.curva(p(60, 70), 24, new Gota.Vec(110, 0), p(230, 240), 58, new Gota.Vec(0, -120), Perfil.recto()) }) {
             BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
             gg.render(im, Colores.cadenaLateral(N1, N2, Mezcla.RGB));
             int[] d = datos(im);
             int mx = 0;
+            Cortes kk = Tira.POR_DEFECTO.cortes(gg);
             for (int j = 0; j < H; j++)
                 for (int i = 0; i + 1 < W; i++) {
                     if (gg.sdf(i + 0.5, j + 0.5) > -3 || gg.sdf(i + 1.5, j + 0.5) > -3) continue;
                     double va = gg.uv(i + 0.5, j + 0.5).v(), vb = gg.uv(i + 1.5, j + 0.5).v();
-                    boolean costura = (va < gg.corte1()) != (vb < gg.corte1()) || (va > gg.corte3()) != (vb > gg.corte3());
+                    boolean costura = (va < kk.c1()) != (vb < kk.c1()) || (va > kk.c3()) != (vb > kk.c3());
                     if (costura) mx = Math.max(mx, maxCanal(d[j * W + i], d[j * W + i + 1]));
                 }
             comprueba("imagen " + (gg.esElipse() ? "elíptica" : "circular") + " con pendiente de radio: salto en la costura <= 40",
@@ -196,9 +198,9 @@ public class TapasDisco {
 
     static void casoBasico() throws Exception {
         double E = 40, r1 = 3 * E, r2 = 2 * E, d = 7 * E, cx1 = 150, cy = 170;
-        Gota g = Gota.lineal(p(cx1, cy), r1, p(cx1 + d, cy), r2, Gota.Perfil.recto());
+        Gota g = Gota.lineal(p(cx1, cy), r1, p(cx1 + d, cy), r2, Perfil.recto());
         Mezcla M = Mezcla.RGB;
-        Gota.Relleno rel = Colores.cadenaLateral(N1, N2, M);
+        Relleno rel = Colores.cadenaLateral(N1, N2, M);
         BufferedImage im = new BufferedImage(560, 340, BufferedImage.TYPE_INT_ARGB);
         g.render(im, rel);
         int[] px = datos(im);
@@ -277,7 +279,7 @@ public class TapasDisco {
                     difAlfa == 0 && pintados > 1000, "píxeles " + pintados + ", alfa distinta " + difAlfa);
         }
         boolean lanza = false;
-        try { cs[0].render(new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB), null); } catch (NullPointerException e) { lanza = true; }
+        try { cs[0].render(new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB), (Texturas.Textura) null); } catch (NullPointerException e) { lanza = true; }
         comprueba("composición: render con textura null se rechaza", lanza, "");
         ImageIO.write(out, "png", new File("tapas_disco.png"));
         comprueba("composición: cadena y estrella se renderizan con tapas de semidisco (tapas_disco.png)", true, "");

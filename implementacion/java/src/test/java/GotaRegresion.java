@@ -28,6 +28,7 @@ public class GotaRegresion {
 
     public static void main(String[] args) throws Exception {
         noFinitas();
+        perfiles();
         subimagen();
         contorno();
         contornoCurvo();
@@ -38,10 +39,29 @@ public class GotaRegresion {
         if (fallos > 0) System.exit(1);
     }
 
+    // ---------- Perfil: resolución sobre los radios de los extremos ----------
+
+    static void perfiles() {
+        Perfil.Resuelto a = Perfil.recto().resuelve(50, 20);
+        comprueba("Perfil.recto: rm = (r1 + r2)/2, tm = 1/2, suavizado 1, círculos",
+                  a.rm() == 35 && a.tm() == 0.5 && a.suavizado() == 1 && a.lam1() == 1 && a.lam2() == 1 && !a.elipses(), a.toString());
+        Perfil.Resuelto b = Perfil.radioMedio(-5, 0.99, 3).resuelve(10, 10);
+        comprueba("Perfil: rm >= 0, tm a [0.05, 0.95] y suavizado a [0, 1]", b.rm() == 0 && b.tm() == 0.95 && b.suavizado() == 1, b.toString());
+        Perfil.Resuelto c = Perfil.recto().aspecto(100, 0.001).resuelve(10, 10);
+        comprueba("Perfil.aspecto: recortado a (0.05, 20) y activa las elipses", c.lam1() == 20 && c.lam2() == 0.05 && c.elipses(), c.toString());
+        Perfil.Resuelto d = Perfil.recto().radiosTangentes(30, 12).resuelve(10, 0);
+        comprueba("Perfil.radiosTangentes: aspecto = a / r, y 1 si el radio normal es 0", d.lam1() == 3 && d.lam2() == 1 && d.elipses(), d.toString());
+        comprueba("Perfil.forzarElipses con aspecto 1 usa el algoritmo de elipses", Perfil.recto().forzarElipses().resuelve(10, 10).elipses(), "");
+        boolean lanza = true;
+        for (Perfil pf : new Perfil[] { Perfil.radioMedio(Double.NaN), Perfil.recto().aspecto(Double.POSITIVE_INFINITY, 1), Perfil.radioMedio(5, Double.NaN, 1) })
+            try { pf.resuelve(10, 10); lanza = false; } catch (IllegalArgumentException e) { }
+        comprueba("Perfil.resuelve rechaza valores no finitos", lanza, "");
+    }
+
     // ---------- 1. Coordenadas y parámetros no finitos ----------
 
     static void noFinitas() {
-        Gota g = Gota.lineal(p(0, 0), 10, p(40, 0), 10, Gota.Perfil.central(1));
+        Gota g = Gota.lineal(p(0, 0), 10, p(40, 0), 10, Perfil.central(1));
         double[] malos = { Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY };
         boolean cont = true, sdf = true;
         StringBuilder det = new StringBuilder();
@@ -54,11 +74,11 @@ public class GotaRegresion {
         comprueba("sdf() devuelve +infinito con coordenadas no finitas", sdf, "");
 
         Runnable[] malas = {
-            () -> Gota.lineal(p(Double.NaN, 0), 10, p(40, 0), 10, Gota.Perfil.central(1)),
-            () -> Gota.lineal(p(0, 0), Double.NaN, p(40, 0), 10, Gota.Perfil.central(1)),
-            () -> Gota.lineal(p(0, 0), 10, p(Double.POSITIVE_INFINITY, 0), 10, Gota.Perfil.central(1)),
-            () -> Gota.lineal(p(0, 0), 10, p(40, 0), 10, Gota.Perfil.central(Double.NaN)),
-            () -> Gota.curva(p(0, 0), 10, new Gota.Vec(Double.NaN, 0), p(40, 0), 10, new Gota.Vec(0, 0), Gota.Perfil.central(1)),
+            () -> Gota.lineal(p(Double.NaN, 0), 10, p(40, 0), 10, Perfil.central(1)),
+            () -> Gota.lineal(p(0, 0), Double.NaN, p(40, 0), 10, Perfil.central(1)),
+            () -> Gota.lineal(p(0, 0), 10, p(Double.POSITIVE_INFINITY, 0), 10, Perfil.central(1)),
+            () -> Gota.lineal(p(0, 0), 10, p(40, 0), 10, Perfil.central(Double.NaN)),
+            () -> Gota.curva(p(0, 0), 10, new Gota.Vec(Double.NaN, 0), p(40, 0), 10, new Gota.Vec(0, 0), Perfil.central(1)),
         };
         int lanzan = 0;
         for (Runnable r : malas) {
@@ -81,12 +101,12 @@ public class GotaRegresion {
                 antes[y * W + x] = c;
             }
         }
-        Gota g = Gota.lineal(p(7, 10), 6, p(23, 10), 4, Gota.Perfil.central(1));
+        Gota g = Gota.lineal(p(7, 10), 6, p(23, 10), 4, Perfil.central(1));
         int rojo = 0xFFFF0000;
         BufferedImage ref = new BufferedImage(sw, sh, BufferedImage.TYPE_INT_ARGB);
-        g.render(ref, Gota.Relleno.solido(rojo));
+        g.render(ref, Relleno.solido(rojo));
         BufferedImage sub = base.getSubimage(sx, sy, sw, sh);
-        g.render(sub, Gota.Relleno.solido(rojo));
+        g.render(sub, Relleno.solido(rojo));
 
         int fuera = 0, mal = 0, cubiertos = 0;
         for (int y = 0; y < H; y++) {
@@ -110,7 +130,7 @@ public class GotaRegresion {
     // ---------- 3. Contorno: cápsula recta de radio constante, con SDF analítica ----------
 
     static void contorno() {
-        Gota g = Gota.lineal(p(0, 0), 10, p(40, 0), 10, Gota.Perfil.central(1));   // central = 1 y r1 = r2: radio constante
+        Gota g = Gota.lineal(p(0, 0), 10, p(40, 0), 10, Perfil.central(1));   // central = 1 y r1 = r2: radio constante
         List<double[]> normales = new ArrayList<>();           // {cx, cy, nx, ny}: centro y normal exterior
         for (double ang : new double[] { 15, 45, 75, 90 }) {
             double r = Math.toRadians(ang);
@@ -149,7 +169,7 @@ public class GotaRegresion {
         double tm = 0.02 + rnd.nextDouble() * 0.96, suav = rnd.nextInt(4) == 0 ? 1 : rnd.nextDouble();
         boolean rec = rnd.nextBoolean(), medio = rnd.nextBoolean();   // consumo fijo de rnd
         // la mitad de las gotas usa el perfil nuevo (rm absoluto, tm desplazado, suavizado < 1; rm puede quedar por debajo del recorte)
-        Gota.Perfil pf = medio ? Gota.Perfil.radioMedio(h * (r1 + r2) / 2 * (rnd.nextInt(6) == 0 ? 0.2 : 1), tm, suav) : Gota.Perfil.central(h);
+        Perfil pf = medio ? Perfil.radioMedio(h * (r1 + r2) / 2 * (rnd.nextInt(6) == 0 ? 0.2 : 1), tm, suav) : Perfil.central(h);
         return rec ? Gota.lineal(c1, r1, c2, r2, pf) : Gota.curva(c1, r1, v1, c2, r2, v2, pf);
     }
 
@@ -193,15 +213,15 @@ public class GotaRegresion {
 
     static void coberturaSoloEnBorde() {
         Gota[] gs = {
-            Gota.lineal(p(70, 70), 30, p(90, 70), 30, Gota.Perfil.central(1)),                                   // muy solapados
-            Gota.curva(p(40, 150), 12, new Gota.Vec(80, -100), p(150, 150), 9, new Gota.Vec(-80, -100), Gota.Perfil.central(1.0)),  // lazo
-            Gota.lineal(p(100, 100), 40, p(100, 100), 25, Gota.Perfil.central(1)),                               // concéntricos
+            Gota.lineal(p(70, 70), 30, p(90, 70), 30, Perfil.central(1)),                                   // muy solapados
+            Gota.curva(p(40, 150), 12, new Gota.Vec(80, -100), p(150, 150), 9, new Gota.Vec(-80, -100), Perfil.central(1.0)),  // lazo
+            Gota.lineal(p(100, 100), 40, p(100, 100), 25, Perfil.central(1)),                               // concéntricos
         };
         int mal = 0, parciales = 0;
         String primero = "";
         for (int gi = 0; gi < gs.length; gi++) {
             BufferedImage img = new BufferedImage(200, 200, BufferedImage.TYPE_INT_ARGB);
-            gs[gi].render(img, Gota.Relleno.solido(0xFFFFFFFF));
+            gs[gi].render(img, Relleno.solido(0xFFFFFFFF));
             for (int y = 0; y < 200; y++) {
                 for (int x = 0; x < 200; x++) {
                     int a = img.getRGB(x, y) >>> 24;
@@ -297,7 +317,7 @@ public class GotaRegresion {
     }
 
     static void alfaYParalelo() throws Exception {
-        Gota g = Gota.lineal(p(20, 20), 12, p(25, 20), 12, Gota.Perfil.central(1));
+        Gota g = Gota.lineal(p(20, 20), 12, p(25, 20), 12, Perfil.central(1));
         int[] fondos = { 0x00000000, 0x00FF00FF, 0x80336699, 0xFF336699, 0x40FFFFFF };
         int[] fuentes = { 0xFFFF8040, 0x80FF8040, 0x10204060 };
         int malos = 0;
@@ -306,7 +326,7 @@ public class GotaRegresion {
             for (int s : fuentes) {
                 BufferedImage img = new BufferedImage(50, 40, BufferedImage.TYPE_INT_ARGB);
                 Arrays.fill(datos(img), f);
-                g.render(img, Gota.Relleno.solido(s));
+                g.render(img, Relleno.solido(s));
                 int got = img.getRGB(20, 20), exp = refSrcOver(f, s);
                 if (!cercano(got, exp)) {
                     malos++;
@@ -316,14 +336,16 @@ public class GotaRegresion {
         }
         comprueba("composición alfa (src-over) contra la fórmula de referencia", malos == 0, malos + " casos de 15. " + primero);
 
-        Gota curva = Gota.curva(p(30, 150), 25, new Gota.Vec(0, -120), p(150, 150), 15, new Gota.Vec(0, -120), Gota.Perfil.central(1.3));
-        Gota.Relleno rel = Colores.conGamma(0xFFFFE27A, 0xFF2563EB, 0xFFC2410C, 0xFF1E1B4B, 2.0, 0.7);
+        Gota curva = Gota.curva(p(30, 150), 25, new Gota.Vec(0, -120), p(150, 150), 15, new Gota.Vec(0, -120), Perfil.central(1.3));
+        Relleno rel = Colores.conGamma(0xFFFFE27A, 0xFF2563EB, 0xFFC2410C, 0xFF1E1B4B, 2.0, 0.7);
         boolean iguales = true;
-        for (Gota gg : new Gota[] { curva, curva.conSolape(Gota.Solape.TRAZO) }) {
+        for (Solape sol : Solape.values()) {
+            Gota gg = curva;
+            Opciones op = Opciones.POR_DEFECTO.conSolape(sol);
             BufferedImage a1 = fondoRuido(200, 180, 7), a2 = fondoRuido(200, 180, 7);
-            gg.render(a1, rel);
+            gg.render(a1, rel, op);
             ForkJoinPool una = new ForkJoinPool(1);
-            try { una.submit(() -> gg.render(a2, rel)).get(); } finally { una.shutdown(); }
+            try { una.submit(() -> gg.render(a2, rel, op)).get(); } finally { una.shutdown(); }
             if (!Arrays.equals(datos(a1), datos(a2))) iguales = false;
         }
         comprueba("render paralelo == render con un solo hilo (PLANO y TRAZO, fondo con ruido)", iguales, "");

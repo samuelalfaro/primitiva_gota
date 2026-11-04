@@ -11,6 +11,8 @@ import javax.imageio.ImageIO;
  * Además comprueba que la máscara (el alfa) es la misma en los dos modos.
  */
 public class GotaSolape {
+    static final Opciones TRAZO = Opciones.POR_DEFECTO.conSolape(Solape.TRAZO);
+
 
     static Point2D.Double p(int col, int fila, double x, double y) {
         return new Point2D.Double(col * 300 + x, fila * 300 + y);
@@ -19,24 +21,24 @@ public class GotaSolape {
     static Gota crea(int caso, int col, int fila) {
         return switch (caso) {
             case 0 -> Gota.curva(p(col, fila, 80, 230), 40, new Gota.Vec(180, -230),
-                                 p(col, fila, 220, 230), 30, new Gota.Vec(-180, -230), Gota.Perfil.central(1.0));
+                                 p(col, fila, 220, 230), 30, new Gota.Vec(-180, -230), Perfil.central(1.0));
             case 1 -> Gota.curva(p(col, fila, 80, 230), 14, new Gota.Vec(180, -230),
-                                 p(col, fila, 220, 230), 10, new Gota.Vec(-180, -230), Gota.Perfil.central(1.0));
-            case 2 -> Gota.lineal(p(col, fila, 120, 150), 70, p(col, fila, 160, 150), 15, Gota.Perfil.central(1.0));
-            default -> Gota.lineal(p(col, fila, 60, 150), 50, p(col, fila, 240, 150), 20, Gota.Perfil.central(1.8));
+                                 p(col, fila, 220, 230), 10, new Gota.Vec(-180, -230), Perfil.central(1.0));
+            case 2 -> Gota.lineal(p(col, fila, 120, 150), 70, p(col, fila, 160, 150), 15, Perfil.central(1.0));
+            default -> Gota.lineal(p(col, fila, 60, 150), 50, p(col, fila, 240, 150), 20, Perfil.central(1.8));
         };
     }
 
     public static void main(String[] args) throws Exception {
         String[] nombres = { "lazo grueso", "lazo fino", "circulo contenido", "hinchada h=1.8" };
         // centros amarillo -> azul para distinguir el principio del camino del final
-        Gota.Relleno rel = Colores.cuatroColores(0xFFFFE27A, 0xFF2563EB, 0xFFC2410C, 0xFF1E1B4B);
+        Relleno rel = Colores.cuatroColores(0xFFFFE27A, 0xFF2563EB, 0xFFC2410C, 0xFF1E1B4B);
 
         BufferedImage img = new BufferedImage(1200, 600, BufferedImage.TYPE_INT_ARGB);
         Arrays.fill(((DataBufferInt) img.getRaster().getDataBuffer()).getData(), 0xFFFFFFFF);
         for (int c = 0; c < 4; c++) {
             crea(c, c, 0).render(img, rel);
-            crea(c, c, 1).conSolape(Gota.Solape.TRAZO).render(img, rel);
+            crea(c, c, 1).render(img, rel, TRAZO);
         }
         ImageIO.write(img, "png", new File("gota_solape.png"));
 
@@ -50,7 +52,7 @@ public class GotaSolape {
             g.render(a, rel);
             double msPlano = (System.nanoTime() - t0) / 1e6;
             t0 = System.nanoTime();
-            g.conSolape(Gota.Solape.TRAZO).render(b, rel);
+            g.render(b, rel, TRAZO);
             double msTrazo = (System.nanoTime() - t0) / 1e6;
             int[] da = ((DataBufferInt) a.getRaster().getDataBuffer()).getData();
             int[] db = ((DataBufferInt) b.getRaster().getDataBuffer()).getData();

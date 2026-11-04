@@ -8,9 +8,9 @@ import javax.imageio.ImageIO;
 public class LadosDemo {
     public static void main(String[] args) throws Exception {
         Texturas.Textura tex = Texturas.referenciaLados();
-        Gota basica = Gota.lineal(new Point2D.Double(130, 130), 90, new Point2D.Double(130 + 7 * 30, 130), 60, Gota.Perfil.recto());
+        Gota basica = Gota.lineal(new Point2D.Double(130, 130), 90, new Point2D.Double(130 + 7 * 30, 130), 60, Perfil.recto());
         Gota curva = Gota.curva(new Point2D.Double(70, 70), 30, new Gota.Vec(130, 0), new Point2D.Double(300, 250), 60,
-                new Gota.Vec(0, -130), Gota.Perfil.recto());
+                new Gota.Vec(0, -130), Perfil.recto());
         BufferedImage out = new BufferedImage(880, 330, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(((DataBufferInt) out.getRaster().getDataBuffer()).getData(), 0xFFF4F1EA);
         Gota[] gs = { basica, curva };

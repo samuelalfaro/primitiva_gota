@@ -17,13 +17,13 @@ public class GotaDemo {
         String[] nombres = { "lineal h=1", "hinchada h=1.8", "guitarra h=0.55",
                              "curva (arco)", "r2=0 (punta)", "circulo contenido" };
         Gota[] gotas = {
-            Gota.lineal(p(0, 0, 60, 150), 50, p(0, 0, 240, 150), 20, Gota.Perfil.central(1.0)),
-            Gota.lineal(p(1, 0, 60, 150), 50, p(1, 0, 240, 150), 20, Gota.Perfil.central(1.8)),
-            Gota.lineal(p(2, 0, 60, 150), 50, p(2, 0, 240, 150), 20, Gota.Perfil.central(0.55)),
+            Gota.lineal(p(0, 0, 60, 150), 50, p(0, 0, 240, 150), 20, Perfil.central(1.0)),
+            Gota.lineal(p(1, 0, 60, 150), 50, p(1, 0, 240, 150), 20, Perfil.central(1.8)),
+            Gota.lineal(p(2, 0, 60, 150), 50, p(2, 0, 240, 150), 20, Perfil.central(0.55)),
             Gota.curva(p(0, 1, 60, 240), 35, new Gota.Vec(0, -200),
-                       p(0, 1, 240, 240), 15, new Gota.Vec(0, -200), Gota.Perfil.central(1.0)),
-            Gota.lineal(p(1, 1, 90, 150), 60, p(1, 1, 250, 150), 0, Gota.Perfil.central(1.0)),
-            Gota.lineal(p(2, 1, 120, 150), 70, p(2, 1, 160, 150), 15, Gota.Perfil.central(1.0)),
+                       p(0, 1, 240, 240), 15, new Gota.Vec(0, -200), Perfil.central(1.0)),
+            Gota.lineal(p(1, 1, 90, 150), 60, p(1, 1, 250, 150), 0, Perfil.central(1.0)),
+            Gota.lineal(p(2, 1, 120, 150), 70, p(2, 1, 160, 150), 15, Perfil.central(1.0)),
         };
         int[] colores = { 0xFF534AB7, 0xFF0F6E56, 0xFF993C1D, 0xFF185FA5, 0xFF993556, 0xFF854F0B };
 
@@ -33,7 +33,7 @@ public class GotaDemo {
         boolean ok = true;
         for (int i = 0; i < gotas.length; i++) {
             long t0 = System.nanoTime();
-            gotas[i].render(img, Gota.Relleno.solido(colores[i]));
+            gotas[i].render(img, Relleno.solido(colores[i]));
             double ms = (System.nanoTime() - t0) / 1e6;
             int[] r = comparar(gotas[i]);
             System.out.printf("%-20s render %6.1f ms | dentro=%6d  difs vs fuerza bruta=%d  difs signo sdf=%d%n",

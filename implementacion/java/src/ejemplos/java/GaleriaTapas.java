@@ -12,24 +12,24 @@ public class GaleriaTapas {
     public static void main(String[] args) throws Exception {
         Texturas.Textura tex = Texturas.referencia();
         int W = 440, H = 400, FONDO = 0xFFF4F1EA;
-        Gota gruesa = Gota.curva(p(80, 90), 34, new Gota.Vec(130, 0), p(300, 290), 62, new Gota.Vec(0, -130), Gota.Perfil.recto());
+        Gota gruesa = Gota.curva(p(80, 90), 34, new Gota.Vec(130, 0), p(300, 290), 62, new Gota.Vec(0, -130), Perfil.recto());
         Colores.Lateral a = new Colores.Lateral(0xFFD7263D, 0xFFFFE9A8, 0xFF2D6CDF);
         Colores.Lateral b = new Colores.Lateral(0xFF1FA39A, 0xFFE8F5D0, 0xFFF28E2B);
         Composicion estT = ComposicionPruebas.estrella(0);
 
         Object[][] filas = {
-                { "gruesa-textura", new Gota.Relleno[] { Texturas.tira(tex), Texturas.discoCapsula(tex), null } },
-                { "gruesa-color", new Gota.Relleno[] {
+                { "gruesa-textura", new Relleno[] { Texturas.tira(tex), Texturas.discoCapsula(tex), null } },
+                { "gruesa-color", new Relleno[] {
                         Colores.cadenaLateral(a, b, Mezcla.RGB),
                         Colores.cadenaLateral(a, b, Mezcla.RGB_LINEAL),
                         Colores.cadenaLateral(a, b, Mezcla.LCH) } },
-                { "estrella-textura", new Gota.Relleno[] { Texturas.tira(tex), null, null } },
+                { "estrella-textura", new Relleno[] { Texturas.tira(tex), null, null } },
         };
         BufferedImage out = new BufferedImage(W * 3, H * 3, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(((DataBufferInt) out.getRaster().getDataBuffer()).getData(), FONDO);
         Graphics2D g2 = out.createGraphics();
         for (int f = 0; f < 3; f++) {
-            Gota.Relleno[] rs = (Gota.Relleno[]) filas[f][1];
+            Relleno[] rs = (Relleno[]) filas[f][1];
             for (int c = 0; c < 3; c++) {
                 if (rs[c] == null) continue;
                 BufferedImage panel = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);

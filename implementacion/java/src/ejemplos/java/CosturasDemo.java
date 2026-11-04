@@ -5,7 +5,7 @@ import java.io.File;
 import javax.imageio.ImageIO;
 
 /**
- * Los tres modos de costura de la gota ({@link Gota.Costura}) sobre cuatro gotas de círculos y cuatro de elipses, con una
+ * Los tres modos de costura de la gota ({@link Costura}) sobre cuatro gotas de círculos y cuatro de elipses, con una
  * textura de referencia (líneas transversales en el cuerpo y radios en las tapas) y con un degradado.
  * Genera cuatro imágenes: costuras_circulos_texturas, costuras_circulos_degradados, costuras_elipses_texturas y
  * costuras_elipses_degradados. Cada una tiene un modo por columna (ORTOGONAL, ESPIGA, SUAVIZADO) y una gota por fila.
@@ -48,7 +48,7 @@ public class CosturasDemo {
 
     /** Círculos, a 40 px por unidad: r = 2 y d = 5 con radios iguales, y r1 = 1, r2 = 3 con d = 5. Rectas y con la Bézier deformada. */
     static Caso[] circulos() {
-        Gota.Perfil recto = Gota.Perfil.recto();
+        Perfil recto = Perfil.recto();
         double u = 40, r = 2 * u, d = 5 * u;
         return new Caso[] {
             new Caso("Radios iguales", "r = 2, d = 5. Las costillas son perpendiculares\ny los tres modos coinciden.",
@@ -66,26 +66,26 @@ public class CosturasDemo {
     static Caso[] elipses() {
         return new Caso[] {
             new Caso("Aspecto 2 a 0,6", "Radios 40 a 20. Pasa de elipse alargada\na elipse achatada.",
-                     Gota.lineal(p(70, 110), 40, p(300, 110), 20, Gota.Perfil.central(1.2).aspecto(2, 0.6))),
+                     Gota.lineal(p(70, 110), 40, p(300, 110), 20, Perfil.central(1.2).aspecto(2, 0.6))),
             new Caso("Aspecto constante 1,8", "Radios iguales. La tapa es media elipse:\nlas texturas se estiran con ella.",
-                     Gota.lineal(p(70, 110), 30, p(300, 110), 30, Gota.Perfil.recto().aspecto(1.8, 1.8))),
+                     Gota.lineal(p(70, 110), 30, p(300, 110), 30, Perfil.recto().aspecto(1.8, 1.8))),
             new Caso("Arco, aspecto 1,6 a 0,8", "Bézier curvada con las costillas\nal punto de contacto de cada elipse.",
-                     Gota.curva(p(60, 250), 30, new Gota.Vec(0, -200), p(300, 250), 20, new Gota.Vec(0, -200), Gota.Perfil.central(0.8).aspecto(1.6, 0.8))),
+                     Gota.curva(p(60, 250), 30, new Gota.Vec(0, -200), p(300, 250), 20, new Gota.Vec(0, -200), Perfil.central(0.8).aspecto(1.6, 0.8))),
             new Caso("Aspecto 0,6 a 1,6", "Radios 36 a 18. Pasa de achatada\na alargada.",
-                     Gota.lineal(p(70, 110), 36, p(300, 110), 18, Gota.Perfil.central(1).aspecto(0.6, 1.6))),
+                     Gota.lineal(p(70, 110), 36, p(300, 110), 18, Perfil.central(1).aspecto(0.6, 1.6))),
         };
     }
 
     // ---------- Las hojas ----------
 
-    static final Gota.Costura[] MODOS = Gota.Costura.values();
+    static final Costura[] MODOS = Costura.values();
     static final String[] DESC_MODO = {
         "Líneas de t constante perpendiculares al camino.\nTapas: semidiscos.",
         "Líneas contorno - eje - contorno en recta (espiga):\nla costilla es el radio al punto de tangencia.\nTapas: sectores polares. Es el modo por defecto.",
         "Como la espiga, pero cada mitad es un Hermite\n(normal en el eje, costilla en el contorno):\nsin picos en el eje."
     };
 
-    static void hoja(String archivo, String titulo, Caso[] casos, int w, int h, Gota.Relleno relleno) throws Exception {
+    static void hoja(String archivo, String titulo, Caso[] casos, int w, int h, Relleno relleno) throws Exception {
         int ml = 310, mt = 135;
         BufferedImage hoja = new BufferedImage(ml + 3 * w, mt + casos.length * h, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = hoja.createGraphics();
@@ -105,7 +105,7 @@ public class CosturasDemo {
                 BufferedImage celda = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
                 Graphics2D gc = celda.createGraphics();
                 gc.setColor(new Color(FONDO)); gc.fillRect(0, 0, w, h); gc.dispose();
-                casos[f].gota().conCostura(MODOS[c]).render(celda, relleno);
+                casos[f].gota().render(celda, relleno, Opciones.POR_DEFECTO.conCostura(MODOS[c]));
                 g.drawImage(celda, ml + c * w, mt + f * h, null);
             }
         }
@@ -120,8 +120,8 @@ public class CosturasDemo {
     }
 
     public static void main(String[] args) throws Exception {
-        Gota.Relleno texturas = Texturas.tira(new Guia());
-        Gota.Relleno degradado = Colores.cadenaLateral(
+        Relleno texturas = Texturas.tira(new Guia());
+        Relleno degradado = Colores.cadenaLateral(
                 new Colores.Lateral(0xFFD7263D, 0xFFFFE9A8, 0xFF2D6CDF),     // contra, centro y normal del primer círculo
                 new Colores.Lateral(0xFF1FA39A, 0xFFE8F5D0, 0xFFF28E2B),     // y del segundo
                 Mezcla.RGB);

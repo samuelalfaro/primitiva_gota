@@ -331,6 +331,36 @@ public class ComposicionPruebas {
         ImageIO.write(img, "png", new File("composicion_ocho.png"));
     }
 
+    // ---------- opciones de pintado ----------
+
+    static BufferedImage lienzo() {
+        BufferedImage img = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
+        java.util.Arrays.fill(datos(img), FONDO);
+        return img;
+    }
+
+    static void opciones() {
+        Composicion c = cadena();
+        BufferedImage a = lienzo(), b = lienzo();
+        c.render(a);
+        c.render(b, Opciones.POR_DEFECTO);
+        comprueba("render(dst) == render(dst, Opciones.POR_DEFECTO)", java.util.Arrays.equals(datos(a), datos(b)), "");
+
+        Texturas.Textura tex = Texturas.referenciaLados();
+        BufferedImage e = lienzo(), o = lienzo();
+        c.render(e, tex, Opciones.POR_DEFECTO);
+        c.render(o, tex, Opciones.POR_DEFECTO.conCostura(Costura.ORTOGONAL));
+        int[] de = datos(e), dor = datos(o);
+        int difs = 0;
+        for (int i = 0; i < de.length; i++) if (de[i] != dor[i]) difs++;
+        comprueba("la costura de las opciones llega a la composición con textura (ESPIGA != ORTOGONAL)", difs > 100, difs + " píxeles distintos");
+
+        BufferedImage t = lienzo();
+        c.render(t, tex, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
+        comprueba("la composición se renderiza con solape TRAZO", datos(t) != null && !java.util.Arrays.equals(datos(t), datos(lienzo())), "");
+        comprueba("opciones nulas: NullPointerException", lanza(NullPointerException.class, () -> c.render(lienzo(), (Opciones) null)), "");
+    }
+
     public static void main(String[] args) throws Exception {
         reglas();
         anillo();
@@ -344,6 +374,7 @@ public class ComposicionPruebas {
         invalidacion();
         tiradoresExplicitos();
         pruebaOcho();
+        opciones();
         galeria();
         System.out.printf("%d pruebas, %d fallos%n", pruebas, fallos);
         if (fallos > 0) System.exit(1);

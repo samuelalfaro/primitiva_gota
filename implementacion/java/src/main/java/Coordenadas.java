@@ -25,29 +25,65 @@ public final class Coordenadas {
     /** Posición t sobre el camino y coordenadas de la tira de un píxel, según el modo de costura de la gota. */
     record Costurado(double t, Uv uv) {}
 
-    private final Gota g;
-    private volatile Costurador costurador;
+    private final Geometria g;
+    private final Costura modo;
+    private final Cortes cortes;
+    private volatile Zonas zonas;
 
-    Coordenadas(Gota g) { this.g = g; }
+    Coordenadas(Geometria g, Costura modo, Cortes cortes) { this.g = g; this.modo = modo; this.cortes = cortes; }
 
-    private Costurador costurador() {
-        Costurador c = costurador;
-        if (c == null) synchronized (this) { if ((c = costurador) == null) costurador = c = new Costurador(g, g.costura); }
+    /** Cortes del eje v de la tira con los que se calculan estas coordenadas. */
+    Cortes cortes() { return cortes; }
+
+    private Zonas zonas() {
+        Zonas c = zonas;
+        if (c == null) synchronized (this) { if ((c = zonas) == null) zonas = c = new Zonas(g, modo, cortes); }
         return c;
     }
 
     /** Solución única del píxel (solape PLANO). */
-    Costurado costurado(double x, double y) { return costurador().calcula(x, y); }
+    Costurado costurado(double x, double y) { return zonas().calcula(x, y); }
 
     /** Todas las soluciones del píxel, con su clave de orden (solape TRAZO). */
-    java.util.List<Costurador.Candidato> candidatos(double x, double y) { return costurador().candidatos(x, y); }
+    java.util.List<Zonas.Candidato> candidatos(double x, double y) { return zonas().candidatos(x, y); }
 
-    Muestra muestra(double x, double y, double t) {
+    /** El punto (x, y) con las coordenadas que elija la fuente; muestra y uv se calculan al pedirlas, una sola vez. */
+    Punto punto(double x, double y, java.util.function.Supplier<Costurado> fuente) {
+        return new PuntoPerezoso(x, y, fuente);
+    }
+
+    private final class PuntoPerezoso implements Punto {
+        private final double x, y;
+        private java.util.function.Supplier<Costurado> fuente;
+        private Costurado costurado;
+        private Muestra muestra;
+
+        PuntoPerezoso(double x, double y, java.util.function.Supplier<Costurado> fuente) {
+            this.x = x; this.y = y; this.fuente = fuente;
+        }
+
+        private Costurado costurado() {
+            if (costurado == null) { costurado = fuente.get(); fuente = null; }
+            return costurado;
+        }
+
+        @Override public Muestra muestra() {
+            if (muestra == null) muestra = Coordenadas.this.muestra(x, y, costurado().t());
+            return muestra;
+        }
+
+        @Override public Uv uv() { return costurado().uv(); }
+    }
+
+    Muestra muestra(double x, double y, double t) { return muestra(g, x, y, t); }
+
+    /** La muestra solo depende de la geometría, no de la costura. */
+    static Muestra muestra(Geometria g, double x, double y, double t) {
         double r = Math.max(g.rad(t), 1e-9);
         double dx = x - g.cx(t), dy = y - g.cy(t);
         double[] tg = g.tangente(t);
-        if (g.elipses) {
-            double ax = (dx * tg[0] + dy * tg[1]) / (r * g.lam(t)), la = (dx * tg[1] - dy * tg[0]) / r;
+        if (g.esElipse()) {
+            double ax = (dx * tg[0] + dy * tg[1]) / (r * g.aspecto(t)), la = (dx * tg[1] - dy * tg[0]) / r;
             return new Muestra(t, Math.hypot(ax, la), ax, la);
         }
         return new Muestra(t, Math.hypot(dx, dy) / r,
