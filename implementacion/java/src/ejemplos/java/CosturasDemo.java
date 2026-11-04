@@ -5,7 +5,7 @@ import java.io.File;
 import javax.imageio.ImageIO;
 
 /**
- * Los tres modos de costura de la gota ({@link Gota.Costura}) sobre cuatro gotas de círculos y cuatro de elipses, con una
+ * Los tres modos de costura de la gota ({@link Costura}) sobre cuatro gotas de círculos y cuatro de elipses, con una
  * textura de referencia (líneas transversales en el cuerpo y radios en las tapas) y con un degradado.
  * Genera cuatro imágenes: costuras_circulos_texturas, costuras_circulos_degradados, costuras_elipses_texturas y
  * costuras_elipses_degradados. Cada una tiene un modo por columna (ORTOGONAL, ESPIGA, SUAVIZADO) y una gota por fila.
@@ -78,7 +78,7 @@ public class CosturasDemo {
 
     // ---------- Las hojas ----------
 
-    static final Gota.Costura[] MODOS = Gota.Costura.values();
+    static final Costura[] MODOS = Costura.values();
     static final String[] DESC_MODO = {
         "Líneas de t constante perpendiculares al camino.\nTapas: semidiscos.",
         "Líneas contorno - eje - contorno en recta (espiga):\nla costilla es el radio al punto de tangencia.\nTapas: sectores polares. Es el modo por defecto.",

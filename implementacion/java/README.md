@@ -10,7 +10,10 @@ src/main/java      la biblioteca
   Gota.java              la primitiva: círculos/elipses a lo largo de una Bézier cúbica; geometría, SDF y raster
   Relleno.java           interfaz de un relleno: de la muestra de un píxel a un color ARGB (las fábricas están en Colores y Texturas)
   Coordenadas.java       coordenadas intrínsecas de un píxel de la gota (Muestra, Uv, semidisco de las tapas)
-  Costurador.java        modos de costura de la tira (Gota.Costura: ORTOGONAL, ESPIGA por defecto, SUAVIZADO)
+  Costura.java           modos de costura de la tira: ORTOGONAL, ESPIGA (por defecto) y SUAVIZADO
+  Zonas.java             reparto de la tira en banda y tapas según la costura (lo usa Coordenadas; solo conoce Geometria)
+  Geometria.java         consulta de solo lectura de la geometría de una gota (la implementa Gota)
+  Utils.java             funciones numéricas auxiliares
   Colores.java           colores sobre las coordenadas (cadena axial, color lateral, tapas de semidisco)
   Texturas.java          texturas: imagen, textura de referencia 1 x 2 y mapeos (tira, disco) sobre las coordenadas
   Mezcla.java            interpolación entre dos colores (RGB, RGB lineal, HSL, Oklch)
@@ -35,10 +38,13 @@ classpath, copiar `src/test/resources` a este segundo, y lanzar `Todas <classpat
 ## Dependencias entre clases
 
 ```
-Gota ──genera──> Coordenadas ──> Colores   ──┐
-                      └───────> Texturas ────┼─> Relleno ──> color ARGB
-                                  Mezcla <───┘  (Colores y Texturas interpolan con Mezcla)
+Gota ──implementa──> Geometria <──lee── Coordenadas ──usa──> Zonas ──lee──> Geometria
+ │                                         │ (Costura elige el modo de Zonas)
+ └─ render/uv/parametros ──> Coordenadas ──> Colores   ──┐
+                                  └───────> Texturas ────┼─> Relleno ──> color ARGB
+                                              Mezcla <───┘  (Colores y Texturas interpolan con Mezcla)
 ComposicionColor combina dos rellenos cualquiera; Composicion une gotas y las pinta con esos rellenos.
+Coordenadas y Zonas solo conocen la interfaz Geometria, no la clase Gota.
 ```
 
 ## Modelo de color y textura en la tira
@@ -49,7 +55,7 @@ semidisco. Ver `Coordenadas.discoTapa` y `Colores.Lateral`.
 
 ## Modos de costura
 
-`Gota.Costura` decide cómo se reparte la tira entre cuerpo y tapas, igual para colores y texturas
+`Costura` decide cómo se reparte la tira entre cuerpo y tapas, igual para colores y texturas
 (`gota.conCostura(...)`; por defecto ESPIGA): ORTOGONAL (líneas de t constante normales al camino, tapas semidiscos),
 ESPIGA (cada mitad es el radio al punto de tangencia, tapas polares) y SUAVIZADO (como ESPIGA, con Hermites C1 en el eje).
 Valen para círculos y elipses, con solape PLANO y TRAZO (con elipses, las costillas van a los puntos de contacto con el contorno y las tapas se muestrean con la norma elíptica). En TRAZO el píxel puede tener varias soluciones (el camino pasa varias veces por él) y manda la de mayor clave: t en la banda, y las tapas como si prolongaran el trazo (la inicial, más cerca del centro es posterior; la final, más lejos del centro es posterior).

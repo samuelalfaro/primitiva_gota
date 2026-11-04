@@ -25,29 +25,30 @@ public final class Coordenadas {
     /** Posición t sobre el camino y coordenadas de la tira de un píxel, según el modo de costura de la gota. */
     record Costurado(double t, Uv uv) {}
 
-    private final Gota g;
-    private volatile Costurador costurador;
+    private final Geometria g;
+    private final Costura modo;
+    private volatile Zonas zonas;
 
-    Coordenadas(Gota g) { this.g = g; }
+    Coordenadas(Geometria g, Costura modo) { this.g = g; this.modo = modo; }
 
-    private Costurador costurador() {
-        Costurador c = costurador;
-        if (c == null) synchronized (this) { if ((c = costurador) == null) costurador = c = new Costurador(g, g.costura); }
+    private Zonas zonas() {
+        Zonas c = zonas;
+        if (c == null) synchronized (this) { if ((c = zonas) == null) zonas = c = new Zonas(g, modo); }
         return c;
     }
 
     /** Solución única del píxel (solape PLANO). */
-    Costurado costurado(double x, double y) { return costurador().calcula(x, y); }
+    Costurado costurado(double x, double y) { return zonas().calcula(x, y); }
 
     /** Todas las soluciones del píxel, con su clave de orden (solape TRAZO). */
-    java.util.List<Costurador.Candidato> candidatos(double x, double y) { return costurador().candidatos(x, y); }
+    java.util.List<Zonas.Candidato> candidatos(double x, double y) { return zonas().candidatos(x, y); }
 
     Muestra muestra(double x, double y, double t) {
         double r = Math.max(g.rad(t), 1e-9);
         double dx = x - g.cx(t), dy = y - g.cy(t);
         double[] tg = g.tangente(t);
-        if (g.elipses) {
-            double ax = (dx * tg[0] + dy * tg[1]) / (r * g.lam(t)), la = (dx * tg[1] - dy * tg[0]) / r;
+        if (g.esElipse()) {
+            double ax = (dx * tg[0] + dy * tg[1]) / (r * g.aspecto(t)), la = (dx * tg[1] - dy * tg[0]) / r;
             return new Muestra(t, Math.hypot(ax, la), ax, la);
         }
         return new Muestra(t, Math.hypot(dx, dy) / r,

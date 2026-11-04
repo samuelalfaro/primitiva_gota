@@ -14,24 +14,10 @@ import java.util.stream.IntStream;
  * Un punto p pertenece a la gota si existe t con |p - c(t)|^2 - r(t)^2 <= 0.
  * Ese polinomio (grado 6) se evalúa en base de Bernstein: sin contornos ni tangentes explícitas.
  */
-public final class Gota {
+public final class Gota implements Geometria {
 
     /** Vector relativo (tirador respecto a su centro). */
     public record Vec(double x, double y) {}
-
-    /**
-     * Dónde caen las costuras entre las zonas de la tira (cuerpo y tapas), común a colores y texturas: cómo se reparte
-     * el interior en líneas de t constante, que van del contorno al eje y al otro contorno.
-     * Solo para gotas de círculos con solape PLANO; con elipses o TRAZO se mantiene el cálculo anterior.
-     */
-    public enum Costura {
-        /** Las líneas de t constante son normales al camino; las tapas son semidiscos. */
-        ORTOGONAL,
-        /** Por defecto. Cada mitad de la línea es el radio al punto de tangencia (recta, en espiga); tapas polares. */
-        ESPIGA,
-        /** Como ESPIGA pero cada mitad es un Hermite (normal en el eje, radio en el contorno): sin picos en el eje. */
-        SUAVIZADO
-    }
 
     /** Cómo se resuelve el color donde el camino se cruza consigo mismo o los círculos se solapan. */
     public enum Solape {
@@ -232,12 +218,12 @@ public final class Gota {
         double rmIn = perfil.relativo ? perfil.valor * (this.r1 + this.r2) / 2 : perfil.valor;
         if (!Double.isFinite(rmIn)) throw new IllegalArgumentException("parámetros no finitos");
         this.rm = Math.max(0, rmIn);
-        this.tm = acota(perfil.tm, 0.05, 0.95);
-        this.suav = acota(perfil.suavizado, 0, 1);
+        this.tm = Utils.acota(perfil.tm, 0.05, 0.95);
+        this.suav = Utils.acota(perfil.suavizado, 0, 1);
         double l1 = perfil.usaTang ? (this.r1 > 0 ? perfil.tang1 / this.r1 : 1) : perfil.lam1;
         double l2 = perfil.usaTang ? (this.r2 > 0 ? perfil.tang2 / this.r2 : 1) : perfil.lam2;
-        this.lam1 = acota(l1, ASPECTO_MIN, ASPECTO_MAX);
-        this.lam2 = acota(l2, ASPECTO_MIN, ASPECTO_MAX);
+        this.lam1 = Utils.acota(l1, ASPECTO_MIN, ASPECTO_MAX);
+        this.lam2 = Utils.acota(l2, ASPECTO_MIN, ASPECTO_MAX);
         this.elipses = perfil.forzar || lam1 != 1 || lam2 != 1;
 
         px = new double[] { c1.getX(), c1.getX() + v1.x(), c2.getX() + v2.x(), c2.getX() };
@@ -330,7 +316,7 @@ public final class Gota {
         muestras = (int) Math.max(32, Math.min(512, largo / 2 + 16));
         solape = Solape.PLANO;
         costura = Costura.ESPIGA;
-        coord = new Coordenadas(this);
+        coord = new Coordenadas(this, costura);
         // v lineal en t a lo largo del cuerpo: el corte central cae donde t = tm (con tm = 1/2, v2 = 1/2)
         this.v1 = 0.25; this.v3 = 0.75; this.v2 = 0.25 + 0.5 * tm;
     }
@@ -346,7 +332,7 @@ public final class Gota {
         solape = java.util.Objects.requireNonNull(s, "solape");
         costura = java.util.Objects.requireNonNull(c, "costura");
         this.v1 = v1; this.v2 = v2; this.v3 = v3;
-        coord = new Coordenadas(this);
+        coord = new Coordenadas(this, costura);
     }
 
     /** Copia de esta gota con otro modo de solape (la geometría es idéntica). */
@@ -393,25 +379,27 @@ public final class Gota {
     public double rm() { return rm; }
 
     /** Posición efectiva de rm sobre el camino (tras recortar a [0.05, 0.95]); es también el corte central de la tira. */
-    public double tm() { return tm; }
+    @Override public double tm() { return tm; }
 
     /** Suavizado efectivo del perfil, en [0, 1]. */
     public double suavizado() { return suav; }
 
     /** Corte de la tira entre la tapa trasera y el cuerpo: v en el centro del primer círculo. */
-    public double corte1() { return v1; }
+    @Override public double corte1() { return v1; }
 
     /** Corte central de la tira: v en t = tm (siempre sigue a tm). */
-    public double corte2() { return v2; }
+    @Override public double corte2() { return v2; }
 
     /** Corte de la tira entre el cuerpo y la tapa delantera: v en el centro del segundo círculo. */
-    public double corte3() { return v3; }
+    @Override public double corte3() { return v3; }
 
     /** true si la gota usa elipses (algún aspecto distinto de 1); con false son círculos. */
-    public boolean esElipse() { return elipses; }
+    @Override public boolean esElipse() { return elipses; }
 
     /** Aspecto a/b en t (1 en las gotas de círculos). */
-    public double aspecto(double t) { return elipses ? lam(t) : 1; }
+    @Override public double aspecto(double t) { return elipses ? lam(t) : 1; }
+
+    @Override public double dAspecto(double t) { return elipses ? lam2 - lam1 : 0; }
 
     /** Radio tangente al camino en t: aspecto(t) · radio(t). */
     public double radioTangente(double t) { return aspecto(t) * radio(t); }
@@ -421,7 +409,7 @@ public final class Gota {
     public double radio(double t) { return rad(t); }
 
     /** Pertenencia exacta (a precisión de punto flotante). */
-    public boolean contiene(double x, double y) { return dentro(x, y, CERO); }
+    @Override public boolean contiene(double x, double y) { return dentro(x, y, CERO); }
 
     /**
      * Distancia con signo. Exacta fuera de la gota. Dentro es la profundidad respecto al
@@ -457,8 +445,8 @@ public final class Gota {
     /** Coordenadas del píxel: la única solución en PLANO; en TRAZO la de mayor clave (la más tardía del trazo). */
     private Coordenadas.Costurado ganador(double x, double y) {
         if (solape == Solape.TRAZO) {
-            Costurador.Candidato mejor = null;
-            for (Costurador.Candidato c : coord.candidatos(x, y)) if (mejor == null || c.clave() > mejor.clave()) mejor = c;
+            Zonas.Candidato mejor = null;
+            for (Zonas.Candidato c : coord.candidatos(x, y)) if (mejor == null || c.clave() > mejor.clave()) mejor = c;
             if (mejor != null) return mejor.c();
         }
         return coord.costurado(x, y);
@@ -648,7 +636,7 @@ public final class Gota {
     }
 
     private int pintaTrazo(int dst, double x, double y, Relleno relleno, boolean usa, boolean usaUv) {
-        java.util.List<Costurador.Candidato> cs = null;
+        java.util.List<Zonas.Candidato> cs = null;
         java.util.List<double[]> capas = hebras(x, y, BANDA);
         for (int h = 0; h < capas.size(); h++) {         // t creciente: la posterior tapa a la anterior
             double[] hb = capas.get(h);
@@ -664,7 +652,7 @@ public final class Gota {
                 double limite = h == capas.size() - 1 ? Double.POSITIVE_INFINITY : 0.5 * (hb[0] + capas.get(h + 1)[0]);
                 double kb = Double.NEGATIVE_INFINITY, kmin = Double.POSITIVE_INFINITY;
                 Coordenadas.Costurado best = null, primero = null;
-                for (Costurador.Candidato c : cs) {
+                for (Zonas.Candidato c : cs) {
                     if (c.clave() <= limite && c.clave() > kb) { best = c.c(); kb = c.clave(); }
                     if (c.clave() < kmin) { primero = c.c(); kmin = c.clave(); }
                 }
@@ -686,9 +674,17 @@ public final class Gota {
     double ddy(double t) { double u = 1 - t; return u * u * dyq[0] + 2 * u * t * dyq[1] + t * t * dyq[2]; }
 
     /** Eje tangente unitario de la elipse en t (la dirección regularizada del camino). */
-    double[] dirD(double t) {
+    @Override public double[] dirD(double t) {
         double x = ddx(t), y = ddy(t), n = Math.hypot(x, y);
         return n > 0 ? new double[] { x / n, y / n } : new double[] { 1, 0 };
+    }
+
+    /** Velocidad angular del eje D respecto a t: (D x D') / |D|^2. */
+    @Override public double giroD(double t) {
+        double dx = ddx(t), dy = ddy(t), n = Math.hypot(dx, dy), u = 1 - t;
+        double dxp = 2 * (u * (dxq[1] - dxq[0]) + t * (dxq[2] - dxq[1]));
+        double dyp = 2 * (u * (dyq[1] - dyq[0]) + t * (dyq[2] - dyq[1]));
+        return (dx * dyp - dy * dxp) / (n * n);
     }
 
     /**
@@ -744,7 +740,7 @@ public final class Gota {
     }
 
     /** Tangente unitaria del camino en t; si la derivada es nula usa la secante, y si no, el eje x. */
-    double[] tangente(double t) {
+    @Override public double[] tangente(double t) {
         if (elipses) return dirD(t);
         double u = 1 - t;
         double dx = 3 * (u * u * (px[1] - px[0]) + 2 * u * t * (px[2] - px[1]) + t * t * (px[3] - px[2]));
@@ -766,17 +762,16 @@ public final class Gota {
         return Math.atan2(d[1], d[0]);
     }
 
-    static double acota(double v, double lo, double hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
-    double dcx(double t) { double u = 1 - t; return 3 * (u*u*(px[1]-px[0]) + 2*u*t*(px[2]-px[1]) + t*t*(px[3]-px[2])); }
-    double dcy(double t) { double u = 1 - t; return 3 * (u*u*(py[1]-py[0]) + 2*u*t*(py[2]-py[1]) + t*t*(py[3]-py[2])); }
-    double drad(double t) { return tramoDe(t).drad(t); }
+    @Override public double dcx(double t) { double u = 1 - t; return 3 * (u*u*(px[1]-px[0]) + 2*u*t*(px[2]-px[1]) + t*t*(px[3]-px[2])); }
+    @Override public double dcy(double t) { double u = 1 - t; return 3 * (u*u*(py[1]-py[0]) + 2*u*t*(py[2]-py[1]) + t*t*(py[3]-py[2])); }
+    @Override public double drad(double t) { return tramoDe(t).drad(t); }
 
     // ---------- Evaluación directa ----------
 
-    double cx(double t) { double u = 1 - t; return u*u*u*px[0] + 3*u*u*t*px[1] + 3*u*t*t*px[2] + t*t*t*px[3]; }
-    double cy(double t) { double u = 1 - t; return u*u*u*py[0] + 3*u*u*t*py[1] + 3*u*t*t*py[2] + t*t*t*py[3]; }
-    double rad(double t) { return tramoDe(t).rad(t); }
+    @Override public double cx(double t) { double u = 1 - t; return u*u*u*px[0] + 3*u*u*t*px[1] + 3*u*t*t*px[2] + t*t*t*px[3]; }
+    @Override public double cy(double t) { double u = 1 - t; return u*u*u*py[0] + 3*u*u*t*py[1] + 3*u*t*t*py[2] + t*t*t*py[3]; }
+    @Override public double rad(double t) { return tramoDe(t).rad(t); }
 
     /** Tramo del perfil que contiene t (en el codo, el izquierdo). */
     Tramo tramoDe(double t) { return tramos.length == 1 || t <= tm ? tramos[0] : tramos[1]; }
