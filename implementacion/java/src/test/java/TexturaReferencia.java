@@ -141,7 +141,7 @@ public class TexturaReferencia {
             }
         Gota recta = recta(150, 70, 50);                         // 2r = 100: la cápsula exacta
         Gota curva = Gota.curva(p(70, 70), 30, new Gota.Vec(120, 0), p(220, 250), 55, new Gota.Vec(0, -110), Gota.Perfil.recto());
-        Gota.Relleno[] rel = { Texturas.tira(tex), Texturas.discoCapsula(tex) };
+        Relleno[] rel = { Texturas.tira(tex), Texturas.discoCapsula(tex) };
         Gota[] gs = { recta, curva };
         for (int k = 0; k < 4; k++) {
             BufferedImage panel = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);

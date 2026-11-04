@@ -84,9 +84,9 @@ public class GotaRegresion {
         Gota g = Gota.lineal(p(7, 10), 6, p(23, 10), 4, Gota.Perfil.central(1));
         int rojo = 0xFFFF0000;
         BufferedImage ref = new BufferedImage(sw, sh, BufferedImage.TYPE_INT_ARGB);
-        g.render(ref, Gota.Relleno.solido(rojo));
+        g.render(ref, Relleno.solido(rojo));
         BufferedImage sub = base.getSubimage(sx, sy, sw, sh);
-        g.render(sub, Gota.Relleno.solido(rojo));
+        g.render(sub, Relleno.solido(rojo));
 
         int fuera = 0, mal = 0, cubiertos = 0;
         for (int y = 0; y < H; y++) {
@@ -201,7 +201,7 @@ public class GotaRegresion {
         String primero = "";
         for (int gi = 0; gi < gs.length; gi++) {
             BufferedImage img = new BufferedImage(200, 200, BufferedImage.TYPE_INT_ARGB);
-            gs[gi].render(img, Gota.Relleno.solido(0xFFFFFFFF));
+            gs[gi].render(img, Relleno.solido(0xFFFFFFFF));
             for (int y = 0; y < 200; y++) {
                 for (int x = 0; x < 200; x++) {
                     int a = img.getRGB(x, y) >>> 24;
@@ -306,7 +306,7 @@ public class GotaRegresion {
             for (int s : fuentes) {
                 BufferedImage img = new BufferedImage(50, 40, BufferedImage.TYPE_INT_ARGB);
                 Arrays.fill(datos(img), f);
-                g.render(img, Gota.Relleno.solido(s));
+                g.render(img, Relleno.solido(s));
                 int got = img.getRGB(20, 20), exp = refSrcOver(f, s);
                 if (!cercano(got, exp)) {
                     malos++;
@@ -317,7 +317,7 @@ public class GotaRegresion {
         comprueba("composición alfa (src-over) contra la fórmula de referencia", malos == 0, malos + " casos de 15. " + primero);
 
         Gota curva = Gota.curva(p(30, 150), 25, new Gota.Vec(0, -120), p(150, 150), 15, new Gota.Vec(0, -120), Gota.Perfil.central(1.3));
-        Gota.Relleno rel = Colores.conGamma(0xFFFFE27A, 0xFF2563EB, 0xFFC2410C, 0xFF1E1B4B, 2.0, 0.7);
+        Relleno rel = Colores.conGamma(0xFFFFE27A, 0xFF2563EB, 0xFFC2410C, 0xFF1E1B4B, 2.0, 0.7);
         boolean iguales = true;
         for (Gota gg : new Gota[] { curva, curva.conSolape(Gota.Solape.TRAZO) }) {
             BufferedImage a1 = fondoRuido(200, 180, 7), a2 = fondoRuido(200, 180, 7);

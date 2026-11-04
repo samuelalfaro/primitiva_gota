@@ -85,9 +85,9 @@ public class GotaCombina {
         comprueba("el alfa de MODULATE es el producto de alfas", (ComposicionColor.aplica(ComposicionColor.Modo.MODULATE, 0x80FFFFFF, 0x80FFFFFF, ce) >>> 24) == 64, "");
 
         boolean lanza = true;
-        try { ComposicionColor.combinar(null, Gota.Relleno.solido(0), ComposicionColor.Modo.ADD); lanza = false; } catch (NullPointerException e) { }
-        try { ComposicionColor.combinar(Gota.Relleno.solido(0), null, ComposicionColor.Modo.ADD); lanza = false; } catch (NullPointerException e) { }
-        try { ComposicionColor.combinar(Gota.Relleno.solido(0), Gota.Relleno.solido(0), null); lanza = false; } catch (NullPointerException e) { }
+        try { ComposicionColor.combinar(null, Relleno.solido(0), ComposicionColor.Modo.ADD); lanza = false; } catch (NullPointerException e) { }
+        try { ComposicionColor.combinar(Relleno.solido(0), null, ComposicionColor.Modo.ADD); lanza = false; } catch (NullPointerException e) { }
+        try { ComposicionColor.combinar(Relleno.solido(0), Relleno.solido(0), null); lanza = false; } catch (NullPointerException e) { }
         comprueba("argumentos nulos rechazados", lanza, "");
     }
 
@@ -111,15 +111,15 @@ public class GotaCombina {
         // REPLACE con un color sólido == textura sola, píxel a píxel
         BufferedImage a = lienzo(), b = lienzo();
         g.render(a, Texturas.textura(tx));
-        g.render(b, ComposicionColor.combinar(Gota.Relleno.solido(cc), Texturas.textura(tx), ComposicionColor.Modo.REPLACE));
+        g.render(b, ComposicionColor.combinar(Relleno.solido(cc), Texturas.textura(tx), ComposicionColor.Modo.REPLACE));
         comprueba("combinar(sólido, textura, REPLACE) == textura sola (píxel a píxel)", Arrays.equals(datos(a), datos(b)), "");
 
         // MODULATE: cada píxel interior coincide con la fórmula aplicada al color y al texel de ese píxel
         ComposicionColor.Modo[] ms = ComposicionColor.Modo.values();
         for (ComposicionColor.Modo m : ms) {
-            Gota.Relleno color = Colores.cadena(0xFF1E1B4B, 0xFFFFE27A, 0xFF2563EB, 0xFF7C2D12);
-            Gota.Relleno comb = ComposicionColor.combinar(color, Texturas.textura(tx), m, 0xFF20C040).para(g);
-            Gota.Relleno c2 = color.para(g), t2 = Texturas.textura(tx).para(g);
+            Relleno color = Colores.cadena(0xFF1E1B4B, 0xFFFFE27A, 0xFF2563EB, 0xFF7C2D12);
+            Relleno comb = ComposicionColor.combinar(color, Texturas.textura(tx), m, 0xFF20C040).para(g);
+            Relleno c2 = color.para(g), t2 = Texturas.textura(tx).para(g);
             int malos = 0, n = 0;
             for (int y = 100; y < 200; y += 3)
                 for (int x = 10; x < 260; x += 3) {
@@ -142,16 +142,16 @@ public class GotaCombina {
         // tira con cortes explícitos: el corte central sigue a tm
         double[] ult = new double[2];
         Gota gm = Gota.lineal(p(60.5, 150.5), 50, p(240.5, 150.5), 20, Gota.Perfil.radioMedio(30, 0.3, 1));
-        Gota.Relleno rt = Texturas.tira((u, v) -> { ult[0] = u; ult[1] = v; return 0xFFFFFFFF; }, 0, 0, 1, 1, 0.1, 0.9).para(gm);
+        Relleno rt = Texturas.tira((u, v) -> { ult[0] = u; ult[1] = v; return 0xFFFFFFFF; }, 0, 0, 1, 1, 0.1, 0.9).para(gm);
         Point2D cm = gm.centro(gm.tm());
         rt.argb(gm.parametros(cm.getX(), cm.getY()), gm.uv(cm.getX(), cm.getY()));
         comprueba("tira(tex, ..., c1, c3): v en el centro de t = tm es c1 + (c3 - c1)·tm", Math.abs(ult[1] - (0.1 + 0.8 * 0.3)) < 2e-3, String.format("v = %.4f", ult[1]));
 
         // multitextura (combinaciones anidadas) en PLANO y en TRAZO: cada píxel sigue la fórmula encadenada
-        Gota.Relleno multi = ComposicionColor.combinar(ComposicionColor.combinar(Gota.Relleno.solido(cc), Texturas.textura(tx), ComposicionColor.Modo.MODULATE),
+        Relleno multi = ComposicionColor.combinar(ComposicionColor.combinar(Relleno.solido(cc), Texturas.textura(tx), ComposicionColor.Modo.MODULATE),
                                                Texturas.textura(tx), ComposicionColor.Modo.ADD);
         for (Gota gg : new Gota[] { g, g.conSolape(Gota.Solape.TRAZO) }) {
-            Gota.Relleno m2 = multi.para(gg), t2 = Texturas.textura(tx).para(gg);
+            Relleno m2 = multi.para(gg), t2 = Texturas.textura(tx).para(gg);
             int malos = 0, n = 0;
             for (int y = 100; y < 200; y += 3)
                 for (int x = 10; x < 260; x += 3) {
@@ -167,7 +167,7 @@ public class GotaCombina {
         }
 
         boolean lanza = false;
-        try { ComposicionColor.combinar(Gota.Relleno.solido(0), Gota.Relleno.solido(0), ComposicionColor.Modo.ADD).argb(0.5, 0.5); } catch (UnsupportedOperationException x) { lanza = true; }
+        try { ComposicionColor.combinar(Relleno.solido(0), Relleno.solido(0), ComposicionColor.Modo.ADD).argb(0.5, 0.5); } catch (UnsupportedOperationException x) { lanza = true; }
         comprueba("argb(t, rho) sobre el combinado exige la muestra", lanza, "");
     }
 
@@ -181,9 +181,9 @@ public class GotaCombina {
         for (int i = 0; i < 6; i++) {
             double ox = (i % 3) * 300, oy = (i / 3) * 300;
             Gota g = Gota.lineal(p(ox + 60, oy + 150), 50, p(ox + 240, oy + 150), 25, Gota.Perfil.radioMedio(36, 0.5, 1));
-            Gota.Relleno color = Colores.cadena(0xFF1E1B4B, 0xFFFFC857, 0xFF2563EB, 0xFF7C2D12);
+            Relleno color = Colores.cadena(0xFF1E1B4B, 0xFFFFC857, 0xFF2563EB, 0xFF7C2D12);
             ComposicionColor.Modo m = i < 5 ? ms[i] : ComposicionColor.Modo.MODULATE;
-            Gota.Relleno rel = i < 5 ? ComposicionColor.combinar(color, Texturas.textura(tx), m, 0xFF20C040)
+            Relleno rel = i < 5 ? ComposicionColor.combinar(color, Texturas.textura(tx), m, 0xFF20C040)
                                      : ComposicionColor.combinar(color, Texturas.tira(tx, 0, 0, 1, 1, 0.1, 0.9), m);
             g.render(img, rel);
         }

@@ -23,7 +23,7 @@ public class GotaDisco {
     static final double[] ultima = new double[2];
     static final Texturas.Textura REGISTRA = (u, v) -> { ultima[0] = u; ultima[1] = v; return 0xFFFFFFFF; };
 
-    static double[] coords(Gota.Relleno rel, Coordenadas.Muestra m) { rel.argb(m); return new double[] { ultima[0], ultima[1] }; }
+    static double[] coords(Relleno rel, Coordenadas.Muestra m) { rel.argb(m); return new double[] { ultima[0], ultima[1] }; }
 
     static boolean igual(double[] a, double x, double y) { return Math.abs(a[0] - x) < 1e-12 && Math.abs(a[1] - y) < 1e-12; }
 
@@ -39,7 +39,7 @@ public class GotaDisco {
 
     static void extremos() {
         Texturas.Disco d1 = new Texturas.Disco(0.3, 0.4, 0.5, 0.4), d2 = new Texturas.Disco(0.7, 0.6, 0.7, 0.9);   // r = 0.2 hacia +x; r = 0.3 hacia +y
-        Gota.Relleno rel = Texturas.disco(REGISTRA, d1, d2);
+        Relleno rel = Texturas.disco(REGISTRA, d1, d2);
         comprueba("centro del círculo 1 -> centro del disco 1", igual(coords(rel, new Coordenadas.Muestra(0, 0, 0, 0)), 0.3, 0.4), "");
         comprueba("centro del círculo 2 -> centro del disco 2", igual(coords(rel, new Coordenadas.Muestra(1, 0, 0, 0)), 0.7, 0.6), "");
         comprueba("proa del círculo 1 (axial 1) -> punto del borde e1", igual(coords(rel, new Coordenadas.Muestra(0, 1, 1, 0)), 0.5, 0.4), "");
@@ -48,7 +48,7 @@ public class GotaDisco {
         comprueba("centro a mitad de camino: centros interpolados", Math.abs(m[0] - 0.5) < 1e-12 && Math.abs(m[1] - 0.5) < 1e-12, "");
 
         // lateral = +1 (a la derecha del avance en pantalla) con tangente +x y tira hacia +y
-        Gota.Relleno uno = Texturas.disco(REGISTRA, Texturas.Disco.inscrito(), Texturas.Disco.inscrito());
+        Relleno uno = Texturas.disco(REGISTRA, Texturas.Disco.inscrito(), Texturas.Disco.inscrito());
         double[] l = coords(uno, new Coordenadas.Muestra(0.3, 1, 0, 1));
         comprueba("lateral +1 (izquierda del avance en pantalla) -> arriba en la textura: (0.5, 0)",
                   Math.abs(l[0] - 0.5) < 1e-12 && Math.abs(l[1] - 0.0) < 1e-12, String.format("(%.3f, %.3f)", l[0], l[1]));
@@ -114,7 +114,7 @@ public class GotaDisco {
         // extremos exactos en los cuatro sentidos
         boolean ok = true;
         for (Mezcla.Tono t : tonos) {
-            Gota.Relleno r = Texturas.disco(REGISTRA, a, b, Texturas.Orientacion.TANGENTE, t);
+            Relleno r = Texturas.disco(REGISTRA, a, b, Texturas.Orientacion.TANGENTE, t);
             double[] c0 = coords(r, new Coordenadas.Muestra(0, 1, 1, 0)), c1 = coords(r, new Coordenadas.Muestra(1, 1, 1, 0));
             ok &= Math.abs(c0[0] - a.eu()) < 1e-12 && Math.abs(c0[1] - a.ev()) < 1e-12 && Math.abs(c1[0] - b.eu()) < 1e-12 && Math.abs(c1[1] - b.ev()) < 1e-12;
         }
@@ -131,8 +131,8 @@ public class GotaDisco {
         for (int i = 0; i < 400; i++) {
             double x = 40 + rnd.nextDouble() * 170, y = 70 + rnd.nextDouble() * 60;
             if (!h.contiene(x, y)) continue;
-            Gota.Relleno rt = Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.TANGENTE).para(h);
-            Gota.Relleno rf = Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.FIJA).para(h);
+            Relleno rt = Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.TANGENTE).para(h);
+            Relleno rf = Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.FIJA).para(h);
             Coordenadas.Muestra m = h.parametros(x, y);
             double[] a = coords(rt, m), b = coords(rf, m);
             n++;
@@ -145,7 +145,7 @@ public class GotaDisco {
         for (int i = 0; i < 400; i++) {   // camino vertical: FIJA sigue siendo el desplazamiento en pantalla; TANGENTE no
             double x = 70 + rnd.nextDouble() * 60, y = 40 + rnd.nextDouble() * 170;
             if (!v.contiene(x, y)) continue;
-            Gota.Relleno rf = Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.FIJA).para(v);
+            Relleno rf = Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.FIJA).para(v);
             Coordenadas.Muestra m = v.parametros(x, y);
             double[] b = coords(rf, m);
             double cx = v.centro(m.t()).getX(), cy = v.centro(m.t()).getY(), r = v.radio(m.t());
@@ -157,7 +157,7 @@ public class GotaDisco {
         comprueba("FIJA, camino vertical: textura = desplazamiento en pantalla normalizado (no gira)", malosV == 0, "");
 
         // TANGENTE con camino vertical: la textura gira 90° respecto a FIJA
-        Gota.Relleno rt = Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.TANGENTE).para(v);
+        Relleno rt = Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.TANGENTE).para(v);
         Coordenadas.Muestra m = v.parametros(100, 110 + 8);
         double[] a = coords(rt, m);
         double cx = v.centro(m.t()).getX(), cy = v.centro(m.t()).getY(), r = v.radio(m.t());
@@ -168,7 +168,7 @@ public class GotaDisco {
 
         // elipses: las coordenadas locales son las normalizadas por cada eje, también en FIJA
         Gota e = Gota.lineal(p(50, 100), 20, p(200, 100), 20, Gota.Perfil.recto().aspecto(2.5));
-        Gota.Relleno re = Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.TANGENTE).para(e);
+        Relleno re = Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.TANGENTE).para(e);
         int malosE = 0, nE = 0;
         for (int i = 0; i < 300; i++) {
             double px = 20 + rnd.nextDouble() * 230, py = 70 + rnd.nextDouble() * 60;
@@ -206,7 +206,7 @@ public class GotaDisco {
             double ox = (i % 3) * 300, oy = (i / 3) * 300;
             Gota g = i < 3 ? Gota.lineal(p(ox + 70, oy + 150), 55, p(ox + 230, oy + 150), 35, Gota.Perfil.recto())
                            : Gota.curva(p(ox + 70, oy + 235), 35, new Gota.Vec(0, -200), p(ox + 230, oy + 235), 25, new Gota.Vec(0, -200), Gota.Perfil.recto());
-            Gota.Relleno rel = switch (i % 3) {
+            Relleno rel = switch (i % 3) {
                 case 0 -> Texturas.disco(tex);
                 case 1 -> Texturas.disco(tex, ins, giro, Texturas.Orientacion.TANGENTE, Mezcla.Tono.CORTO);
                 default -> Texturas.disco(tex, peq, peq, Texturas.Orientacion.FIJA);

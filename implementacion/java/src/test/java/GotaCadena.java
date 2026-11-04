@@ -128,7 +128,7 @@ public class GotaCadena {
         comprueba("dosColores(a, b) == dosColores(a, b, 0.5) (RGB y LCH, también con tm movido)", peor <= 1,
                   "dif. máx " + peor + " nivel");
 
-        Gota.Relleno r0 = Colores.dosColores(a, b, 0.0).para(gs[0]), r1 = Colores.dosColores(a, b, 1.0).para(gs[0]);
+        Relleno r0 = Colores.dosColores(a, b, 0.0).para(gs[0]), r1 = Colores.dosColores(a, b, 1.0).para(gs[0]);
         Coordenadas.Uv tapa1 = new Coordenadas.Uv(0.5, 0.1), tapa2 = new Coordenadas.Uv(0.5, 0.9), medio = new Coordenadas.Uv(0.5, 0.5);
         boolean ok = r0.argb(mu(), tapa1) == a && r0.argb(mu(), tapa2) == b && r1.argb(mu(), tapa1) == a
                 && r1.argb(mu(), tapa2) == b && r0.argb(mu(), medio) == b && r1.argb(mu(), medio) == a;
@@ -155,7 +155,7 @@ public class GotaCadena {
         boolean exactas = true, continuas = true;
         String det = "";
         for (double s : ajustes) {
-            Gota.Relleno r = Colores.cadena(e1, c1, c2, e2, s, s, s, Mezcla.RGB).para(g);
+            Relleno r = Colores.cadena(e1, c1, c2, e2, s, s, s, Mezcla.RGB).para(g);
             boolean ok = r.argb(mu(), new Coordenadas.Uv(0.5, 0)) == e1
                     && r.argb(mu(), new Coordenadas.Uv(0.5, 0.25)) == c1
                     && r.argb(mu(), new Coordenadas.Uv(0.5, 0.75)) == c2

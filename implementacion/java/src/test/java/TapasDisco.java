@@ -77,7 +77,7 @@ public class TapasDisco {
     static void identidadColor() {
         double r = 40, cx = 100, cy = 100;
         Gota g = recta(cx, cy, r);
-        Gota.Relleno rel = Colores.cadenaLateral(N1, N2, Mezcla.RGB);
+        Relleno rel = Colores.cadenaLateral(N1, N2, Mezcla.RGB);
         BufferedImage im = new BufferedImage(220, 300, BufferedImage.TYPE_INT_ARGB);
         g.render(im, rel);
         int[] d = datos(im);
@@ -151,7 +151,7 @@ public class TapasDisco {
     static void costura() {
         Gota g = Gota.curva(p(60, 70), 24, new Gota.Vec(110, 0), p(230, 240), 58, new Gota.Vec(0, -120),
                 Gota.Perfil.recto().aspecto(1.6, 0.6));
-        Gota.Relleno rel0 = Colores.cadenaLateral(N1, N2, Mezcla.LCH).para(g);
+        Relleno rel0 = Colores.cadenaLateral(N1, N2, Mezcla.LCH).para(g);
         double c1 = g.corte1(), c3 = g.corte3();
         int maxA = 0, maxB = 0;
         Coordenadas.Muestra m0 = new Coordenadas.Muestra(0, 0.5, 0, 0);
@@ -164,7 +164,7 @@ public class TapasDisco {
         // la textura de referencia es discontinua en los cortes a propósito (cuatro fondos): se usa una continua
         Texturas.Textura tex = (u, v) -> 0xFF000000 | ((int) (255 * Math.min(1, Math.max(0, u))) << 16)
                 | ((int) (255 * Math.min(1, Math.max(0, v))) << 8) | (int) (255 * Math.min(1, Math.max(0, 0.5 * u + 0.5 * v)));
-        Gota.Relleno tr = Texturas.tira(tex).para(g);
+        Relleno tr = Texturas.tira(tex).para(g);
         int mt = 0;
         for (int i = 0; i <= 200; i++) {
             double u = i / 200.0;
@@ -198,7 +198,7 @@ public class TapasDisco {
         double E = 40, r1 = 3 * E, r2 = 2 * E, d = 7 * E, cx1 = 150, cy = 170;
         Gota g = Gota.lineal(p(cx1, cy), r1, p(cx1 + d, cy), r2, Gota.Perfil.recto());
         Mezcla M = Mezcla.RGB;
-        Gota.Relleno rel = Colores.cadenaLateral(N1, N2, M);
+        Relleno rel = Colores.cadenaLateral(N1, N2, M);
         BufferedImage im = new BufferedImage(560, 340, BufferedImage.TYPE_INT_ARGB);
         g.render(im, rel);
         int[] px = datos(im);

@@ -33,7 +33,7 @@ public class GotaDemo {
         boolean ok = true;
         for (int i = 0; i < gotas.length; i++) {
             long t0 = System.nanoTime();
-            gotas[i].render(img, Gota.Relleno.solido(colores[i]));
+            gotas[i].render(img, Relleno.solido(colores[i]));
             double ms = (System.nanoTime() - t0) / 1e6;
             int[] r = comparar(gotas[i]);
             System.out.printf("%-20s render %6.1f ms | dentro=%6d  difs vs fuerza bruta=%d  difs signo sdf=%d%n",

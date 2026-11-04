@@ -133,7 +133,7 @@ public final class Texturas {
      * Las tapas son semidiscos ({@link Coordenadas#discoTapa}): con la textura de referencia 1 x 2 una gota recta de radios
      * iguales reproduce la textura idéntica.
      */
-    public static Gota.Relleno tira(Textura tex) {
+    public static Relleno tira(Textura tex) {
         Objects.requireNonNull(tex, "textura");
         return new Tira(tex, 0, 0, 1, 1, null, null);   // sin remapeo: usa los cortes de la gota tal cual
     }
@@ -143,7 +143,7 @@ public final class Texturas {
      * y con los cortes de las tapas como fracciones de su alto, 0 <= c1 <= c3 <= 1. El corte central sigue
      * a tm: el cuerpo de la gota se reparte entre c1 y c3 en la misma proporción que en la propia gota.
      */
-    public static Gota.Relleno tira(Textura tex, double u0, double v0, double u1, double v1,
+    public static Relleno tira(Textura tex, double u0, double v0, double u1, double v1,
                                     double corte1, double corte3) {
         Objects.requireNonNull(tex, "textura");
         if (!(0 <= corte1 && corte1 <= corte3 && corte3 <= 1))
@@ -151,7 +151,7 @@ public final class Texturas {
         return new Tira(tex, u0, v0, u1, v1, null, new double[] { corte1, corte3 });
     }
 
-    private static final class Tira implements Gota.Relleno {
+    private static final class Tira implements Relleno {
         private final Textura tex;
         private final double u0, v0, u1, v1;
         private final double[] desde, hasta;   // cortes de la gota -> cortes de la textura (null sin remapeo)
@@ -161,7 +161,7 @@ public final class Texturas {
             this.desde = desde; this.hasta = hasta;
         }
 
-        @Override public Gota.Relleno para(Gota g) {
+        @Override public Relleno para(Gota g) {
             double[] d = { 0, g.corte1(), g.corte2(), g.corte3(), 1 };
             if (hasta == null) return new Tira(tex, u0, v0, u1, v1, d, d);
             double c1 = hasta[0], c3 = hasta[1];
@@ -194,7 +194,7 @@ public final class Texturas {
     }
 
     /** Igual que {@link #tira(Textura)}: hay un solo mapeo de textura en la tira (tapas de semidisco). */
-    public static Gota.Relleno textura(Textura tex) { return tira(tex); }
+    public static Relleno textura(Textura tex) { return tira(tex); }
 
     // ---------- Mapeo en disco ----------
     //
@@ -246,11 +246,11 @@ public final class Texturas {
     }
 
     /** Todos los círculos al disco inscrito en la textura, orientado con el camino (una especie de proyección). */
-    public static Gota.Relleno disco(Textura tex) {
+    public static Relleno disco(Textura tex) {
         return disco(tex, Disco.inscrito(), Disco.inscrito(), Orientacion.TANGENTE, Mezcla.Tono.CORTO);
     }
 
-    public static Gota.Relleno disco(Textura tex, Disco primero, Disco segundo) {
+    public static Relleno disco(Textura tex, Disco primero, Disco segundo) {
         return disco(tex, primero, segundo, Orientacion.TANGENTE, Mezcla.Tono.CORTO);
     }
 
@@ -259,15 +259,15 @@ public final class Texturas {
      * la de abajo, y los círculos intermedios se deslizan entre ellos. En una gota recta de radios iguales con los
      * centros a dos radios de distancia reproduce la textura idéntica.
      */
-    public static Gota.Relleno discoCapsula(Textura tex) {
+    public static Relleno discoCapsula(Textura tex) {
         return disco(tex, Disco.capsulaInicio(), Disco.capsulaFin(), Orientacion.TANGENTE, Mezcla.Tono.CORTO);
     }
 
-    public static Gota.Relleno disco(Textura tex, Disco primero, Disco segundo, Orientacion orientacion) {
+    public static Relleno disco(Textura tex, Disco primero, Disco segundo, Orientacion orientacion) {
         return disco(tex, primero, segundo, orientacion, Mezcla.Tono.CORTO);
     }
 
-    public static Gota.Relleno disco(Textura tex, Disco primero, Disco segundo,
+    public static Relleno disco(Textura tex, Disco primero, Disco segundo,
                                      Orientacion orientacion, Mezcla.Tono giro) {
         Objects.requireNonNull(tex, "textura");
         Objects.requireNonNull(primero, "primero");
@@ -277,7 +277,7 @@ public final class Texturas {
         return new DiscoRelleno(tex, primero, segundo, orientacion, giro, null);
     }
 
-    private static final class DiscoRelleno implements Gota.Relleno {
+    private static final class DiscoRelleno implements Relleno {
         private final Textura tex;
         private final Disco d1, d2;
         private final Orientacion orientacion;
@@ -300,7 +300,7 @@ public final class Texturas {
             th2 = Math.toDegrees(Math.atan2(dv2, du2));
         }
 
-        @Override public Gota.Relleno para(Gota g) { return new DiscoRelleno(tex, d1, d2, orientacion, giro, g); }
+        @Override public Relleno para(Gota g) { return new DiscoRelleno(tex, d1, d2, orientacion, giro, g); }
 
         @Override public int argb(double t, double rho) {
             throw new UnsupportedOperationException("el mapeo en disco necesita la muestra completa");

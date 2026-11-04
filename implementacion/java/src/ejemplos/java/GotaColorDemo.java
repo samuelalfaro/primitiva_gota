@@ -50,7 +50,7 @@ public class GotaColorDemo {
 
         // Colores: centros azul y amarillo, bordes azul noche y ladrillo
         int a = 0xFF2563EB, b = 0xFFFACC15, aBorde = 0xFF1E1B4B, bBorde = 0xFF7C2D12;
-        Gota.Relleno[] rellenos = {
+        Relleno[] rellenos = {
             Colores.conGamma(a, b, aBorde, bBorde, 2.0, 0.7, Mezcla.HSL, Mezcla.HSL),
             Colores.conGamma(a, b, aBorde, bBorde, 2.0, 0.7,
                               Mezcla.hsl(Mezcla.Tono.ANTIHORARIO), Mezcla.HSL),

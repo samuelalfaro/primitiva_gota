@@ -129,7 +129,7 @@ public final class Composicion {
 
     // Resultado de construir (se rehace tras cualquier cambio).
     private List<Gota> gotas;
-    private List<Gota.Relleno> rellenos;
+    private List<Relleno> rellenos;
     private Rectangle2D.Double bounds;
 
     // ---------- Construcción ----------
@@ -241,12 +241,12 @@ public final class Composicion {
     public void render(BufferedImage dst, Texturas.Textura tex) {
         Objects.requireNonNull(tex, "textura");
         construye();
-        List<Gota.Relleno> rs = new ArrayList<>();
+        List<Relleno> rs = new ArrayList<>();
         for (int i = 0; i < gotas.size(); i++) rs.add(Texturas.tira(tex));
         pinta(dst, rs);
     }
 
-    private void pinta(BufferedImage dst, List<Gota.Relleno> rellenos) {
+    private void pinta(BufferedImage dst, List<Relleno> rellenos) {
         if (dst.getType() != BufferedImage.TYPE_INT_ARGB)
             throw new IllegalArgumentException("Se requiere BufferedImage.TYPE_INT_ARGB");
         final WritableRaster raster = dst.getRaster();
@@ -263,7 +263,7 @@ public final class Composicion {
         final int y0 = Math.max(0, (int) Math.floor(bounds.getMinY() - marg));
         final int y1 = Math.min(dst.getHeight(), (int) Math.ceil(bounds.getMaxY() + marg));
         if (x0 >= x1 || y0 >= y1) return;
-        final List<Gota.Relleno> rel = new ArrayList<>();
+        final List<Relleno> rel = new ArrayList<>();
         for (int i = 0; i < gotas.size(); i++) rel.add(rellenos.get(i).para(gotas.get(i)));
         IntStream.range(y0, y1).parallel().forEach(j -> {
             for (int i = x0; i < x1; i++) {
@@ -271,7 +271,7 @@ public final class Composicion {
                 double[] ev = evalua(x, y);
                 if (ev[1] < 0) continue;
                 Gota g = gotas.get((int) ev[1]);
-                Gota.Relleno rl = rel.get((int) ev[1]);
+                Relleno rl = rel.get((int) ev[1]);
                 int c = g.color(rl, x, y);
                 int idx = base + j * stride + i;
                 datos[idx] = sobre(datos[idx], c, ev[0]);

@@ -85,7 +85,7 @@ public class CosturasDemo {
         "Como la espiga, pero cada mitad es un Hermite\n(normal en el eje, costilla en el contorno):\nsin picos en el eje."
     };
 
-    static void hoja(String archivo, String titulo, Caso[] casos, int w, int h, Gota.Relleno relleno) throws Exception {
+    static void hoja(String archivo, String titulo, Caso[] casos, int w, int h, Relleno relleno) throws Exception {
         int ml = 310, mt = 135;
         BufferedImage hoja = new BufferedImage(ml + 3 * w, mt + casos.length * h, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = hoja.createGraphics();
@@ -120,8 +120,8 @@ public class CosturasDemo {
     }
 
     public static void main(String[] args) throws Exception {
-        Gota.Relleno texturas = Texturas.tira(new Guia());
-        Gota.Relleno degradado = Colores.cadenaLateral(
+        Relleno texturas = Texturas.tira(new Guia());
+        Relleno degradado = Colores.cadenaLateral(
                 new Colores.Lateral(0xFFD7263D, 0xFFFFE9A8, 0xFF2D6CDF),     // contra, centro y normal del primer círculo
                 new Colores.Lateral(0xFF1FA39A, 0xFFE8F5D0, 0xFFF28E2B),     // y del segundo
                 Mezcla.RGB);

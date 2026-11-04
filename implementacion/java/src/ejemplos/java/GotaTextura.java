@@ -64,7 +64,7 @@ public class GotaTextura {
 
         BufferedImage tex = texturaPrueba();
         ImageIO.write(tex, "png", new File("gota_textura_base.png"));
-        Gota.Relleno rel = Texturas.textura(Texturas.deImagen(tex));
+        Relleno rel = Texturas.textura(Texturas.deImagen(tex));
 
         BufferedImage img = new BufferedImage(900, 600, BufferedImage.TYPE_INT_ARGB);
         Arrays.fill(((DataBufferInt) img.getRaster().getDataBuffer()).getData(), 0xFFFFFFFF);

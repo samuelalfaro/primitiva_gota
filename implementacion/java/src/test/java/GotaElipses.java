@@ -115,7 +115,7 @@ public class GotaElipses {
         comprueba("elipses con aspecto 1 == círculos: rho mínimo en el interior", difRho == 0, String.format("peor %.1e", peorRho));
 
         // render completo (PLANO y TRAZO) con un relleno que depende de t y rho
-        Gota.Relleno rel = (t, rho) -> 0xFF000000 | ((int) (255 * Math.min(1, t)) << 16) | ((int) (255 * Math.min(1, rho)) << 8) | 0x40;
+        Relleno rel = (t, rho) -> 0xFF000000 | ((int) (255 * Math.min(1, t)) << 16) | ((int) (255 * Math.min(1, rho)) << 8) | 0x40;
         int malos = 0, total = 0;
         for (int gi = 0; gi < 20; gi++) {
             long semilla = rnd.nextLong();
@@ -256,7 +256,7 @@ public class GotaElipses {
             Gota g = gs[i];
             var b = g.bounds();
             BufferedImage img = new BufferedImage(300, 300, BufferedImage.TYPE_INT_ARGB);
-            g.render(img, Gota.Relleno.solido(0xFF336699));
+            g.render(img, Relleno.solido(0xFF336699));
             int cubiertos = 0;
             for (int px : datos(img)) if ((px >>> 24) != 0) cubiertos++;
             int caja = (int) (Math.min(300, b.getMaxX()) - Math.max(0, b.getMinX())) * (int) (Math.min(300, b.getMaxY()) - Math.max(0, b.getMinY()));

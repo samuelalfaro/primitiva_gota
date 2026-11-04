@@ -18,18 +18,18 @@ public class GaleriaTapas {
         Composicion estT = ComposicionPruebas.estrella(0);
 
         Object[][] filas = {
-                { "gruesa-textura", new Gota.Relleno[] { Texturas.tira(tex), Texturas.discoCapsula(tex), null } },
-                { "gruesa-color", new Gota.Relleno[] {
+                { "gruesa-textura", new Relleno[] { Texturas.tira(tex), Texturas.discoCapsula(tex), null } },
+                { "gruesa-color", new Relleno[] {
                         Colores.cadenaLateral(a, b, Mezcla.RGB),
                         Colores.cadenaLateral(a, b, Mezcla.RGB_LINEAL),
                         Colores.cadenaLateral(a, b, Mezcla.LCH) } },
-                { "estrella-textura", new Gota.Relleno[] { Texturas.tira(tex), null, null } },
+                { "estrella-textura", new Relleno[] { Texturas.tira(tex), null, null } },
         };
         BufferedImage out = new BufferedImage(W * 3, H * 3, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(((DataBufferInt) out.getRaster().getDataBuffer()).getData(), FONDO);
         Graphics2D g2 = out.createGraphics();
         for (int f = 0; f < 3; f++) {
-            Gota.Relleno[] rs = (Gota.Relleno[]) filas[f][1];
+            Relleno[] rs = (Relleno[]) filas[f][1];
             for (int c = 0; c < 3; c++) {
                 if (rs[c] == null) continue;
                 BufferedImage panel = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);

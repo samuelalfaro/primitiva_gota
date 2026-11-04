@@ -8,6 +8,7 @@ Todo está en el paquete por defecto.
 ```
 src/main/java      la biblioteca
   Gota.java              la primitiva: círculos/elipses a lo largo de una Bézier cúbica; geometría, SDF y raster
+  Relleno.java           interfaz de un relleno: de la muestra de un píxel a un color ARGB (las fábricas están en Colores y Texturas)
   Coordenadas.java       coordenadas intrínsecas de un píxel de la gota (Muestra, Uv, semidisco de las tapas)
   Costurador.java        modos de costura de la tira (Gota.Costura: ORTOGONAL, ESPIGA por defecto, SUAVIZADO)
   Colores.java           colores sobre las coordenadas (cadena axial, color lateral, tapas de semidisco)
@@ -35,7 +36,7 @@ classpath, copiar `src/test/resources` a este segundo, y lanzar `Todas <classpat
 
 ```
 Gota ──genera──> Coordenadas ──> Colores   ──┐
-                      └───────> Texturas ────┼─> Gota.Relleno ──> color ARGB
+                      └───────> Texturas ────┼─> Relleno ──> color ARGB
                                   Mezcla <───┘  (Colores y Texturas interpolan con Mezcla)
 ComposicionColor combina dos rellenos cualquiera; Composicion une gotas y las pinta con esos rellenos.
 ```

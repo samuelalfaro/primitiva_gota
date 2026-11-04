@@ -41,9 +41,9 @@ public final class Colores {
      * Configuración 1: un color en el centro de cada círculo. Solo depende de t, así que admite
      * argb(t, rho) y es idéntico a la cadena con los tres ajustes neutros.
      */
-    public static Gota.Relleno dosColores(int a, int b) { return dosColores(a, b, Mezcla.RGB); }
+    public static Relleno dosColores(int a, int b) { return dosColores(a, b, Mezcla.RGB); }
 
-    public static Gota.Relleno dosColores(int a, int b, Mezcla m) {
+    public static Relleno dosColores(int a, int b, Mezcla m) {
         Objects.requireNonNull(m, "mezcla");
         return (t, rho) -> m.mezclar(a, b, clamp01(t));
     }
@@ -53,25 +53,25 @@ public final class Colores {
      * extremos (0 o 1) hay que distinguir las tapas, y eso se hace con la coordenada v de la tira:
      * usa la cadena y por tanto solo admite argb(Muestra, Uv), no argb(t, rho).
      */
-    public static Gota.Relleno dosColores(int a, int b, double ajusteCC) { return dosColores(a, b, ajusteCC, Mezcla.RGB); }
+    public static Relleno dosColores(int a, int b, double ajusteCC) { return dosColores(a, b, ajusteCC, Mezcla.RGB); }
 
-    public static Gota.Relleno dosColores(int a, int b, double ajusteCC, Mezcla m) {
+    public static Relleno dosColores(int a, int b, double ajusteCC, Mezcla m) {
         // extremo1 = centro1 y extremo2 = centro2: las tapas quedan de color constante
         // y el único tramo con efecto es el central.
         return cadena(a, a, b, b, 0.5, ajusteCC, 0.5, m);
     }
 
     /** Configuración 3: cuatro colores axiales (extremo1, centro1, centro2, extremo2). */
-    public static Gota.Relleno cadena(int extremo1, int centro1, int centro2, int extremo2) {
+    public static Relleno cadena(int extremo1, int centro1, int centro2, int extremo2) {
         return cadena(extremo1, centro1, centro2, extremo2, Mezcla.RGB);
     }
 
-    public static Gota.Relleno cadena(int extremo1, int centro1, int centro2, int extremo2, Mezcla m) {
+    public static Relleno cadena(int extremo1, int centro1, int centro2, int extremo2, Mezcla m) {
         return cadena(extremo1, centro1, centro2, extremo2, 0.5, 0.5, 0.5, m);
     }
 
     /** Configuración 4: la genérica, con los tres ajustes de transición. */
-    public static Gota.Relleno cadena(int extremo1, int centro1, int centro2, int extremo2,
+    public static Relleno cadena(int extremo1, int centro1, int centro2, int extremo2,
                                       double ajusteEC1, double ajusteCC, double ajusteCE2) {
         return cadena(extremo1, centro1, centro2, extremo2, ajusteEC1, ajusteCC, ajusteCE2, Mezcla.RGB);
     }
@@ -80,12 +80,12 @@ public final class Colores {
      * Cadena cuyas anclas son los cortes de la tira de la gota que la pinta (por defecto 1/4 y 3/4):
      * el color usa la misma coordenada v que las texturas, así que ambos alinean siempre.
      */
-    public static Gota.Relleno cadena(int extremo1, int centro1, int centro2, int extremo2,
+    public static Relleno cadena(int extremo1, int centro1, int centro2, int extremo2,
                                       double ajusteEC1, double ajusteCC, double ajusteCE2, Mezcla m) {
         return new Cadena(extremo1, centro1, centro2, extremo2, ajusteEC1, ajusteCC, ajusteCE2, m, 0.25, 0.75);
     }
 
-    private static final class Cadena implements Gota.Relleno {
+    private static final class Cadena implements Relleno {
         private final int e1, c1, c2, e2;
         private final double sEC1, sCC, sCE2;
         private final Mezcla m;
@@ -104,7 +104,7 @@ public final class Colores {
             this.m = m; this.a1 = a1; this.a3 = a3;
         }
 
-        @Override public Gota.Relleno para(Gota g) {
+        @Override public Relleno para(Gota g) {
             return new Cadena(e1, c1, c2, e2, sEC1, sCC, sCE2, m, g.corte1(), g.corte3());
         }
 
@@ -181,16 +181,16 @@ public final class Colores {
      * largo (en v), como un cuadrilátero; las tapas son semidiscos con el centro como origen y la punta es la media de
      * normal y contra (no hay color de extremo aparte). Ver {@link Coordenadas#discoTapa}.
      */
-    public static Gota.Relleno cadenaLateral(Lateral nodo1, Lateral nodo2, Mezcla m) {
+    public static Relleno cadenaLateral(Lateral nodo1, Lateral nodo2, Mezcla m) {
         return cadenaLateral(nodo1, nodo2, 0.5, m);
     }
 
     /** Igual, con el ajuste de la transición entre los dos nodos (0.5 = lineal; ver {@link #transicion}). */
-    public static Gota.Relleno cadenaLateral(Lateral nodo1, Lateral nodo2, double ajusteCC, Mezcla m) {
+    public static Relleno cadenaLateral(Lateral nodo1, Lateral nodo2, double ajusteCC, Mezcla m) {
         return new CadenaLateral(nodo1, nodo2, ajusteCC, m, 0.25, 0.75);
     }
 
-    private static final class CadenaLateral implements Gota.Relleno {
+    private static final class CadenaLateral implements Relleno {
         private final Lateral n1, n2;
         private final double sCC;
         private final Mezcla m;
@@ -206,7 +206,7 @@ public final class Colores {
             this.n1 = n1; this.n2 = n2; this.sCC = sCC; this.m = m; this.a1 = a1; this.a3 = a3;
         }
 
-        @Override public Gota.Relleno para(Gota g) { return new CadenaLateral(n1, n2, sCC, m, g.corte1(), g.corte3()); }
+        @Override public Relleno para(Gota g) { return new CadenaLateral(n1, n2, sCC, m, g.corte1(), g.corte3()); }
 
         @Override public boolean usaUv() { return true; }
 
@@ -253,30 +253,30 @@ public final class Colores {
     }
 
     /** Nivel 2: color de centro y de borde para cada círculo. */
-    public static Gota.Relleno cuatroColores(int a, int b, int aBorde, int bBorde) {
+    public static Relleno cuatroColores(int a, int b, int aBorde, int bBorde) {
         return cuatroColores(a, b, aBorde, bBorde, Mezcla.RGB, Mezcla.RGB);
     }
 
-    public static Gota.Relleno cuatroColores(int a, int b, int aBorde, int bBorde, Mezcla m) {
+    public static Relleno cuatroColores(int a, int b, int aBorde, int bBorde, Mezcla m) {
         return cuatroColores(a, b, aBorde, bBorde, m, m);
     }
 
-    public static Gota.Relleno cuatroColores(int a, int b, int aBorde, int bBorde,
+    public static Relleno cuatroColores(int a, int b, int aBorde, int bBorde,
                                              Mezcla entreCirculos, Mezcla centroBorde) {
         return conGamma(a, b, aBorde, bBorde, 1, 1, entreCirculos, centroBorde);
     }
 
     /** Nivel 3: nivel 2 más una corrección gamma centro→borde en cada círculo. */
-    public static Gota.Relleno conGamma(int a, int b, int aBorde, int bBorde, double gamma1, double gamma2) {
+    public static Relleno conGamma(int a, int b, int aBorde, int bBorde, double gamma1, double gamma2) {
         return conGamma(a, b, aBorde, bBorde, gamma1, gamma2, Mezcla.RGB, Mezcla.RGB);
     }
 
-    public static Gota.Relleno conGamma(int a, int b, int aBorde, int bBorde,
+    public static Relleno conGamma(int a, int b, int aBorde, int bBorde,
                                         double gamma1, double gamma2, Mezcla m) {
         return conGamma(a, b, aBorde, bBorde, gamma1, gamma2, m, m);
     }
 
-    public static Gota.Relleno conGamma(int a, int b, int aBorde, int bBorde, double gamma1, double gamma2,
+    public static Relleno conGamma(int a, int b, int aBorde, int bBorde, double gamma1, double gamma2,
                                         Mezcla entreCirculos, Mezcla centroBorde) {
         Objects.requireNonNull(entreCirculos, "entreCirculos");
         Objects.requireNonNull(centroBorde, "centroBorde");
