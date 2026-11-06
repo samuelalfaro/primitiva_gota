@@ -8,8 +8,12 @@ import java.util.List;
  */
 public class Todas {
     static final String[] SUITES = {
-            "GotaRegresion", "GotaCadena", "GotaCombina", "GotaElipses", "GotaDisco",
-            "TexturaReferencia", "TapasDisco", "ComposicionPruebas"
+             "GotaRegresion",
+            ,"GotaCombina", 
+            ,"TexturaReferencia"
+            ,"TapasDisco"
+            ,"ComposicionPruebas"
+            ,"SiluetaPruebas"
     };
 
     public static void main(String[] args) throws Exception {
