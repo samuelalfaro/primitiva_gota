@@ -29,7 +29,8 @@ final class Zonas {
      * Marco de la figura de la familia en t: centro, ejes (T, N = (Ty, -Tx)), semiejes a (según T) y b (según N), y el
      * desplazamiento del centro al punto de contacto con el contorno de cada lado (índice 0 = -N, 1 = +N): la costilla.
      */
-    private record Fr(double cx, double cy, double tx, double ty, double nx, double ny, double a, double b,
+    // PROVISIONAL (Fr y marco son visibles en el paquete para el modo alambre): se reemplaza al redefinir los puntos P1..P4.
+    record Fr(double cx, double cy, double tx, double ty, double nx, double ny, double a, double b,
                       double[] ox, double[] oy) {}
 
     private static final int NC = 1024;          // tabla de puntos de contacto (elipses)
@@ -81,7 +82,7 @@ final class Zonas {
 
     // ---------- Geometría de las líneas de t constante ----------
 
-    private Fr marco(double t) {
+    Fr marco(double t) {
         t = Utils.acota(t, 0, 1);
         if (g.esElipse()) {
             double b = Math.max(g.rad(t), 1e-9), a = g.aspecto(t) * b;
@@ -104,6 +105,7 @@ final class Zonas {
             x = g.dcx(tt); y = g.dcy(tt); n = Math.max(Math.hypot(x, y), 1e-12);
         }
         double tx = x / n, ty = y / n, r = g.rad(t), k = Utils.acota(g.drad(t) / n, -0.999, 0.999), sq = Math.sqrt(1 - k * k);
+        if (Math.hypot(x, y) < 1e-9) { double[] d = g.tangente(t); tx = d[0]; ty = d[1]; }   // camino parado: la secante o, si no, el eje x
         double nx = ty, ny = -tx;
         double[] ox = new double[2], oy = new double[2];
         for (int l = 0; l < 2; l++) {
