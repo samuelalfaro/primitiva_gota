@@ -8,7 +8,8 @@ La **primitiva Gota** es una forma vectorial 2D que define las areas de influenc
 Los centros recorre una curva Bézier cúbica y cuyo radio varía según una función de perfil. Esta primitiva permite crear
 formas orgánicas y suaves gracias a la flexibilidad de las curvas paramétricas.
 
-![](./.README_files/figura-1.svg)
+![](./.README_files/figura-1a.svg)
+![](./.README_files/figura-1b.svg)
 
 **Características principales:**
 - Forma definida por 2 puntos extremos (centros de las secciones) y 2 puntos de control (para la Bézier).
