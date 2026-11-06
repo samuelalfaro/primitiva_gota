@@ -24,6 +24,8 @@ formas orgánicas y suaves gracias a la flexibilidad de las curvas paramétricas
 
 ## 🎨 Modelos de Color y Textura
 
+![](./.README_files/figura-2.png)
+
 ### 📐 Sistema de Coordenadas Intrínsecas
 
 Cada píxel de la gota se describe mediante una muestra:
@@ -69,7 +71,7 @@ En los círculos, donde $a=b=r$, se recupera el sistema de coordenadas circular 
 
 ### Modos de las Coordenadas
 
-![](./.README_files/figura-2.png)
+![](./.README_files/figura-3.png)
 
 La tira utiliza dos coordenadas normalizadas:
 
