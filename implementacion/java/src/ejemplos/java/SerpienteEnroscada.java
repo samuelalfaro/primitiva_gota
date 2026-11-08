@@ -64,7 +64,7 @@ public class SerpienteEnroscada {
             if (i == n - 1) r = 26;
             var nd = c.nodo(nodos.get(i)[0], nodos.get(i)[1], r).centro(LOMO2);
             if (i == 0) nd.sectores(LOMO);
-            else if (i == n - 1) nd.aspecto(1.5).sectores(LOMO);
+            else if (i == n - 1) nd.sectores(LOMO);
             else nd.lados(VIENTRE, LOMO).ajusteLateral(0.45);
             if (prev != null) c.arista(prev, nd);
             prev = nd;

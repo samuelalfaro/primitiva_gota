@@ -44,7 +44,7 @@ public class Serpiente {
             double[] p = punto(t);
             var nd = c.nodo(p[0], p[1], radio(t) * (i == n - 1 ? 1.35 : 1)).centro(LOMO2);
             if (i == 0) nd.sectores(LOMO);
-            else if (i == n - 1) { nd.aspecto(1.45).sectores(LOMO); }
+            else if (i == n - 1) { nd.sectores(LOMO); }
             else nd.lados(VIENTRE, LOMO).ajusteLateral(0.5);
             if (prev != null) c.arista(prev, nd);
             prev = nd;

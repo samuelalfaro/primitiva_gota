@@ -12,7 +12,7 @@ public class Caracol {
         var cola = c.nodo(150, 396, 3).centro(0xFFE8C9A0).sectores(0xFFB98B5E);
         var lomo = c.nodo(262, 392, 21).centro(0xFFF3DDB8).lados(0xFFB98B5E, 0xFFE8C9A0).ajusteLateral(0.35);
         var cuello = c.nodo(376, 372, 25).centro(0xFFF3DDB8).lados(0xFFB98B5E, 0xFFE8C9A0).ajusteLateral(0.35);
-        var cabeza = c.nodo(452, 330, 27).centro(0xFFF7E6C8).aspecto(1.15).sectores(0xFFC99B6B);
+        var cabeza = c.nodo(452, 330, 27).centro(0xFFF7E6C8).sectores(0xFFC99B6B);
         c.arista(cola, lomo).tiradores(new Gota.Vec(40, 0), null);
         c.arista(lomo, cuello);
         c.arista(cuello, cabeza).tiradores(new Gota.Vec(30, -2), new Gota.Vec(-4, 34));

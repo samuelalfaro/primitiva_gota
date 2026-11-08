@@ -114,7 +114,7 @@ public class Colibri {
         tallo.render(im);
         Composicion flor = new Composicion();
         var fb = flor.nodo(98, 300, 7).centro(0xFFFFB74D).sectores(0xFFE65100);
-        var fo = flor.nodo(138, 218, 40).centro(0xFFFFEE58).aspecto(1.25).sectores(0xFFD32F2F);
+        var fo = flor.nodo(138, 218, 40).centro(0xFFFFEE58).sectores(0xFFD32F2F);
         flor.arista(fb, fo).tiradores(new Gota.Vec(10, -40), new Gota.Vec(-22, 18));
         flor.render(im);
         disco(im, 150, 205, 14, 0xFF7A1F10, 0xFFB5341D);                      // la boca de la flor

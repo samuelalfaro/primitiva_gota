@@ -55,8 +55,8 @@ public class Pez {
     static Composicion cola() {
         Composicion c = new Composicion();
         var raiz = c.nodo(182, 261, 7).centro(ALETA2).sectores(ALETA, OSC);
-        var arriba = c.nodo(92, 168, 24).centro(ALETA2).aspecto(1.9).sectores(ALETA);
-        var abajo = c.nodo(96, 352, 24).centro(ALETA2).aspecto(1.9).sectores(ALETA);
+        var arriba = c.nodo(92, 168, 24).centro(ALETA2).sectores(ALETA);
+        var abajo = c.nodo(96, 352, 24).centro(ALETA2).sectores(ALETA);
         c.arista(raiz, arriba).tiradores(new Gota.Vec(-50, -4), new Gota.Vec(30, 36));
         c.arista(raiz, abajo).tiradores(new Gota.Vec(-50, 4), new Gota.Vec(30, -36));
         return c;
@@ -65,7 +65,7 @@ public class Pez {
     static Composicion aleta(double x0, double y0, double r0, double x1, double y1, double r1, double vx, double vy, double asp) {
         Composicion c = new Composicion();
         var a = c.nodo(x0, y0, r0).centro(ALETA2).sectores(OSC);
-        var b = c.nodo(x1, y1, r1).centro(ALETA2).aspecto(asp).sectores(ALETA);
+        var b = c.nodo(x1, y1, r1).centro(ALETA2).sectores(ALETA);
         c.arista(a, b).tiradores(new Gota.Vec(vx, vy), null);
         return c;
     }
