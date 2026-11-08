@@ -508,4 +508,142 @@ final class Silueta {
                       cx + r * Math.cos(b), cy + r * Math.sin(b));
         }
     }
+
+    // ---------- Pertenencia a la envolvente de la familia de círculos ----------
+
+    /**
+     * Pertenencia a la unión de la familia de círculos (c(t), r(t)), con c una cúbica de Bézier y r una cuadrática (o dos) de Bézier:
+     * un punto p está dentro si existe t con |p - c(t)|^2 - r(t)^2 <= 0. Ese polinomio (grado 6) se evalúa en base de Bernstein por
+     * subdivisión, sin contornos ni tangentes explícitas. Es exacta y rápida mientras la silueta coincide con la envolvente
+     * (d >= r1 + r2); los tramos son los trozos del camino en los que el perfil del radio es una sola cuadrática.
+     */
+    static final class Envolvente {
+        static final double BANDA = 0.5;                  // semiancho del antialiasing, en píxeles
+        private static final int GRADO = 6;
+        private static final int PROF_MAX = 24;           // profundidad máxima de subdivisión
+        private static final int EXT = 0, CERO = 1, INT = 2;   // banda del antialiasing para la pertenencia
+        private static final double[][] BIN = new double[GRADO + 1][GRADO + 1];
+        static {
+            for (int n = 0; n <= GRADO; n++) {
+                BIN[n][0] = 1;
+                for (int k = 1; k <= n; k++)
+                    BIN[n][k] = BIN[n - 1][k - 1] + (k <= n - 1 ? BIN[n - 1][k] : 0);
+            }
+        }
+
+        private final double[][] cx6, cy6;                // c(t) de cada tramo, en Bernstein de grado 6
+        private final double[][] kExt, kCero, kInt;       // K = |c|^2 - (r + d)^2 para d = +BANDA, 0, -BANDA
+        private final boolean interiorValido;
+
+        /** Un elemento por tramo: los controles de c(t) (cúbica) y los de r(t) (cuadrática) en ese tramo. */
+        Envolvente(double[][] pxs, double[][] pys, double[][] radios) {
+            int n = pxs.length;
+            cx6 = new double[n][]; cy6 = new double[n][];
+            kExt = new double[n][]; kCero = new double[n][]; kInt = new double[n][];
+            double rmin = Double.MAX_VALUE;
+            for (int i = 0; i < n; i++) {
+                cx6[i] = elevar(pxs[i], GRADO);
+                cy6[i] = elevar(pys[i], GRADO);
+                double[] c2 = suma(producto(pxs[i], pxs[i]), producto(pys[i], pys[i]));
+                kExt[i] = k(c2, radios[i], +BANDA);
+                kCero[i] = k(c2, radios[i], 0);
+                kInt[i] = k(c2, radios[i], -BANDA);
+                for (double v : radios[i]) rmin = Math.min(rmin, v);
+            }
+            interiorValido = rmin >= BANDA;
+        }
+
+        /** Pertenencia exacta (a precisión de punto flotante). */
+        boolean contiene(double x, double y) { return dentro(x, y, CERO); }
+
+        /** Fracción del píxel que cubre la unión (0 a más de BANDA del borde, 1 a más de BANDA de profundidad). */
+        double cobertura(Geometria g, double x, double y) {
+            if (!dentro(x, y, EXT)) return 0;
+            if (interiorValido && dentro(x, y, INT)) return 1;
+            return Math.max(0, Math.min(1, 0.5 - g.distancia(x, y)));        // franja del borde
+        }
+
+        java.util.List<Geometria.Hebra> hebras(Geometria g, double x, double y) {
+            if (!dentro(x, y, EXT)) return java.util.List.of();
+            return g.hebras(x, y, BANDA);
+        }
+
+        private boolean dentro(double x, double y, int banda) {
+            if (!Double.isFinite(x) || !Double.isFinite(y)) return false;   // con NaN la subdivisión nunca decide
+            double pp = x * x + y * y;
+            double[] b = new double[GRADO + 1];
+            for (int j = 0; j < cx6.length; j++) {
+                double[] K = banda == EXT ? kExt[j] : banda == INT ? kInt[j] : kCero[j];
+                for (int i = 0; i <= GRADO; i++) b[i] = pp - 2 * (x * cx6[j][i] + y * cy6[j][i]) + K[i];
+                if (hayNoPositivo(b, PROF_MAX)) return true;
+            }
+            return false;
+        }
+
+        /** true si el polinomio de coeficientes b toma algún valor <= 0 en [0,1]. */
+        private static boolean hayNoPositivo(double[] b, int prof) {
+            double min = b[0];
+            for (int i = 1; i < b.length; i++) min = Math.min(min, b[i]);
+            if (min > 0) return false;                       // envolvente convexa: todo positivo
+            if (b[0] <= 0 || b[b.length - 1] <= 0) return true; // F(0) o F(1) ya no positivo
+            if (prof == 0) return true;                      // indeciso a esta resolución: dentro
+            double[] izq = new double[b.length], der = new double[b.length];
+            dividir(b, izq, der);
+            return hayNoPositivo(izq, prof - 1) || hayNoPositivo(der, prof - 1);
+        }
+
+        /** Divide la Bézier de controles b en el parámetro s: izq cubre [0, s] y der cubre [s, 1]. */
+        static void dividirEn(double[] b, double s, double[] izq, double[] der) {
+            double[] w = b.clone();
+            int n = b.length - 1;
+            izq[0] = w[0];
+            der[n] = w[n];
+            for (int k = 1; k <= n; k++) {
+                for (int i = 0; i <= n - k; i++) w[i] = (1 - s) * w[i] + s * w[i + 1];
+                izq[k] = w[0];
+                der[n - k] = w[n - k];
+            }
+        }
+
+        private static void dividir(double[] b, double[] izq, double[] der) { dividirEn(b, 0.5, izq, der); }
+
+        private static double[] k(double[] c2sum, double[] a, double d) {
+            double[] rd = { a[0] + d, a[1] + d, a[2] + d };
+            double[] rd2 = elevar(producto(rd, rd), GRADO);
+            double[] out = new double[GRADO + 1];
+            for (int i = 0; i <= GRADO; i++) out[i] = c2sum[i] - rd2[i];
+            return out;
+        }
+
+        private static double[] producto(double[] a, double[] b) {
+            int m = a.length - 1, n = b.length - 1;
+            double[] c = new double[m + n + 1];
+            for (int i = 0; i <= m; i++)
+                for (int j = 0; j <= n; j++)
+                    c[i + j] += BIN[m][i] * BIN[n][j] / BIN[m + n][i + j] * a[i] * b[j];
+            return c;
+        }
+
+        private static double[] suma(double[] a, double[] b) {
+            double[] c = new double[a.length];
+            for (int i = 0; i < a.length; i++) c[i] = a[i] + b[i];
+            return c;
+        }
+
+        private static double[] elevar(double[] a, int grado) {
+            double[] c = a;
+            while (c.length - 1 < grado) {
+                int n = c.length - 1;
+                double[] d = new double[n + 2];
+                d[0] = c[0];
+                d[n + 1] = c[n];
+                for (int i = 1; i <= n; i++) {
+                    double s = i / (double) (n + 1);
+                    d[i] = s * c[i - 1] + (1 - s) * c[i];
+                }
+                c = d;
+            }
+            return c;
+        }
+    }
 }
