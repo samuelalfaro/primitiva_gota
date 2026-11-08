@@ -8,7 +8,7 @@
     <artifactId>primitiva-gota</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <name>Primitiva Gota</name>
-    <description>Primitiva 2D formada por dos elipses unidas por una curva Bézier.</description>
+    <description>Primitiva de dibujo 2D que define las areas de influencia limitadas por el centro dirigido más cercano.</description>
 
     <properties>
         <!-- source/target en vez de release: no necesitan lib/ct.sym, que falta en algunos JDK de Ubuntu -->
