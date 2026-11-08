@@ -187,6 +187,54 @@ final class SiluetaCurva {
         return cuenta;
     }
 
+    /**
+     * Distancia con signo (positiva dentro, cero en el borde) del punto (px, py) al borde de la silueta doblada, aproximada.
+     * Cada pie de perpendicular (x, y) es una preimagen de p; el doblado es localmente Φ(x, y) = c(x) + y·N(x), con diferencial
+     * de columnas (1 + k·y)·T y N, de modo que la distancia recta D(x, y) de {@link Silueta#distanciaLocal} se convierte en la
+     * distancia al borde de esa capa con la regla de primer orden D / |∇(D∘Φ⁻¹)|, y |∇(D∘Φ⁻¹)|² = (∂D/∂x / (1 + k·y))² + (∂D/∂y)².
+     * La silueta es la unión de las capas (los pies), y la distancia con signo de una unión es el máximo de las de sus capas, exacto
+     * fuera y cota inferior dentro: cerca del borde, que es donde se usa (cobertura, SDF), es la del borde de la unión. Un borde de
+     * una capa invertida (1 + k·y < 0) que queda dentro de la unión no cuenta, porque otra capa lo cubre y su distancia es mayor.
+     * Su signo coincide con {@link #contiene}. Con el conector BIARCO no hay distancia recta y solo vale el signo (±1e-12).
+     * Es de primer orden: falla cerca del pliegue, donde 1 + k·y se anula y el borde tiene cúspides.
+     */
+    double distancia(double px, double py) {
+        int n = s.length;
+        double mejor = -Double.MAX_VALUE;
+        double dx = px - cx[0], dy = py - cy[0], nn = Math.hypot(tx[0], ty[0]), ux = tx[0] / nn, uy = ty[0] / nn;
+        double x0 = dx * ux + dy * uy;
+        if (x0 < 0) mejor = Math.max(mejor, capa(x0, dx * uy - dy * ux, 1));
+        dx = px - cx[n - 1]; dy = py - cy[n - 1];
+        nn = Math.hypot(tx[n - 1], ty[n - 1]); ux = tx[n - 1] / nn; uy = ty[n - 1] / nn;
+        double xe = dx * ux + dy * uy;
+        if (xe >= 0) mejor = Math.max(mejor, capa(largo + xe, dx * uy - dy * ux, 1));
+        double gPrev = (px - cx[0]) * tx[0] + (py - cy[0]) * ty[0];
+        for (int i = 0; i + 1 < n; i++) {
+            double gNext = (px - cx[i + 1]) * tx[i + 1] + (py - cy[i + 1]) * ty[i + 1];
+            if ((gPrev <= 0 && gNext > 0) || (gPrev >= 0 && gNext < 0)) {
+                double f = gPrev / (gPrev - gNext), x = s[i] + f * (s[i + 1] - s[i]);
+                double ccx = cx[i] + f * (cx[i + 1] - cx[i]), ccy = cy[i] + f * (cy[i + 1] - cy[i]);
+                double Tx = tx[i] + f * (tx[i + 1] - tx[i]), Ty = ty[i] + f * (ty[i + 1] - ty[i]), m = Math.hypot(Tx, Ty);
+                Tx /= m; Ty /= m;
+                double y = (px - ccx) * Ty - (py - ccy) * Tx;
+                mejor = Math.max(mejor, capa(x, y, Math.abs(1 + curvatura(x) * y)));
+            }
+            gPrev = gNext;
+        }
+        return mejor;
+    }
+
+    /** Distancia con signo al borde de una capa: la recta en (x, y) corregida por el factor {@code j} = |1 + k·y| del doblado en la dirección del camino. */
+    private double capa(double x, double y, double j) {
+        double dd = recta.distanciaLocal(x, y);
+        if (Math.abs(dd) < 1e-9 || dd < -1e30) return dd;                    // en el borde, o sin distancia (BIARCO, sin elipse)
+        double h = 1e-5 * (r1 + r2);
+        double gx = (recta.distanciaLocal(x + h, y) - recta.distanciaLocal(x - h, y)) / (2 * h);
+        double gy = (recta.distanciaLocal(x, y + h) - recta.distanciaLocal(x, y - h)) / (2 * h);
+        double g = Math.hypot(gx / Math.max(j, 1e-6), gy);
+        return g < 1e-9 ? dd : dd / g;
+    }
+
     // ---------- el camino ----------
 
     /** Índice y fracción de la tabla para una longitud de arco (acotada a [0, L]). */
