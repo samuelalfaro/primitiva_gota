@@ -32,7 +32,7 @@ public class BallenaV1 {
         var c1 = cuerpo.nodo(290, 315, 58).centro(CENTRO).lados(LADO1, VIENTRE).ajusteLateral(0.38);
         var c2 = cuerpo.nodo(430, 300, 72).centro(CENTRO).lados(LADO1, VIENTRE).ajusteLateral(0.42);
         var c3 = cuerpo.nodo(560, 295, 60).centro(CENTRO).lados(LADO1, VIENTRE).ajusteLateral(0.40);
-        var cabeza = cuerpo.nodo(700, 310, 36).centro(CENTRO).sectores(VIENTRE).aspecto(1.35);
+        var cabeza = cuerpo.nodo(700, 310, 36).centro(CENTRO).sectores(VIENTRE);
 
         cuerpo.arista(colaBase, c1).tiradores(new Gota.Vec(45, -30), new Gota.Vec(-55, 8));
         cuerpo.arista(c1, c2).tiradores(new Gota.Vec(65, 5), new Gota.Vec(-60, -2));
@@ -43,26 +43,26 @@ public class BallenaV1 {
         // Flukes independientes
         Composicion flukeSup = new Composicion().suavizado(1.8);
         var fs1 = flukeSup.nodo(185, 325, 24).centro(CENTRO).sectores(LADO1);
-        var fs2 = flukeSup.nodo(95, 245, 13).centro(CENTRO).sectores(LADO1).aspecto(1.7);
+        var fs2 = flukeSup.nodo(95, 245, 13).centro(CENTRO).sectores(LADO1);
         flukeSup.arista(fs1, fs2).tiradores(new Gota.Vec(-35, -45), new Gota.Vec(25, 18));
         flukeSup.render(im);
 
         Composicion flukeInf = new Composicion().suavizado(1.8);
         var fi1 = flukeInf.nodo(185, 365, 22).centro(CENTRO).sectores(LADO1);
-        var fi2 = flukeInf.nodo(100, 430, 12).centro(CENTRO).sectores(LADO1).aspecto(1.6);
+        var fi2 = flukeInf.nodo(100, 430, 12).centro(CENTRO).sectores(LADO1);
         flukeInf.arista(fi1, fi2).tiradores(new Gota.Vec(-30, 40), new Gota.Vec(20, -12));
         flukeInf.render(im);
 
         // Aletas independientes
         Composicion dorsal = new Composicion().suavizado(1.4);
         var d1 = dorsal.nodo(435, 238, 14).centro(CENTRO).sectores(LADO1);
-        var d2 = dorsal.nodo(460, 180, 8).centro(CENTRO).sectores(LADO1).aspecto(1.9);
+        var d2 = dorsal.nodo(460, 180, 8).centro(CENTRO).sectores(LADO1);
         dorsal.arista(d1, d2).tiradores(new Gota.Vec(8, -35), new Gota.Vec(-8, 18));
         dorsal.render(im);
 
         Composicion pectoral = new Composicion().suavizado(1.6);
         var p1 = pectoral.nodo(525, 360, 20).centro(CENTRO).sectores(LADO1);
-        var p2 = pectoral.nodo(490, 445, 13).centro(CENTRO).sectores(LADO1).aspecto(1.8);
+        var p2 = pectoral.nodo(490, 445, 13).centro(CENTRO).sectores(LADO1);
         pectoral.arista(p1, p2).tiradores(new Gota.Vec(-18, 45), new Gota.Vec(12, -18));
         pectoral.render(im);
 
@@ -84,6 +84,6 @@ public class BallenaV1 {
         boca.render(im);
 
         System.out.printf("BallenaV1 render: %.2f s%n", (System.nanoTime() - t0) / 1e9);
-        ImageIO.write(im, "png", new File("/home/workdir/artifacts/ballena_v1.png"));
+        ImageIO.write(im, "png", new File("ballena_v1.png"));
     }
 }

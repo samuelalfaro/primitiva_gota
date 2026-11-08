@@ -45,7 +45,7 @@ public class BallenaV3 {
                 .centro(C_CUERPO).sectores(C_SOMBRA, C_VIENTRE, C_SOMBRA);
 
         var cabeza = ballena.nodo(770, 308, 40)
-                .centro(C_CUERPO).sectores(C_VIENTRE).aspecto(1.42);
+                .centro(C_CUERPO).sectores(C_VIENTRE);
 
         ballena.arista(cola, caudal).tiradores(new Gota.Vec(50, -30), new Gota.Vec(-55, 10));
         ballena.arista(caudal, centro).tiradores(new Gota.Vec(70, 6),  new Gota.Vec(-68, -4));
@@ -54,20 +54,20 @@ public class BallenaV3 {
 
         // Flukes desde el nodo cola compartido
         var flukeS = ballena.nodo(100, 235, 14)
-                .centro(C_CUERPO).sectores(C_PUNTA).aspecto(1.85);
+                .centro(C_CUERPO).sectores(C_PUNTA);
         ballena.arista(cola, flukeS).tiradores(new Gota.Vec(-35, -48), new Gota.Vec(25, 20));
 
         var flukeI = ballena.nodo(105, 470, 13)
-                .centro(C_CUERPO).sectores(C_PUNTA).aspecto(1.75);
+                .centro(C_CUERPO).sectores(C_PUNTA);
         ballena.arista(cola, flukeI).tiradores(new Gota.Vec(-32, 45), new Gota.Vec(22, -16));
 
         // Aletas desde nodos del cuerpo
         var dorsal = ballena.nodo(490, 168, 7.5)
-                .centro(C_CUERPO).sectores(C_PUNTA).aspecto(2.15);
+                .centro(C_CUERPO).sectores(C_PUNTA);
         ballena.arista(centro, dorsal).tiradores(new Gota.Vec(8, -42), new Gota.Vec(-5, 14));
 
         var pectoral = ballena.nodo(520, 465, 12)
-                .centro(C_CUERPO).sectores(C_PUNTA).aspecto(1.95);
+                .centro(C_CUERPO).sectores(C_PUNTA);
         ballena.arista(anterior, pectoral).tiradores(new Gota.Vec(-25, 48), new Gota.Vec(12, -18));
 
         ballena.render(im);
@@ -93,7 +93,7 @@ public class BallenaV3 {
         dibujarChorro(im, 730, 205);
 
         System.out.printf("BallenaV3 render: %.2f s%n", (System.nanoTime() - t0) / 1e9);
-        ImageIO.write(im, "png", new File("/home/workdir/artifacts/ballena_v3.png"));
+        ImageIO.write(im, "png", new File("ballena_v3.png"));
     }
 
     static void dibujarChorro(BufferedImage im, double x, double y) {
