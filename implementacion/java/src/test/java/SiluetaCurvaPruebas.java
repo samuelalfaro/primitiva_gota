@@ -214,6 +214,58 @@ public class SiluetaCurvaPruebas {
             String.format("giro %.1f°, %.2f %% → %.2f %%", Math.toDegrees(sN.giro()), 100 * dN, 100 * dA));
     }
 
+    /** El contorno recto (aplanado y subdividido muy fino) llevado por el doblado punto a punto: la referencia exacta del contorno doblado. */
+    static Path2D.Double referencia(SiluetaCurva cu) {
+        Path2D.Double out = new Path2D.Double();
+        double[] c = new double[6];
+        double px = 0, py = 0, paso = 2e-3 * (cu.r1 + cu.r2);
+        for (var it = cu.recta().formaLocal().getPathIterator(null, 2e-5 * (cu.r1 + cu.r2)); !it.isDone(); it.next()) {
+            int t = it.currentSegment(c);
+            if (t == java.awt.geom.PathIterator.SEG_CLOSE) { out.closePath(); continue; }
+            if (t == java.awt.geom.PathIterator.SEG_MOVETO) {
+                double[] q = cu.mapea(c[0], c[1]);
+                out.moveTo(q[0], q[1]);
+            } else {
+                int m = Math.max(1, (int) Math.ceil(Math.hypot(c[0] - px, c[1] - py) / paso));
+                for (int i = 1; i <= m; i++) {
+                    double[] q = cu.mapea(px + (c[0] - px) * i / m, py + (c[1] - py) * i / m);
+                    out.lineTo(q[0], q[1]);
+                }
+            }
+            px = c[0];
+            py = c[1];
+        }
+        return out;
+    }
+
+    static void pertenencia() {
+        System.out.println("-- (6) pertenencia: unión de pies de perpendicular");
+        double peorSin = 0, peorFalta = 0;
+        int sinPliegue = 0, conPliegue = 0, huecos = 0;
+        for (double[] rr : new double[][] { { 72, 36 }, { 60, 60 } })
+            for (double d : new double[] { 0.3, 0.6, 0.9, 1.0, 1.5, 2.0 })
+                for (double g : new double[] { 0, 30, 60, 90, 120, 150 }) {
+                    var cu = curva(rr[0], rr[1], d, g);
+                    double esc = Math.min(rr[0], rr[1]);
+                    if (!cu.plegada()) {
+                        sinPliegue++;
+                        peorSin = Math.max(peorSin, SiluetaPruebas.discrepancia(referencia(cu), (x, y) -> cu.contiene(x, y) ? 1 : 0, esc, false));
+                    } else {
+                        conPliegue++;
+                        // con pliegue la máscara es la unión: contiene todo lo que cubre el relleno, y puede cubrir más (huecos del winding)
+                        peorFalta = Math.max(peorFalta, SiluetaPruebas.discrepancia(referencia(cu), (x, y) -> cu.contiene(x, y) ? 1 : 0, esc, true));
+                        if (SiluetaPruebas.discrepancia(referencia(cu), (x, y) -> cu.contiene(x, y) ? 1 : 0, esc, false) > 1e-2) huecos++;
+                    }
+                }
+        comprueba(String.format("sin pliegue (%d casos): contiene coincide con el relleno del contorno doblado (referencia: el contorno recto doblado punto a punto)", sinPliegue), peorSin < 1e-4, String.format("peor %.1e radios del borde", peorSin));
+        comprueba(String.format("con pliegue (%d casos): contiene incluye todo lo que cubre el contorno doblado", conPliegue), peorFalta < 1e-4, String.format("peor %.1e radios; en %d el relleno con winding tiene huecos que la unión cubre", peorFalta, huecos));
+        var p = camino(60, 0.9 * 108);
+        var cu = SiluetaCurva.de(p[0], p[1], p[2], p[3], 72, 36);
+        double[] w = new double[1];
+        int pies = cu.pies(p[0].x, p[0].y, w);
+        comprueba("el centro de la tapa 1 está dentro (al menos un pie) y sin pliegue el winding es 1", pies >= 1 && w[0] == 1 && cu.contiene(p[0].x, p[0].y), "pies " + pies + ", winding " + w[0]);
+    }
+
     public static void main(String[] args) {
         recto();
         sinEsquinas();
@@ -222,6 +274,7 @@ public class SiluetaCurvaPruebas {
         escalaYOrientacion();
         relajo();
         relajoLocal();
+        pertenencia();
         System.out.printf("%n%d pruebas, %d fallos%n", pruebas, fallos);
         if (fallos > 0) System.exit(1);
     }

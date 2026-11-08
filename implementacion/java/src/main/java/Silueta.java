@@ -36,6 +36,10 @@ final class Silueta {
     final Point2D.Double c1, c2;
     final double r1, r2, d, tx, ty;
     private final Angulos angulos;
+    /** Elipse conectora superior {ax, ay, bx, by, w, xx, xy} (marco local); null si el conector no es ELIPSE. */
+    private final double[] elipseSup;
+    private final double xP1, xP3, yP1, yP3;
+    private Path2D.Double formaCache;                  // solo para el respaldo BIARCO de contiene()
 
     private Silueta(Point2D c1, double r1, Point2D c2, double r2, double tx, double ty, double d, Angulos a) {
         this.c1 = new Point2D.Double(c1.getX(), c1.getY());
@@ -46,6 +50,14 @@ final class Silueta {
         this.tx = tx;
         this.ty = ty;
         this.angulos = a;
+        double p1 = a.psi1(), p2 = a.psi2();
+        this.xP1 = -r1 * Math.cos(p1);
+        this.yP1 = r1 * Math.sin(p1);
+        this.xP3 = d + r2 * Math.cos(p2);
+        this.yP3 = r2 * Math.sin(p2);
+        double[] el = a.conector() == Conector.ELIPSE
+                ? elipse(xP1, yP1, Math.sin(p1), Math.cos(p1), xP3, yP3, Math.sin(p2), -Math.cos(p2)) : null;
+        this.elipseSup = el == null ? null : new double[] { xP1, yP1, xP3, yP3, el[0], el[2], el[3] };
     }
 
     /** Con la tangente de la cuerda c1→c2 o, si los centros coinciden, el eje x. */
@@ -295,6 +307,82 @@ final class Silueta {
         if (bx - ax <= 1e-9 * (r1 + r2)) return INF;
         double[] el = elipse(ax, ay, s1, c1, bx, by, s2, -c2);
         return el == null ? INF : energiaConica(ax, ay, el[2], el[3], bx, by, el[0]);
+    }
+
+    // ---------- pertenencia ----------
+
+    /**
+     * Si el punto (x, y) del plano está dentro de la silueta (la máscara de la gota). Con la simetría respecto al eje, en el marco
+     * local basta la semianchura h(x) del contorno superior: las tapas son círculos, y el conector es la recta P1-P3 o el arco de
+     * elipse, que es monótono en x, de modo que x(u) = x es una ecuación de segundo grado en el parámetro u del arco. Coste constante
+     * y sin subdivisión. Con el respaldo BIARCO se usa el contorno ({@link #forma()}), más lento.
+     */
+    boolean contiene(double x, double y) {
+        double ex = x - c1.x, ey = y - c1.y;
+        return contieneLocal(ex * tx + ey * ty, ex * ty - ey * tx);
+    }
+
+    /** Como {@link #contiene(double, double)}, en el marco local (c1 en el origen, T = (1, 0), N hacia +y). */
+    boolean contieneLocal(double x, double y) {
+        if (angulos.conector() == Conector.BIARCO) {
+            if (formaCache == null) formaCache = formaLocal();
+            return formaCache.contains(x, y);
+        }
+        return distanciaLocal(x, y) >= 0;
+    }
+
+    /**
+     * Distancia con signo (positiva dentro) del punto (x, y) al contorno, aproximada: exacta en las tapas y de primer orden en el
+     * conector (la semianchura en x dividida por sqrt(1 + h'^2)), que basta cerca del borde. Su signo es el de la pertenencia.
+     * No definida (se usa el respaldo del contorno) con el conector BIARCO.
+     */
+    double distancia(double x, double y) {
+        double ex = x - c1.x, ey = y - c1.y;
+        return distanciaLocal(ex * tx + ey * ty, ex * ty - ey * tx);
+    }
+
+    /** Como {@link #distancia(double, double)}, en el marco local. */
+    double distanciaLocal(double x, double y) {
+        if (angulos.conector() == Conector.BIARCO) {
+            if (formaCache == null) formaCache = formaLocal();
+            return formaCache.contains(x, y) ? 0 : -1e-12;      // sin distancia: solo el signo
+        }
+        y = Math.abs(y);
+        if (x <= xP1 || x < -r1) return r1 - Math.hypot(x, y);
+        if (x >= xP3 || x > d + r2) return r2 - Math.hypot(x - d, y);
+        double h, dh;
+        if (elipseSup == null) {                                  // RECTA
+            dh = (yP3 - yP1) / (xP3 - xP1);
+            h = yP1 + dh * (x - xP1);
+        } else {
+            double[] q = elipseEn(x);
+            if (q == null) return -INF;
+            h = q[0];
+            dh = q[1];
+        }
+        return (h - y) / Math.sqrt(1 + dh * dh);
+    }
+
+    /** {h, h'} del arco de elipse superior en x (xP1 < x < xP3), o null si no hay raíz. */
+    private double[] elipseEn(double x) {
+        double[] k = elipseSup;
+        double w = k[4], a = k[0] - x, b = k[5] - x, c = k[2] - x;
+        double q2 = a - 2 * w * b + c, q1 = -2 * a + 2 * w * b, q0 = a, u;
+        if (Math.abs(q2) < 1e-14 * (Math.abs(a) + Math.abs(b) + Math.abs(c) + 1e-300)) u = -q0 / q1;
+        else {
+            double sq = Math.sqrt(Math.max(q1 * q1 - 4 * q2 * q0, 0));
+            double u1 = (-q1 + sq) / (2 * q2), u2 = (-q1 - sq) / (2 * q2);
+            u = u1 >= -1e-9 && u1 <= 1 + 1e-9 ? u1 : (u2 >= -1e-9 && u2 <= 1 + 1e-9 ? u2 : Double.NaN);
+        }
+        if (Double.isNaN(u)) return null;
+        u = Math.min(Math.max(u, 0), 1);
+        double A = (1 - u) * (1 - u), B = 2 * w * u * (1 - u), C = u * u, D = A + B + C;
+        double dD = 2 * (w - 1) * (1 - 2 * u);
+        double nx = A * k[0] + B * k[5] + C * k[2], ny = A * k[1] + B * k[6] + C * k[3];
+        double dnx = -2 * (1 - u) * k[0] + 2 * w * (1 - 2 * u) * k[5] + 2 * u * k[2];
+        double dny = -2 * (1 - u) * k[1] + 2 * w * (1 - 2 * u) * k[6] + 2 * u * k[3];
+        double dx = (dnx - nx / D * dD) / D, dy = (dny - ny / D * dD) / D;
+        return new double[] { ny / D, dy / dx };
     }
 
     // ---------- la forma ----------

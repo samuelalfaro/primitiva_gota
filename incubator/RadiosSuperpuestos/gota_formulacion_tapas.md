@@ -199,3 +199,26 @@ Caminos que fuerzan el pliegue (demo `SiluetaComplejaDemo`, silueta_compleja.png
 - Un punto con etiqueta s queda oculto si está dentro (más de ε = 0,2 % de r1 + r2) de algún círculo (c(t'), r(t')) con t' > s. Se evalúa en 12 puntos por cúbica y cada tramo toma el estado más oculto de sus dos extremos. Salida: caminos abiertos (negro = visible, gris punteado = tapado en el demo `SiluetaTrazoDemo`, silueta_trazo.png).
 - Resultado en los caminos de 12.2 (S, horquilla, lazo, caracol; cuatro relajos): el negro deja de cruzar el interior de la unión; los tramos plegados de los conectores interiores quedan tapados y en el exterior casi todo el contorno es visible. Con relajo interior o de ambos desaparece el pico interior del lazo y el caracol.
 - Límites: ε está elegido a ojo (casi tangentes pueden cambiar de estado); se oculta un punto dentro de cualquier círculo posterior aunque venga de otro tramo del mismo contorno; sin pruebas automáticas todavía, solo el demo; la relación con el relleno (par-impar o no cero) está sin decidir.
+
+## 13. Pertenencia: la silueta es la máscara (2026-11-08)
+
+La silueta decide si un punto es de la gota (como dibujar la gota de un color sólido); a qué zona de las coordenadas intrínsecas pertenece un punto es una etapa posterior, también parte de la definición.
+
+### 13.1 Camino recto: cónicas
+
+En el marco local (c1 en el origen, T = (1, 0)) el contorno es simétrico respecto al eje y, en el semiplano superior, una función de x: h(x) es el círculo de la tapa 1 hasta P1, el conector (la recta P1-P3 o el arco de elipse) hasta P3 y el círculo de la tapa 2. El arco de elipse es la cónica racional (1, w, 1) sobre P1, X, P3 y es monótono en x (X queda entre P1 y P3 en x), así que x(u) = x es una ecuación de segundo grado en u y h(x) sale sin buscar raíces: coste constante. Dentro si |y| <= h(x). `Silueta.contiene` / `contieneLocal`; con el respaldo BIARCO se usa el contorno.
+
+Medido (408 configuraciones: 8 a mano y 400 con radios de 0,4 a 3 y d hasta 1,3·(r1 + r2); 303 con elipse, 105 con recta; ninguna con biarco): los puntos que discrepan del relleno de `forma()` están como mucho a 5,8·10⁻⁵ radios del borde. `Silueta.distancia` (signo = pertenencia) es exacta en las tapas y de primer orden en el conector; a menos de un píxel del borde el peor error fue 0,7 píxeles, en un caso extremo (r1 ≈ 0,4, r2 ≈ 4,7, d = 0,2); no se ha medido el percentil, de modo que la cobertura necesita una iteración de proyección antes de fiarse.
+
+### 13.2 Camino curvo: unión de pies de perpendicular
+
+El doblado es Φ(x, y) = c(x) + y·N(x) (con las prolongaciones rectas de las tapas fuera de [0, L]). Un punto p es imagen de (x, y) si x es un pie de perpendicular, (p - c(x))·T(x) = 0, e y = (p - c(x))·N(x). `SiluetaCurva.contiene`: dentro si algún pie cae en la silueta recta (más las dos prolongaciones). Sin pliegue Φ es inyectiva en la región y coincide con el relleno del contorno doblado (peor 2,7·10⁻⁵ radios en 35 casos, frente al contorno doblado punto a punto).
+
+Con pliegue (1 + k·y <= 0 en algún punto del contorno) hay pies de orientación invertida. Dos reglas posibles:
+
+- **Unión de pies** (la elegida): dentro si hay algún pie. Es la imagen del doblado: lo que la forma cubre.
+- **Winding**: el winding de p es la suma, sobre sus pies dentro de la región, del signo de 1 + k·y; dentro si no es cero (lo que hace `Path2D.contains`). Una capa invertida y una normal se cancelan, y se abren huecos en la forma: 25 de 37 casos plegados de las pruebas.
+
+Elegida la unión: contiene todo lo que cubre el contorno doblado y puede cubrir más. `SiluetaCurva.pies(x, y, signos)` da el número de pies y el winding con la misma pasada. Consecuencia pendiente: en la zona plegada el contorno doblado (Path2D) tiene un lazo que queda dentro de la unión, así que el borde visible de la máscara no es ese contorno.
+
+Límites: el barrido de pies es lineal en la tabla del camino (2049 muestras); `pliegue()` solo se ha corregido para el conector recto (PR #12); no se ha probado con relajo ni con caminos que se cruzan globalmente.

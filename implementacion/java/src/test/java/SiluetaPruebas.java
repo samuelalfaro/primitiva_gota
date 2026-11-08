@@ -256,6 +256,69 @@ public class SiluetaPruebas {
         return m < 1e-6 * r + 2e-3;
     }
 
+    /** Segmentos {x0, y0, x1, y1} de la forma aplanada. */
+    static List<double[]> segmentos(java.awt.Shape sh) {
+        List<double[]> out = new ArrayList<>();
+        double[] c = new double[6];
+        double px = 0, py = 0, mx = 0, my = 0;
+        for (PathIterator it = sh.getPathIterator(null, 1e-4); !it.isDone(); it.next()) {
+            int t = it.currentSegment(c);
+            if (t == PathIterator.SEG_MOVETO) { mx = px = c[0]; my = py = c[1]; }
+            else if (t == PathIterator.SEG_LINETO) { out.add(new double[] { px, py, c[0], c[1] }); px = c[0]; py = c[1]; }
+            else if (t == PathIterator.SEG_CLOSE) out.add(new double[] { px, py, mx, my });
+        }
+        return out;
+    }
+
+    static double distSegmentos(List<double[]> seg, double x, double y) {
+        double best = Double.MAX_VALUE;
+        for (double[] q : seg) {
+            double dx = q[2] - q[0], dy = q[3] - q[1], l2 = dx * dx + dy * dy;
+            double t = l2 == 0 ? 0 : Math.max(0, Math.min(1, ((x - q[0]) * dx + (y - q[1]) * dy) / l2));
+            best = Math.min(best, Math.hypot(x - q[0] - t * dx, y - q[1] - t * dy));
+        }
+        return best;
+    }
+
+    /**
+     * Mayor distancia (en unidades de {@code escala}) al contorno de los puntos de una malla de 120 x 120 donde {@code dentro} y el
+     * relleno de {@code forma} discrepan; si {@code soloSobra} solo cuentan los puntos que están dentro del relleno y la máscara dice fuera.
+     */
+    static double discrepancia(java.awt.Shape forma, java.util.function.DoubleBinaryOperator dentro, double escala, boolean soloFalta) {
+        var b = forma.getBounds2D();
+        double mg = 0.15 * Math.max(b.getWidth(), b.getHeight());
+        double x0 = b.getMinX() - mg, y0 = b.getMinY() - mg, w = b.getWidth() + 2 * mg, h = b.getHeight() + 2 * mg;
+        var seg = segmentos(forma);
+        int n = 120;
+        double peor = 0;
+        for (int j = 0; j < n; j++)
+            for (int i = 0; i < n; i++) {
+                double x = x0 + (i + .5) * w / n, y = y0 + (j + .5) * h / n;
+                boolean m = dentro.applyAsDouble(x, y) > 0, f = forma.contains(x, y);
+                if (m != f && (!soloFalta || (f && !m))) peor = Math.max(peor, distSegmentos(seg, x, y) / escala);
+            }
+        return peor;
+    }
+
+    static void pertenencia() {
+        System.out.println("-- (7) pertenencia (contiene) frente al relleno del contorno");
+        double[][] c = { { 2, 2, 0 }, { 2, 2, 1 }, { 2, 2, 3 }, { 1, 3, 0.5 }, { 1, 3, 2 }, { 1, 3, 3.9 }, { 1, 3, 4 }, { 1, 3, 6 }, { 3, 1, 2.5 }, { 1.5, 1.2, 0.4 } };
+        double peor = 0, peorD = 0;
+        for (double[] f : c) {
+            var q = de(new Point2D.Double(0, 0), f[0], new Point2D.Double(f[2], 0), f[1]);
+            peor = Math.max(peor, discrepancia(q.forma(), (x, y) -> q.contiene(x, y) ? 1 : 0, Math.min(f[0], f[1]), false));
+        }
+        java.util.Random rnd = new java.util.Random(5);
+        for (int i = 0; i < 40; i++) {
+            double r1 = 0.4 + 2.6 * rnd.nextDouble(), r2 = 0.4 + 2.6 * rnd.nextDouble(), d = 1.3 * (r1 + r2) * rnd.nextDouble(), a = 6.283 * rnd.nextDouble();
+            var q = de(new Point2D.Double(5, -3), r1, new Point2D.Double(5 + d * Math.cos(a), -3 + d * Math.sin(a)), r2);
+            peor = Math.max(peor, discrepancia(q.forma(), (x, y) -> q.contiene(x, y) ? 1 : 0, Math.min(r1, r2), false));
+        }
+        comprueba("contiene coincide con el relleno de forma() (10 casos + 40 aleatorios, girados y trasladados)", peor < 5e-4, String.format("peor %.1e radios del borde", peor));
+        var g = de(new Point2D.Double(1, 2), 2, new Point2D.Double(1, 2), 2, 0.6, 0.8);
+        comprueba("círculos idénticos: contiene es el círculo", g.contiene(1 + 1.99, 2) && !g.contiene(1 + 2.01, 2) && g.contiene(1, 2 + 1.99) && !g.contiene(1, 2 + 2.01), "");
+    }
+
     public static void main(String[] args) {
         for (Silueta.Conector c : new Silueta.Conector[] { Silueta.Conector.ELIPSE, Silueta.Conector.BIARCO }) {
             C = c;
@@ -268,6 +331,7 @@ public class SiluetaPruebas {
             sinEsquinas();
             forma();
             conector();
+            pertenencia();
         }
         System.out.printf("%n%d pruebas, %d fallos%n", pruebas, fallos);
         if (fallos > 0) System.exit(1);
