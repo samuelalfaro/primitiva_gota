@@ -301,13 +301,20 @@ final class Silueta {
 
     /** Los extremos de los arcos en el plano: P1 y P2 son los de la tapa 1 (lados +N y -N), P3 y P4 los de la tapa 2; las ramas son P1→P3 y P2→P4. */
     Point2D.Double[] extremos() {
+        Point2D.Double[] out = extremosLocales();
+        AffineTransform at = aMundo();
+        for (int i = 0; i < 4; i++) at.transform(out[i], out[i]);
+        return out;
+    }
+
+    /** Como {@link #extremos()}, pero en el marco local (c1 en el origen, T = (1, 0), N hacia +y). */
+    Point2D.Double[] extremosLocales() {
         double p1 = angulos.psi1(), p2 = angulos.psi2();
         double[][] l = {
             { -r1 * Math.cos(p1), r1 * Math.sin(p1) }, { -r1 * Math.cos(p1), -r1 * Math.sin(p1) },
             { d + r2 * Math.cos(p2), r2 * Math.sin(p2) }, { d + r2 * Math.cos(p2), -r2 * Math.sin(p2) } };
         Point2D.Double[] out = new Point2D.Double[4];
-        AffineTransform at = aMundo();
-        for (int i = 0; i < 4; i++) out[i] = (Point2D.Double) at.transform(new Point2D.Double(l[i][0], l[i][1]), new Point2D.Double());
+        for (int i = 0; i < 4; i++) out[i] = new Point2D.Double(l[i][0], l[i][1]);
         return out;
     }
 
@@ -318,6 +325,13 @@ final class Silueta {
 
     /** La silueta cerrada (arcos de círculo en cúbicas de Bézier, error ~1e-4 del radio), en el sentido T→N→-T. */
     Path2D.Double forma() {
+        Path2D.Double p = formaLocal();
+        p.transform(aMundo());
+        return p;
+    }
+
+    /** La silueta en el marco local (c1 en el origen, T = (1, 0), N hacia +y matemático). */
+    Path2D.Double formaLocal() {
         double p1 = angulos.psi1(), p2 = angulos.psi2();
         double c1c = Math.cos(p1), c1s = Math.sin(p1), c2c = Math.cos(p2), c2s = Math.sin(p2);
         double ax = -r1 * c1c, ay = r1 * c1s, bx = d + r2 * c2c, by = r2 * c2s;
@@ -345,7 +359,6 @@ final class Silueta {
         }
         bezier(p, 0, 0, r1, Math.PI + p1, -2 * p1);                // tapa 1, por -T
         p.closePath();
-        p.transform(aMundo());
         return p;
     }
 

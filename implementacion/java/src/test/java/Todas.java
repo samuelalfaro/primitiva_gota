@@ -14,6 +14,7 @@ public class Todas {
             ,"TapasDisco"
             ,"ComposicionPruebas"
             ,"SiluetaPruebas"
+            ,"SiluetaCurvaPruebas"
     };
 
     public static void main(String[] args) throws Exception {
