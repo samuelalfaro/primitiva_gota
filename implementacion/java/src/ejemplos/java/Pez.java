@@ -4,18 +4,17 @@ import java.awt.image.DataBufferInt;
 import java.io.File;
 import javax.imageio.ImageIO;
 
-/** Dibujo libre solo con la API de Composicion: un pez con aletas, escamas (textura con alfa), ojo, burbujas y algas. */
+/** Dibujo libre solo con la API de Composicion: un pez (y el océano, una sola gota enorme) con aletas, escamas (textura con alfa), ojo, burbujas y algas. */
 public class Pez {
     static final int W = 700, H = 440;
 
     static final int LOMO = 0xFF1E88A8, VIENTRE = 0xFFFFB74D, PLATA = 0xFFFFE0A3, ALETA = 0xFFFF7043, ALETA2 = 0xFFFFA070, OSC = 0xFFBF4A22;
 
+    /** El océano es una sola gota enorme: dos círculos de radio 1100 casi coincidentes, claros en el centro (arriba) y oscuros en el borde. */
     static void agua(BufferedImage im) {
-        int[] px = ((DataBufferInt) im.getRaster().getDataBuffer()).getData();
-        for (int y = 0; y < H; y++) {
-            int c = Mezcla.RGB.mezclar(0xFF9AD9E8, 0xFF0F5B7A, Math.pow((double) y / H, 0.9));
-            for (int x = 0; x < W; x++) px[y * W + x] = c;
-        }
+        java.util.Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), 0xFF0F5B7A);
+        Point2D.Double a = new Point2D.Double(W / 2.0, -420), b = new Point2D.Double(W / 2.0 + 0.5, -420);
+        Gota.lineal(a, 1000, b, 1000, Perfil.recto()).render(im, Colores.cuatroColores(0xFF9AD9E8, 0xFF9AD9E8, 0xFF0F5B7A, 0xFF0F5B7A, Mezcla.RGB));
     }
 
     static void disco(BufferedImage im, double x, double y, double r, int centro, int borde) {
@@ -99,11 +98,11 @@ public class Pez {
         Composicion cuerpo = cuerpo();
         cuerpo.render(im);
         cuerpo.render(im, ESCAMAS);
-        aleta(498, 262, 17, 425, 322, 3, -25, 14, 1.0).render(im);               // pectoral
+        aleta(486, 270, 17, 420, 330, 3, -25, 14, 1.0).render(im);               // pectoral
         // agalla
         Composicion ag = new Composicion();
-        var g0 = ag.nodo(518, 205, 2.2).color(OSC);
-        var g1 = ag.nodo(512, 268, 2.2).color(OSC);
+        var g0 = ag.nodo(522, 205, 2.2).color(OSC);
+        var g1 = ag.nodo(516, 272, 2.2).color(OSC);
         ag.arista(g0, g1).tiradores(new Gota.Vec(-26, 18), null);
         ag.render(im);
         // ojo
