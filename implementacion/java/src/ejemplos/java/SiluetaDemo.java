@@ -11,12 +11,14 @@ import java.util.List;
 import javax.imageio.ImageIO;
 
 /**
- * Silueta de tapas y biarcos (clase {@code Silueta}) para los casos de la tabla del documento de formulación: de dos
+ * Silueta de tapas y conector elíptico o biarco (clase {@code Silueta}) para los casos de la tabla del documento de formulación: de dos
  * círculos separados (la silueta de siempre) a círculos idénticos (la X). En naranja, los radios libres a los extremos de los
- * arcos (P1..P4). Escribe silueta_biarcos.png en el directorio actual.
+ * arcos (P1..P4). Escribe silueta_elipses.png (o silueta_biarcos.png con el argumento «biarco») en el directorio actual.
  */
 public class SiluetaDemo {
     record Caso(String titulo, double r1, double r2, double d) {}
+
+    static Silueta.Conector conector = Silueta.Conector.ELIPSE;
 
     static final int W = 300, H = 250, FONDO = 0xFFF4F1EA, TEXTO = 0xFF3A3A3A;
 
@@ -32,7 +34,7 @@ public class SiluetaDemo {
     }
 
     static void celda(Graphics2D g, Caso c) {
-        Silueta s = Silueta.de(new Point2D.Double(0, 0), c.r1(), new Point2D.Double(c.d(), 0), c.r2());
+        Silueta s = Silueta.de(new Point2D.Double(0, 0), c.r1(), new Point2D.Double(c.d(), 0), c.r2(), 1, 0, conector);
         Path2D.Double forma = s.forma();
         Rectangle2D b = new Rectangle2D.Double(-c.r1(), -c.r1(), c.d() + c.r1() + c.r2(), 2 * c.r1()).createUnion(forma.getBounds2D());
         double esc = Math.min((W - 40) / b.getWidth(), (H - 70) / b.getHeight());
@@ -67,10 +69,11 @@ public class SiluetaDemo {
         g.setFont(new Font("SansSerif", Font.BOLD, 12));
         g.drawString(c.titulo(), 10, 18);
         g.setFont(new Font("SansSerif", Font.PLAIN, 11));
-        g.drawString(String.format("psi1 = %.1f°, psi2 = %.1f°", Math.toDegrees(s.angulos().psi1()), Math.toDegrees(s.angulos().psi2())), 10, 33);
+        g.drawString(String.format("psi1 = %.1f°, psi2 = %.1f°  [%s]", Math.toDegrees(s.angulos().psi1()), Math.toDegrees(s.angulos().psi2()), s.conector().name().toLowerCase()), 10, 33);
     }
 
     public static void main(String[] args) throws Exception {
+        if (args.length > 0 && args[0].equalsIgnoreCase("biarco")) conector = Silueta.Conector.BIARCO;
         List<Caso> casos = casos();
         int cols = 4, filas = (casos.size() + cols - 1) / cols;
         BufferedImage img = new BufferedImage(cols * W, filas * H, BufferedImage.TYPE_INT_ARGB);
@@ -86,6 +89,6 @@ public class SiluetaDemo {
             gc.dispose();
         }
         g.dispose();
-        ImageIO.write(img, "png", new File("silueta_biarcos.png"));
+        ImageIO.write(img, "png", new File(conector == Silueta.Conector.ELIPSE ? "silueta_elipses.png" : "silueta_biarcos.png"));
     }
 }
