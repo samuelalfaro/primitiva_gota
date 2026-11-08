@@ -38,7 +38,7 @@ public class Flor {
             double ang = 60 * k, dist = 104, curva = 18;   // sin pétalo vertical: ninguno queda alineado con el tallo
             double a = Math.toRadians(ang);
             var punta = c.nodo(cx + Math.cos(a) * dist, cy + Math.sin(a) * dist, rPetalo).centro(aclara(tono[k], 0.6))
-                    .aspecto(1.3).sectores(tono[k]);
+                    .sectores(tono[k]);
             double d = dist / 3, b = Math.toRadians(ang + 180 + curva);
             c.arista(centro, punta).tiradores(null, new Gota.Vec(Math.cos(b) * d, Math.sin(b) * d));
         }

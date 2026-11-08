@@ -28,7 +28,7 @@ public class Hoja {
         Composicion c = new Composicion();
         var base = c.nodo(t.X(226, 655), t.Y(226, 655), radioBase).centro(0xFFC5E1A5).sectores(0xFF4E8F34);
         var medio = c.nodo(t.X(262, 410), t.Y(262, 410), 112 * t.esc()).centro(0xFFE6EE9C).lados(0xFF1B5E20, 0xFF9CCC65).ajusteLateral(0.3);
-        var punta = c.nodo(t.X(318, 70), t.Y(318, 70), 5 * t.esc()).centro(0xFFDCEDC8).aspecto(3.2).sectores(0xFF5E9B38).ajusteLateral(0.3);
+        var punta = c.nodo(t.X(318, 70), t.Y(318, 70), 5 * t.esc()).centro(0xFFDCEDC8).sectores(0xFF5E9B38).ajusteLateral(0.3);
         c.arista(base, medio);
         c.arista(medio, punta);
         return c;

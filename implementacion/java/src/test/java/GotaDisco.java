@@ -166,22 +166,6 @@ public class GotaDisco {
         double xl = y, yl = -x;
         comprueba("TANGENTE, camino vertical: el sistema local gira con el camino", Math.abs(a[0] - (0.5 + 0.4 * xl)) < 1e-9 && Math.abs(a[1] - (0.5 + 0.4 * yl)) < 1e-9, "");
 
-        // elipses: las coordenadas locales son las normalizadas por cada eje, también en FIJA
-        Gota e = Gota.lineal(p(50, 100), 20, p(200, 100), 20, Perfil.recto().aspecto(2.5));
-        Relleno re = Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.TANGENTE).para(e);
-        int malosE = 0, nE = 0;
-        for (int i = 0; i < 300; i++) {
-            double px = 20 + rnd.nextDouble() * 230, py = 70 + rnd.nextDouble() * 60;
-            if (!e.contiene(px, py)) continue;
-            Coordenadas.Muestra me = e.parametros(px, py);
-            double[] c = coords(re, me);
-            double cxx = e.centro(me.t()).getX(), cyy = e.centro(me.t()).getY(), b = e.radio(me.t()), aa = e.radioTangente(me.t());
-            double ex = 0.5 + 0.4 * ((px - cxx) / aa), ey = 0.5 + 0.4 * ((py - cyy) / b);   // camino horizontal: eje x' = x / a, eje y' = y / b
-            nE++;
-            if (Math.abs(c[0] - ex) > 1e-9 || Math.abs(c[1] - ey) > 1e-9) malosE++;
-        }
-        comprueba("elipses: x' = d·T / a y y' = d·N' / b (el disco es el círculo unidad normalizado)", malosE == 0 && nE > 100, nE + " píxeles");
-
         // render con combinar y orden de los parámetros: no revienta con FIJA en un camino curvo en PLANO y TRAZO
         Gota arco = Gota.curva(p(60, 240), 25, new Gota.Vec(0, -200), p(240, 240), 15, new Gota.Vec(0, -200), Perfil.recto());
         boolean ok = true;

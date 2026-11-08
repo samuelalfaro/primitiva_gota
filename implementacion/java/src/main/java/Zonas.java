@@ -2,9 +2,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Coordenadas de la tira (t, u, v) de un píxel según el modo de {@link Costura}, para círculos y para elipses
- * (en las elipses, las distancias de las tapas son normas elípticas y las costillas van a los puntos de contacto con el
- * contorno, que no son simétricos).
+ * Coordenadas de la tira (t, u, v) de un píxel según el modo de {@link Costura}.
  * <p>
  * Cada modo reparte el interior en una banda, cuyas líneas de t constante van del contorno al eje y al otro contorno
  * (u = 1/2 ± w/2, con w = 0 en el eje y 1 en el contorno), y dos tapas en los extremos:
@@ -26,15 +24,11 @@ final class Zonas {
     private static final int M = 512;            // tabla de semianchuras (ORTOGONAL)
 
     /**
-     * Marco de la figura de la familia en t: centro, ejes (T, N = (Ty, -Tx)), semiejes a (según T) y b (según N), y el
+     * Marco de la figura de la familia en t: centro, ejes (T, N = (Ty, -Tx)), radio r, y el
      * desplazamiento del centro al punto de contacto con el contorno de cada lado (índice 0 = -N, 1 = +N): la costilla.
      */
     // PROVISIONAL (Fr y marco son visibles en el paquete para el modo alambre): se reemplaza al redefinir los puntos P1..P4.
-    record Fr(double cx, double cy, double tx, double ty, double nx, double ny, double a, double b,
-                      double[] ox, double[] oy) {}
-
-    private static final int NC = 1024;          // tabla de puntos de contacto (elipses)
-    private static final double K_MIN = Math.sqrt(1 - 0.999 * 0.999);   // extensión mínima si no hay contacto
+    record Fr(double cx, double cy, double tx, double ty, double nx, double ny, double r, double[] ox, double[] oy) {}
 
     /** Una solución posible para un píxel y su clave de orden: t en la banda, -rho en la tapa inicial, 1 + rho en la final. */
     record Candidato(double clave, Coordenadas.Costurado c) {}
@@ -44,26 +38,12 @@ final class Zonas {
     private final Cortes cortes;
     private final Fr[] tabla = new Fr[NS + 1];
     private final double[][][] dist = new double[2][2][NW + 1], fase = new double[2][2][NW + 1];   // curva de cada extremo y lado
-    private final double[][][] contacto = new double[2][2][];   // elipses: [lado][A, S] en cada muestra NC
     private volatile Ortogonal ort;
 
     Zonas(Geometria g, Costura modo, Cortes cortes) {
         this.g = g;
         this.modo = modo;
         this.cortes = cortes;
-        if (g.esElipse()) {
-            for (int l = 0; l < 2; l++) { contacto[l][0] = new double[NC + 1]; contacto[l][1] = new double[NC + 1]; }
-            for (int i = 0; i <= NC; i++) {
-                double t = i / (double) NC, b = Math.max(g.rad(t), 1e-9);
-                double[] d = dinamica(t);
-                double[][] c = contactos(d);
-                for (int l = 0; l < 2; l++) {
-                    double[] k = c[l];
-                    if (k == null) k = puntaSinContacto(d, l == 1 ? 1 : -1);
-                    contacto[l][0][i] = k[0]; contacto[l][1][i] = k[1];
-                }
-            }
-        }
         for (int i = 0; i <= NS; i++) tabla[i] = marco(i / (double) NS);
         if (modo != Costura.ORTOGONAL) {
             for (int e = 0; e < 2; e++) {
@@ -72,7 +52,7 @@ final class Zonas {
                 for (int l = 0; l < 2; l++) for (int j = 0; j <= NW; j++) {
                     double[] q = punto(f, l == 1 ? 1 : -1, j / (double) NW);
                     double dx = q[0] - f.cx, dy = q[1] - f.cy;
-                    double A = (dx * f.tx + dy * f.ty) / f.a, S = (dx * f.nx + dy * f.ny) / f.b;
+                    double A = (dx * f.tx + dy * f.ty) / f.r, S = (dx * f.nx + dy * f.ny) / f.r;
                     dist[e][l][j] = Math.hypot(A, S);
                     fase[e][l][j] = Math.atan2(l == 1 ? S : -S, sg * A);
                 }
@@ -84,21 +64,6 @@ final class Zonas {
 
     Fr marco(double t) {
         t = Utils.acota(t, 0, 1);
-        if (g.esElipse()) {
-            double b = Math.max(g.rad(t), 1e-9), a = g.aspecto(t) * b;
-            double[] T = g.dirD(t);
-            double nx = T[1], ny = -T[0];
-            double f = t * NC;
-            int i0 = Math.min(NC - 1, (int) f);
-            double fr = f - i0;
-            double[] ox = new double[2], oy = new double[2];
-            for (int l = 0; l < 2; l++) {
-                double A = contacto[l][0][i0] * (1 - fr) + contacto[l][0][i0 + 1] * fr;
-                double S = contacto[l][1][i0] * (1 - fr) + contacto[l][1][i0 + 1] * fr;
-                ox[l] = A * T[0] + S * nx; oy[l] = A * T[1] + S * ny;
-            }
-            return new Fr(g.cx(t), g.cy(t), T[0], T[1], nx, ny, a, b, ox, oy);
-        }
         double x = g.dcx(t), y = g.dcy(t), n = Math.hypot(x, y);
         if (n < 1e-9) {                              // tangente nula (cúspide): se toma la de un punto vecino
             double tt = t < 0.5 ? t + 1e-3 : t - 1e-3;
@@ -112,7 +77,7 @@ final class Zonas {
             int s = l == 1 ? 1 : -1;
             ox[l] = r * (-k * tx + s * sq * nx); oy[l] = r * (-k * ty + s * sq * ny);
         }
-        return new Fr(g.cx(t), g.cy(t), tx, ty, nx, ny, r, r, ox, oy);
+        return new Fr(g.cx(t), g.cy(t), tx, ty, nx, ny, r, ox, oy);
     }
 
     /** Punto de la línea de t constante del lado s: w = 0 en el eje, w = 1 en el contorno. */
@@ -125,64 +90,6 @@ final class Zonas {
         double h01 = -2 * w * w * w + 3 * w * w, h11 = w * w * w - w * w;
         return new double[] { h00 * f.cx + h10 * m * s * f.nx + h01 * px + h11 * m * rx / len,
                               h00 * f.cy + h10 * m * s * f.ny + h01 * py + h11 * m * ry / len };
-    }
-
-    // ---------- Contactos de las elipses ----------
-
-    /**
-     * Sin contacto con el contorno en ese lado, la costilla va a una de las dos puntas de la elipse (el límite k = ±0.999
-     * de los círculos): la de menor |Q|, la más cercana a ser contacto.
-     */
-    private static double[] puntaSinContacto(double[] d, int s) {
-        double a = d[6], b = d[5], S = s * K_MIN * b, A = a * Math.sqrt(1 - K_MIN * K_MIN);
-        return Math.abs(qE(d, A, S)) <= Math.abs(qE(d, -A, S)) ? new double[] { A, S } : new double[] { -A, S };
-    }
-
-    /** Magnitudes en t: {vT, vN, omega, bp, ap, b, a}. */
-    private double[] dinamica(double t) {
-        double tt = t, vx = g.dcx(tt), vy = g.dcy(tt);
-        if (Math.hypot(vx, vy) < 1e-9) {
-            tt = t < 0.5 ? t + 1e-3 : t - 1e-3;
-            vx = g.dcx(tt); vy = g.dcy(tt);
-        }
-        double[] d = g.dirD(tt);
-        double tx = d[0], ty = d[1];
-        double vT = vx * tx + vy * ty, vN = vx * ty - vy * tx;
-        double omega = g.giroD(tt);
-        double b = Math.max(g.rad(t), 1e-9);
-        double bpv = g.drad(tt);
-        double lamv = g.aspecto(t), ap = g.dAspecto(t) * b + lamv * bpv;
-        return new double[] { vT, vN, omega, bpv, ap, b, lamv * b };
-    }
-
-    /** Q(A, S) = q'/2: derivada respecto a t del cuadrado de la norma elíptica del punto (A, S) fijo. */
-    private static double qE(double[] d, double A, double S) {
-        double a = d[6], b = d[5];
-        return A * (-d[0] - d[2] * S) / (a * a) + S * (-d[1] + d[2] * A) / (b * b)
-               - A * A * d[4] / (a * a * a) - S * S * d[3] / (b * b * b);
-    }
-
-    /** Puntos de contacto {{A+, S+}, {A-, S-}} (en los ejes de la elipse) con S+ > 0 máximo y S- < 0 mínimo (null si no hay). */
-    private static double[][] contactos(double[] d) {
-        double a = d[6], b = d[5];
-        int n = 180;
-        double[] pos = null, neg = null;
-        double th0 = -Math.PI, h0 = qE(d, a * Math.cos(th0), b * Math.sin(th0));
-        for (int i = 1; i <= n; i++) {
-            double th1 = -Math.PI + 2 * Math.PI * i / n, h1 = qE(d, a * Math.cos(th1), b * Math.sin(th1));
-            if ((h0 < 0) != (h1 < 0) || h0 == 0) {
-                double lo = th0, hi = th1, flo = h0;
-                for (int k = 0; k < 60; k++) {
-                    double mid = 0.5 * (lo + hi), fm = qE(d, a * Math.cos(mid), b * Math.sin(mid));
-                    if ((fm < 0) == (flo < 0)) { lo = mid; flo = fm; } else hi = mid;
-                }
-                double th = 0.5 * (lo + hi), A = a * Math.cos(th), S = b * Math.sin(th);
-                if (S > 1e-12 * b && (pos == null || S > pos[1])) pos = new double[] { A, S };
-                if (S < -1e-12 * b && (neg == null || S < neg[1])) neg = new double[] { A, S };
-            }
-            th0 = th1; h0 = h1;
-        }
-        return new double[][] { neg, pos };    // índice 0 = lado -N, 1 = lado +N
     }
 
     // ---------- Cálculo ----------
@@ -324,12 +231,12 @@ final class Zonas {
 
     /**
      * Tapa del extremo e (0 inicial, 1 final): sector entre las dos curvas, muestreado en polares desde el centro con
-     * distancias y ángulos normalizados por los semiejes (la tapa es un semidisco en ese espacio); null si no cae.
+     * distancias y ángulos normalizados por el radio (la tapa es un semidisco en ese espacio); null si no cae.
      */
     private Candidato tapa(double x, double y, int e) {
         Fr f = tabla[e == 0 ? 0 : NS];
         double dx = x - f.cx, dy = y - f.cy;
-        double A = (dx * f.tx + dy * f.ty) / f.a, S = (dx * f.nx + dy * f.ny) / f.b, rho = Math.hypot(A, S);
+        double A = (dx * f.tx + dy * f.ty) / f.r, S = (dx * f.nx + dy * f.ny) / f.r, rho = Math.hypot(A, S);
         if (rho > 1.002) return null;
         double sg = e == 0 ? -1 : 1;
         double phi = Math.atan2(S, sg * A);                           // 0 = centro de la tapa, + hacia la normal
@@ -360,7 +267,7 @@ final class Zonas {
             for (int i = 0; i <= M; i++) {
                 Fr f = marco(i / (double) M);
                 for (int s = 0; s < 2; s++) {
-                    double sg = s == 1 ? 1 : -1, lo = 0, hi = 4 * Math.max(f.a, f.b) + 50;
+                    double sg = s == 1 ? 1 : -1, lo = 0, hi = 4 * f.r + 50;
                     for (int it = 0; it < 45; it++) {
                         double mid = (lo + hi) / 2;
                         if (g.contiene(f.cx + sg * mid * f.nx, f.cy + sg * mid * f.ny)) lo = mid; else hi = mid;
@@ -419,13 +326,13 @@ final class Zonas {
         private Candidato en(double x, double y, double t, boolean estricto) {
             Fr f = marco(t);
             double dx = x - f.cx, dy = y - f.cy, Ap = dx * f.tx + dy * f.ty, Sp = dx * f.nx + dy * f.ny;
-            double A = Ap / f.a, S = Sp / f.b, rho = Math.hypot(A, S);
+            double A = Ap / f.r, S = Sp / f.r, rho = Math.hypot(A, S);
             if (t == 0 || t == 1) {
                 double b = t == 0 ? -A : A;                                  // profundidad hacia el exterior del extremo
                 if (b >= 0) {
                     if (estricto && rho > 1.02) return null;
                     int i = t == 0 ? 0 : M;
-                    double den = Math.max(1, S >= 0 ? hw[1][i] / f.b : hw[0][i] / f.b);
+                    double den = Math.max(1, S >= 0 ? hw[1][i] / f.r : hw[0][i] / f.r);
                     double l = Utils.acota(S / den, -1, 1), s1 = Math.sqrt(Math.max(0, 1 - l * l));
                     double a = Utils.acota(b, 0, s1), w = s1 > 1e-9 ? a / s1 : 0;
                     double v = t == 0 ? cortes.c1() * (1 - w) : cortes.c3() + (1 - cortes.c3()) * w;

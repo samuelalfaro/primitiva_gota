@@ -20,10 +20,8 @@ import java.util.stream.IntStream;
  *
  * <h3>Reglas</h3>
  * <ul>
- *   <li><b>Aspecto elíptico solo en extremos libres</b> (nodos de grado 1). Un nodo con más de una rama es un
- *       círculo: una elipse solo sería la misma vista desde todas sus gotas si todas llegaran con la misma
- *       tangente, y el círculo es la única forma que no depende de la orientación. Las gotas con ambos extremos
- *       circulares usan el algoritmo de grado 6.</li>
+ *   <li><b>Los nodos son círculos</b>: el círculo es la única forma que no depende de la orientación, así que es la
+ *       misma vista desde todas las gotas que llegan al nodo.</li>
  *   <li><b>Tiradores automáticos</b> (si no se dan): en un nodo de grado 2 la tangente es la de Catmull-Rom entre sus
  *       dos vecinos (contorno G1); en los demás nodos, la dirección hacia el vecino. Longitud: un tercio de la
  *       distancia entre nodos.</li>
@@ -48,7 +46,6 @@ public final class Composicion {
         private Integer centro;
         private int[] sectores;
         private Integer contra, normal;
-        private double aspecto = 1;
         private double ajusteLateral = 0.5, ajusteArco = 0.5;
 
         private Nodo(Composicion dueña, int id, double x, double y, double radio) {
@@ -94,9 +91,6 @@ public final class Composicion {
             ajusteArco = s;
             return cambia();
         }
-
-        /** Aspecto a/b (tangente/normal) del extremo; solo válido en nodos de grado 1. */
-        public Nodo aspecto(double lambda) { aspecto = lambda; return cambia(); }
 
         private Nodo cambia() { dueña.invalida(); return this; }
     }
@@ -363,7 +357,7 @@ public final class Composicion {
     }
 
     /** Datos de una arista tras fijar tiradores y pendiente. */
-    private record Ar(int a, int b, Gota.Vec va, Gota.Vec vb, double lamA, double lamB, double q, boolean fija) {}
+    private record Ar(int a, int b, Gota.Vec va, Gota.Vec vb, double q, boolean fija) {}
 
     private void construye() {
         if (gotas != null) return;
@@ -371,8 +365,6 @@ public final class Composicion {
         for (Nodo n : nodos) {
             int g = grado(n);
             if (g == 0) throw new IllegalStateException("nodo " + n.id + " sin aristas");
-            if (n.aspecto != 1 && g != 1)
-                throw new IllegalStateException("aspecto distinto de 1 solo en nodos de grado 1 (nodo " + n.id + ", grado " + g + ")");
         }
         // Tiradores.
         List<Ar> ars = new ArrayList<>();
@@ -383,7 +375,7 @@ public final class Composicion {
             double[] ua = salida(e, true), ub = salida(e, false);
             Gota.Vec va = e.va != null ? e.va : new Gota.Vec(ua[0] * d / 3, ua[1] * d / 3);
             Gota.Vec vb = e.vb != null ? e.vb : new Gota.Vec(ub[0] * d / 3, ub[1] * d / 3);
-            ars.add(new Ar(e.a.id, e.b.id, va, vb, e.a.aspecto, e.b.aspecto, Double.NaN, e.va != null || e.vb != null));
+            ars.add(new Ar(e.a.id, e.b.id, va, vb, Double.NaN, e.va != null || e.vb != null));
         }
         if (ajustaPendientes) ars = igualaK(ars);
 
@@ -396,8 +388,7 @@ public final class Composicion {
             Perfil base = Double.isNaN(r.q)
                     ? Perfil.recto()
                     : Perfil.radioMedio((A.radio + B.radio) / 4 + Math.max(0, r.q) / 2, 0.5, 1);
-            Gota g = Gota.curva(new Point2D.Double(A.x, A.y), A.radio, r.va, new Point2D.Double(B.x, B.y), B.radio, r.vb,
-                    base.aspecto(r.lamA, r.lamB));
+            Gota g = Gota.curva(new Point2D.Double(A.x, A.y), A.radio, r.va, new Point2D.Double(B.x, B.y), B.radio, r.vb, base);
             gotas.add(g);
             rellenos.add(Colores.cadenaLateral(lateralDe(A, aristas.get(i), true), lateralDe(B, aristas.get(i), false), mezcla));
             Rectangle2D gb = g.bounds();
@@ -513,7 +504,7 @@ public final class Composicion {
             double q = A.radio + 1.5 * ka * l1;
             double[] ua = unit(r.va.x(), r.va.y()), ub = unit(r.vb.x(), r.vb.y());
             nuevas.add(new Ar(r.a, r.b, new Gota.Vec(ua[0] * l1, ua[1] * l1), new Gota.Vec(ub[0] * l2, ub[1] * l2),
-                    r.lamA, r.lamB, q, false));
+                    q, false));
         }
         return nuevas;
     }

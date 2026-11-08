@@ -105,7 +105,7 @@ $$
 
 Donde $w$ es la profundidad normalizada de la tapa: vale 0 en la costura con el cuerpo y 1 en el arco exterior.
 
-Esta transformación permite utilizar una misma tira de coordenadas para aplicar tanto colores como texturas, independientemente de que la gota esté formada por círculos o elipses.
+Esta transformación permite utilizar una misma tira de coordenadas para aplicar tanto colores como texturas.
 
 ## 🏗️ Arquitectura
 
@@ -146,7 +146,7 @@ primitiva_gota/
 
 ### Algoritmo de Renderizado
 
-1. **División recursiva**: la gota se divide en tramos hasta que el polinomio de grado 6 (para círculos) o 12 (para elipses) puede evaluarse directamente.
+1. **División recursiva**: la gota se divide en tramos hasta que el polinomio de grado 6 puede evaluarse directamente.
 2. **Evaluación en base de Bernstein**: los polinomios se representan y evalúan en esta base, que facilita la subdivisión recursiva y el control de sus valores en cada intervalo.
 3. **Antialiasing**: banda de 0.5 píxeles con evaluación conservadora.
 4. **Profundidad máxima**: 24 niveles de subdivisión.

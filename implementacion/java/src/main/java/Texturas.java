@@ -194,10 +194,10 @@ public final class Texturas {
 
     // ---------- Mapeo en disco ----------
     //
-    // Cada círculo (o elipse) de la familia se lleva a un disco de la textura mediante una semejanza:
+    // Cada círculo de la familia se lleva a un disco de la textura mediante una semejanza:
     //     (u, v) = c(t) + s(t) · R(θ(t)) · (x', y')
     // con (x', y') las coordenadas del píxel dentro de su círculo, normalizadas (el círculo es el disco
-    // unidad; en las elipses, cada eje por su propio radio). Los extremos fijan los discos: c1 y c2 son los centros
+    // unidad). Los extremos fijan los discos: c1 y c2 son los centros
     // de la textura a los que va el centro de cada círculo, y el punto del borde e1 / e2 fija a la vez la escala
     // s = |e - c| y el ángulo θ = atan2(e - c). Entre ambos se interpolan linealmente c y s, y θ con el sentido
     // de Mezcla.Tono (CORTO por defecto). Como en glTexEnv y la tira, depende solo de (t, axial, lateral).

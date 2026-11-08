@@ -32,10 +32,10 @@ public class ComposicionPruebas {
 
     static Composicion cadena() {
         Composicion c = new Composicion();
-        var n0 = c.nodo(60, 330, 14).centro(aclara(0xFFE8523A)).aspecto(2.4).sectores(0xFFE8523A);
+        var n0 = c.nodo(60, 330, 14).centro(aclara(0xFFE8523A)).sectores(0xFFE8523A);
         var n1 = c.nodo(150, 210, 30).centro(aclara(0xFFF2A33A)).lados(0xFFE8523A, 0xFF2D6CDF);
         var n2 = c.nodo(260, 190, 24).centro(aclara(0xFF4FA36B)).lados(0xFFF2A33A, 0xFF1FA39A);
-        var n3 = c.nodo(360, 80, 12).centro(aclara(0xFF3A7FD6)).aspecto(0.45).sectores(0xFF3A7FD6);
+        var n3 = c.nodo(360, 80, 12).centro(aclara(0xFF3A7FD6)).sectores(0xFF3A7FD6);
         c.arista(n0, n1);
         c.arista(n1, n2);
         c.arista(n2, n3);
@@ -57,12 +57,11 @@ public class ComposicionPruebas {
         Composicion c = new Composicion().suavizado(suave);
         var centro = c.nodo(210, 225, 34).centro(aclara(0xFFF2A33A)).sectores(0xFFD7263D, 0xFF2D6CDF, 0xFFF2C14E);
         double[] ang = { -100, 20, 140 }, dist = { 150, 160, 150 }, curva = { 28, -25, 30 }, rr = { 12, 15, 10 };
-        double[] lam = { 2.4, 0.5, 1.8 };
         int[] col = { 0xFFE8523A, 0xFF4FA36B, 0xFF3A7FD6 };
         for (int k = 0; k < 3; k++) {
             double a = Math.toRadians(ang[k]);
             var punta = c.nodo(210 + Math.cos(a) * dist[k], 225 + Math.sin(a) * dist[k], rr[k])
-                    .color(col[k]).aspecto(lam[k]).sectores(col[k]);
+                    .color(col[k]).sectores(col[k]);
             double d = dist[k] / 3, b = Math.toRadians(ang[k] + 180 + curva[k]);
             c.arista(centro, punta).tiradores(null, new Gota.Vec(Math.cos(b) * d, Math.sin(b) * d));
         }
@@ -102,12 +101,6 @@ public class ComposicionPruebas {
     }
 
     static void reglas() {
-        comprueba("aspecto != 1 en un nodo de grado 2 se rechaza", lanza(IllegalStateException.class, () -> {
-            Composicion c = new Composicion();
-            var a = c.nodo(0, 0, 10); var b = c.nodo(100, 0, 10).aspecto(2); var d = c.nodo(200, 0, 10);
-            c.arista(a, b); c.arista(b, d);
-            c.gotas();
-        }), "");
         comprueba("un lazo sin los dos tiradores se rechaza al construir", lanza(IllegalStateException.class, () -> {
             Composicion c = new Composicion();
             var a = c.nodo(0, 0, 10);
@@ -136,15 +129,6 @@ public class ComposicionPruebas {
             c.arista(a, b);
             c.gotas();
         }), "");
-        Composicion ch = cadena();
-        List<Gota> g = ch.gotas();
-        comprueba("cadena: grados de gota 12 / 6 / 12 (solo las terminales son elípticas)",
-                g.get(0).esElipse() && !g.get(1).esElipse() && g.get(2).esElipse(), "");
-        Composicion ci = ciclo();
-        comprueba("ciclo O: las tres gotas circulares (grado 6)", ci.gotas().stream().noneMatch(Gota::esElipse), "");
-        Composicion y = estrella(0);
-        comprueba("estrella Y: tres gotas elípticas (las puntas), centro circular",
-                y.gotas().stream().allMatch(Gota::esElipse) && y.grado(y.nodos().get(0)) == 3, "");
     }
 
     // ---------- geometría ----------
@@ -182,7 +166,7 @@ public class ComposicionPruebas {
                 Point2D p0 = g.centro(t0), p1 = g.centro(t1);
                 double l = Math.hypot(p1.getX() - p0.getX(), p1.getY() - p0.getY());
                 double tx = (p1.getX() - p0.getX()) / l, ty = (p1.getY() - p0.getY()) / l;   // hacia el cuerpo
-                double nx = ty, ny = -tx, lam = g.aspecto(t0);
+                double nx = ty, ny = -tx, lam = 1;
                 boolean dentro = true, fuera = true;
                 for (int s = 0; s < 90; s++) {
                     double th = Math.PI / 2 + Math.PI * s / 89.0;
@@ -195,7 +179,7 @@ public class ComposicionPruebas {
                         if (f > 1 && in) fuera = false;
                     }
                 }
-                comprueba(nombre + ": tapa del nodo " + n.x() + "," + n.y() + " (λ=" + lam + ") es la elipse exacta", dentro && fuera, "");
+                comprueba(nombre + ": tapa del nodo " + n.x() + "," + n.y() + " es el círculo exacto", dentro && fuera, "");
             }
         }
     }
@@ -315,8 +299,8 @@ public class ComposicionPruebas {
         Composicion c = ocho();
         var n = c.nodos().get(0);
         List<Gota> g = c.gotas();
-        comprueba("ocho: dos gotas circulares sobre un único nodo de grado 4",
-                g.size() == 2 && c.grado(n) == 4 && g.stream().noneMatch(Gota::esElipse), "");
+        comprueba("ocho: dos gotas sobre un único nodo de grado 4",
+                g.size() == 2 && c.grado(n) == 4, "");
         double[] fin1 = dir(g.get(0).centro(1 - 1e-4), g.get(0).centro(1));
         double[] ini2 = dir(g.get(1).centro(0), g.get(1).centro(1e-4));
         double[] fin2 = dir(g.get(1).centro(1 - 1e-4), g.get(1).centro(1));

@@ -5,10 +5,10 @@ import java.io.File;
 import javax.imageio.ImageIO;
 
 /**
- * Los tres modos de costura de la gota ({@link Costura}) sobre cuatro gotas de círculos y cuatro de elipses, con una
+ * Los tres modos de costura de la gota ({@link Costura}) sobre cuatro gotas, con una
  * textura de referencia (líneas transversales en el cuerpo y radios en las tapas) y con un degradado.
- * Genera cuatro imágenes: costuras_circulos_texturas, costuras_circulos_degradados, costuras_elipses_texturas y
- * costuras_elipses_degradados. Cada una tiene un modo por columna (ORTOGONAL, ESPIGA, SUAVIZADO) y una gota por fila.
+ * Genera dos imágenes: costuras_circulos_texturas y costuras_circulos_degradados. Cada una tiene un modo por columna
+ * (ORTOGONAL, ESPIGA, SUAVIZADO) y una gota por fila.
  * Solo usa la API pública de la biblioteca.
  */
 public class CosturasDemo {
@@ -59,20 +59,6 @@ public class CosturasDemo {
                      Gota.lineal(p(70, 150), u, p(70 + d, 150), 3 * u, recto)),
             new Caso("Radios distintos, Bézier deformada", "Las mismas cuñas con la Bézier deformada.",
                      Gota.curva(p(70, 190), u, new Gota.Vec(66, -45), p(70 + d, 190), 3 * u, new Gota.Vec(-66, -45), recto)),
-        };
-    }
-
-    /** Elipses: el aspecto a/b (semieje sobre el camino / semieje lateral) cambia a lo largo de la gota. */
-    static Caso[] elipses() {
-        return new Caso[] {
-            new Caso("Aspecto 2 a 0,6", "Radios 40 a 20. Pasa de elipse alargada\na elipse achatada.",
-                     Gota.lineal(p(70, 110), 40, p(300, 110), 20, Perfil.central(1.2).aspecto(2, 0.6))),
-            new Caso("Aspecto constante 1,8", "Radios iguales. La tapa es media elipse:\nlas texturas se estiran con ella.",
-                     Gota.lineal(p(70, 110), 30, p(300, 110), 30, Perfil.recto().aspecto(1.8, 1.8))),
-            new Caso("Arco, aspecto 1,6 a 0,8", "Bézier curvada con las costillas\nal punto de contacto de cada elipse.",
-                     Gota.curva(p(60, 250), 30, new Gota.Vec(0, -200), p(300, 250), 20, new Gota.Vec(0, -200), Perfil.central(0.8).aspecto(1.6, 0.8))),
-            new Caso("Aspecto 0,6 a 1,6", "Radios 36 a 18. Pasa de achatada\na alargada.",
-                     Gota.lineal(p(70, 110), 36, p(300, 110), 18, Perfil.central(1).aspecto(0.6, 1.6))),
         };
     }
 
@@ -127,9 +113,6 @@ public class CosturasDemo {
                 Mezcla.RGB);
         hoja("costuras_circulos_texturas.png", "Modos de costura: texturas, círculos", circulos(), 440, 330, texturas);
         hoja("costuras_circulos_degradados.png", "Modos de costura: degradados, círculos", circulos(), 440, 330, degradado);
-        hoja("costuras_elipses_texturas.png", "Modos de costura: texturas, elipses", elipses(), 400, 300, texturas);
-        hoja("costuras_elipses_degradados.png", "Modos de costura: degradados, elipses", elipses(), 400, 300, degradado);
-        System.out.println("OK: costuras_circulos_texturas.png, costuras_circulos_degradados.png, "
-                + "costuras_elipses_texturas.png, costuras_elipses_degradados.png");
+        System.out.println("OK: costuras_circulos_texturas.png, costuras_circulos_degradados.png");
     }
 }
