@@ -124,6 +124,16 @@ public class SiluetaCurvaPruebas {
                 if (!cu.plegada()) coherente &= new Area(cu.forma()).isSingular();
             }
         comprueba("si pliegue() > 0 el contorno es simple (72/36, δ de 0,3 a 0,9, giros de 30° a 120°)", coherente, "");
+        // con d >= r1 + r2 el conector es una recta: su interior también cuenta (antes solo se miraban los vértices del contorno)
+        boolean coherenteRecta = true;
+        String mal = "";
+        for (double[] rr : new double[][] { { 72, 36 }, { 60, 60 }, { 36, 72 } })
+            for (double d : new double[] { 1.0, 1.5, 2.0, 3.0 })
+                for (double g : new double[] { 30, 60, 90, 120, 150 }) {
+                    var cu = curva(rr[0], rr[1], d, g);
+                    if (!cu.plegada() && !new Area(cu.forma()).isSingular()) { coherenteRecta = false; mal = String.format("%s/%s, δ %s, giro %s°, pliegue %.3f", rr[0], rr[1], d, g, cu.pliegue()); }
+                }
+        comprueba("si pliegue() > 0 el contorno es simple también con conector recto (δ de 1 a 3, giros de 30° a 150°)", coherenteRecta, mal);
     }
 
     static void escalaYOrientacion() {
