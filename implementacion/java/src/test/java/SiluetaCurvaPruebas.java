@@ -148,12 +148,47 @@ public class SiluetaCurvaPruebas {
         comprueba("camino de longitud cero (centros iguales): como la silueta recta con tangente (1, 0)", Math.abs(rz - 1) < 2e-4, String.format("%.2e", rz - 1));
     }
 
+    static SiluetaCurva relajada(double r1, double r2, double delta, double giro, SiluetaCurva.Relajo r) {
+        var p = camino(giro, delta * (r1 + r2));
+        return SiluetaCurva.de(p[0], p[1], p[2], p[3], r1, r2, Silueta.Conector.ELIPSE, r);
+    }
+
+    static void relajo() {
+        System.out.println("-- (6) relajo de los conectores elípticos por una spline");
+        var R = SiluetaCurva.Relajo.values();
+        double a0 = SiluetaPruebas.area(relajada(72, 36, 0.9, 0, R[0]).forma());
+        for (var r : R) {
+            double a = SiluetaPruebas.area(relajada(72, 36, 0.9, 0, r).forma());
+            comprueba("camino recto, relajo " + r + ": se conserva el arco elíptico (área a menos del 1 %)", Math.abs(a / a0 - 1) < 0.01, String.format("%.3f %%", 100 * (a / a0 - 1)));
+        }
+        double[][] c = { { 72, 36, 0.9, 30 }, { 72, 36, 0.9, 60 }, { 72, 36, 0.6, 60 }, { 60, 60, 0.9, 90 }, { 36, 72, 0.9, -45 } };
+        for (double[] f : c)
+            for (var r : R) {
+                if (r == SiluetaCurva.Relajo.NINGUNO) continue;
+                var cu = relajada(f[0], f[1], f[2], f[3], r);
+                Path2D.Double p = cu.forma();
+                double g = SiluetaPruebas.giroMax(p, 1e-4 * (f[0] + f[1]));
+                boolean simple = new Area(p).isSingular();
+                boolean pliegaInterior = r == SiluetaCurva.Relajo.EXTERIOR && cu.plegada();     // el interior sigue doblado y se pliega: es el efecto de la «torsión», con esquina
+                comprueba(String.format("r1 = %s, r2 = %s, δ = %s, giro %s°, relajo %s: %s", f[0], f[1], f[2], f[3], r,
+                    pliegaInterior ? "el interior sigue plegado (cúspide, esperada)" : "sin esquinas (< 8°)" + (r == SiluetaCurva.Relajo.AMBOS ? " y simple" : "")),
+                    pliegaInterior || (g < 8 && (r != SiluetaCurva.Relajo.AMBOS || simple)), String.format("%.2f°, simple %b", g, simple));
+            }
+        for (double[] f : new double[][] { { 72, 36, 0.9, 60 }, { 60, 60, 0.9, 90 } }) {
+            var p = camino(f[3], f[2] * (f[0] + f[1]));
+            double d0 = dif(SiluetaCurva.de(p[0], p[1], p[2], p[3], f[0], f[1]).forma(), p, f[0], f[1]);
+            double d4 = dif(relajada(f[0], f[1], f[2], f[3], SiluetaCurva.Relajo.AMBOS).forma(), p, f[0], f[1]);
+            comprueba(String.format("%s/%s, δ = %s, giro %s°: relajar ambos se acerca más a la unión de círculos", f[0], f[1], f[2], f[3]), d4 < d0, String.format("%.2f %% → %.2f %%", 100 * d0, 100 * d4));
+        }
+    }
+
     public static void main(String[] args) {
         recto();
         sinEsquinas();
         conLaUnion();
         pliegues();
         escalaYOrientacion();
+        relajo();
         System.out.printf("%n%d pruebas, %d fallos%n", pruebas, fallos);
         if (fallos > 0) System.exit(1);
     }

@@ -22,13 +22,24 @@ import java.awt.geom.Point2D;
 final class SiluetaCurva {
     private static final int N_MUESTRAS = 2048;
 
+    /**
+     * Qué conectores dejan de ser el arco de elipse doblado y pasan a ser una spline por P1, el contacto de la envolvente con el
+     * círculo medio y P2, calculada en el plano (sin doblar, así que no se pliega). Exterior/interior se refieren al giro del camino.
+     */
+    enum Relajo { NINGUNO, EXTERIOR, INTERIOR, AMBOS }
+
+    /** Con giros menores que esto el relajo se atenúa (se conservan los arcos elípticos con el camino recto); es el giro total en radianes. */
+    static final double GIRO_RELAJO = Math.toRadians(20);
+
     final double r1, r2;
     private final Silueta recta;
     private final double largo;
     private final double[] s, cx, cy, tx, ty, k;    // tabla del camino por longitud de arco
-    private final double pliegue;
+    private final double pliegue, giro;
+    private final Relajo relajo;
 
-    private SiluetaCurva(Point2D p0, Point2D h1, Point2D h2, Point2D p3, double r1, double r2, Silueta.Conector conector) {
+    private SiluetaCurva(Point2D p0, Point2D h1, Point2D h2, Point2D p3, double r1, double r2, Silueta.Conector conector, Relajo relajo) {
+        this.relajo = relajo;
         if (!(r1 > 0 && r2 > 0)) throw new IllegalArgumentException("los radios deben ser positivos");
         this.r1 = r1;
         this.r2 = r2;
@@ -75,6 +86,9 @@ final class SiluetaCurva {
             if (x > 0 && x < largo) mf = Math.min(mf, 1 + curvatura(x) * y);
         }
         this.pliegue = mf;
+        double g = 0;
+        for (int i = 1; i < n; i++) g += 0.5 * (k[i] + k[i - 1]) * (s[i] - s[i - 1]);
+        this.giro = g;                                      // giro total del camino (con signo): > 0 si el lado +y es el exterior
     }
 
     /** Camino cúbico de p0 a p3 con tiradores h1 y h2 (puntos de control absolutos). */
@@ -83,8 +97,15 @@ final class SiluetaCurva {
     }
 
     static SiluetaCurva de(Point2D p0, Point2D h1, Point2D h2, Point2D p3, double r1, double r2, Silueta.Conector conector) {
-        return new SiluetaCurva(p0, h1, h2, p3, r1, r2, conector);
+        return new SiluetaCurva(p0, h1, h2, p3, r1, r2, conector, Relajo.NINGUNO);
     }
+
+    static SiluetaCurva de(Point2D p0, Point2D h1, Point2D h2, Point2D p3, double r1, double r2, Silueta.Conector conector, Relajo relajo) {
+        return new SiluetaCurva(p0, h1, h2, p3, r1, r2, conector, relajo);
+    }
+
+    /** Giro total del camino en radianes, con signo (> 0: el lado +y de la silueta, hacia N, es el exterior de la curva). */
+    double giro() { return giro; }
 
     /** Longitud de arco del camino. */
     double longitud() { return largo; }
@@ -153,42 +174,119 @@ final class SiluetaCurva {
     }
 
     /**
-     * La silueta doblada: cada tramo de la silueta recta se parte en trozos pequeños y cada trozo se lleva como cúbica de
+     * La silueta doblada: cada tramo de la silueta recta se parte en trozos y cada trozo se lleva como cúbica de
      * Hermite con los extremos y las tangentes transformadas (G1 con el doblado exacto en los extremos de cada trozo).
+     * Los conectores relajados (véase {@link Relajo}) se sustituyen por una spline en el plano.
      */
     Path2D.Double forma() {
-        Path2D.Double local = recta.formaLocal(), out = new Path2D.Double();
+        // 1. los segmentos locales, repartidos en cuatro etapas: conector +y (P1→P3), tapa 2, conector -y (P4→P2), tapa 1
+        java.util.List<double[]> seg = new java.util.ArrayList<>();            // {tipo, x0, y0, c...}
         double[] c = new double[6];
         double px = 0, py = 0, mx = 0, my = 0;
-        double paso = 0.04 * (r1 + r2);
-        for (PathIterator it = local.getPathIterator(null); !it.isDone(); it.next()) {
+        for (PathIterator it = recta.formaLocal().getPathIterator(null); !it.isDone(); it.next()) {
             int t = it.currentSegment(c);
             switch (t) {
-                case PathIterator.SEG_MOVETO -> {
-                    px = mx = c[0];
-                    py = my = c[1];
-                    double[] q = mapea(px, py);
-                    out.moveTo(q[0], q[1]);
-                }
-                case PathIterator.SEG_LINETO -> {
-                    trozos(out, px, py, px + (c[0] - px) / 3, py + (c[1] - py) / 3, px + 2 * (c[0] - px) / 3, py + 2 * (c[1] - py) / 3, c[0], c[1], paso);
-                    px = c[0];
-                    py = c[1];
-                }
-                case PathIterator.SEG_CUBICTO -> {
-                    trozos(out, px, py, c[0], c[1], c[2], c[3], c[4], c[5], paso);
-                    px = c[4];
-                    py = c[5];
-                }
-                case PathIterator.SEG_CLOSE -> {
-                    if (Math.hypot(px - mx, py - my) > 1e-12 * (r1 + r2))
-                        trozos(out, px, py, px + (mx - px) / 3, py + (my - py) / 3, px + 2 * (mx - px) / 3, py + 2 * (my - py) / 3, mx, my, paso);
-                    out.closePath();
-                }
+                case PathIterator.SEG_MOVETO -> { px = mx = c[0]; py = my = c[1]; }
+                case PathIterator.SEG_LINETO -> { seg.add(new double[] { 1, px, py, c[0], c[1] }); px = c[0]; py = c[1]; }
+                case PathIterator.SEG_CUBICTO -> { seg.add(new double[] { 3, px, py, c[0], c[1], c[2], c[3], c[4], c[5] }); px = c[4]; py = c[5]; }
+                case PathIterator.SEG_CLOSE -> { if (Math.hypot(px - mx, py - my) > 1e-12 * (r1 + r2)) seg.add(new double[] { 1, px, py, mx, my }); }
                 default -> { }
             }
         }
+        Point2D.Double[] e = recta.extremosLocales();           // P1, P2 (tapa 1, +y y -y), P3, P4 (tapa 2)
+        double tol = 1e-9 * (r1 + r2);
+        double[][] fin = { { e[2].x, e[2].y }, { e[3].x, e[3].y }, { e[1].x, e[1].y } };   // donde acaban las etapas 0, 1 y 2
+        java.util.List<java.util.List<double[]>> et = new java.util.ArrayList<>();
+        for (int i = 0; i < 4; i++) et.add(new java.util.ArrayList<>());
+        int cur = 0;
+        for (double[] g : seg) {
+            et.get(cur).add(g);
+            double[] fn = g[0] == 1 ? new double[] { g[3], g[4] } : new double[] { g[7], g[8] };
+            if (cur < 3 && Math.hypot(fn[0] - fin[cur][0], fn[1] - fin[cur][1]) < tol) cur++;
+        }
+        // 2. qué lados se relajan
+        boolean extMas = giro >= 0;                              // el lado +y es el exterior
+        boolean relajaMas = relajo == Relajo.AMBOS || (relajo == Relajo.EXTERIOR && extMas) || (relajo == Relajo.INTERIOR && !extMas);
+        boolean relajaMenos = relajo == Relajo.AMBOS || (relajo == Relajo.EXTERIOR && !extMas) || (relajo == Relajo.INTERIOR && extMas);
+        double paso = 0.04 * (r1 + r2);
+        Path2D.Double out = new Path2D.Double();
+        double[] q0 = mapea(e[0].x, e[0].y);
+        out.moveTo(q0[0], q0[1]);
+        for (int i = 0; i < 4; i++) {
+            boolean relaja = (i == 0 && relajaMas) || (i == 2 && relajaMenos);
+            if (relaja) anadeSpline(out, et.get(i), i == 0 ? +1 : -1);
+            else for (double[] g : et.get(i)) {
+                if (g[0] == 1) trozos(out, g[1], g[2], g[1] + (g[3] - g[1]) / 3, g[2] + (g[4] - g[2]) / 3, g[1] + 2 * (g[3] - g[1]) / 3, g[2] + 2 * (g[4] - g[2]) / 3, g[3], g[4], paso);
+                else trozos(out, g[1], g[2], g[3], g[4], g[5], g[6], g[7], g[8], paso);
+            }
+        }
+        out.closePath();
         return out;
+    }
+
+    /** Dirección de salida y de llegada (vectores locales sin normalizar) de una etapa de segmentos. */
+    private static double[] direcciones(java.util.List<double[]> et) {
+        double[] a = et.get(0), z = et.get(et.size() - 1);
+        double sx, sy, ex, ey;
+        if (a[0] == 1) { sx = a[3] - a[1]; sy = a[4] - a[2]; }
+        else { sx = a[3] - a[1]; sy = a[4] - a[2]; if (Math.hypot(sx, sy) < 1e-12) { sx = a[5] - a[1]; sy = a[6] - a[2]; } }
+        if (z[0] == 1) { ex = z[3] - z[1]; ey = z[4] - z[2]; }
+        else { ex = z[7] - z[5]; ey = z[8] - z[6]; if (Math.hypot(ex, ey) < 1e-12) { ex = z[7] - z[3]; ey = z[8] - z[4]; } }
+        return new double[] { sx, sy, ex, ey };
+    }
+
+    /**
+     * Sustituye la etapa (el conector del lado {@code lado} = ±1) por una spline en el plano: dos cúbicas de Hermite por P (en su
+     * extremo de la tapa 1), el punto medio M y el otro extremo, con las tangentes de la silueta doblada en los extremos y, en M, la de la
+     * envolvente. M es el contacto de la envolvente con el círculo medio, c(L/2) + rm·(-r'·T + lado·√(1-r'²)·N), mezclado con el punto de
+     * la silueta doblada según el giro del camino (con el camino recto sigue el arco elíptico).
+     */
+    private void anadeSpline(Path2D.Double out, java.util.List<double[]> etapa, int lado) {
+        double[] dir = direcciones(etapa);
+        double[] a = etapa.get(0), z = etapa.get(etapa.size() - 1);
+        double ax = a[1], ay = a[2], zx = z[0] == 1 ? z[3] : z[7], zy = z[0] == 1 ? z[4] : z[8];
+        boolean atras = lado < 0;                                // la etapa -y se recorre de la tapa 2 a la tapa 1
+        // extremos y tangentes de la silueta doblada, en el sentido de la etapa
+        double[] qa = mapea(ax, ay), qz = mapea(zx, zy);
+        double[] ta = unit(jac(ax, ay, dir[0], dir[1])), tz = unit(jac(zx, zy, dir[2], dir[3]));
+        // contacto de la envolvente con el círculo medio
+        double sm = largo / 2, rm = (r1 + r2) / 2, drds = (r2 - r1) / largo;
+        double kk = Math.sqrt(Math.max(0, 1 - drds * drds));
+        double[] e = estado(sm);
+        double nx = e[3], ny = -e[2];
+        double mex = e[0] + rm * (-drds * e[2] + lado * kk * nx), mey = e[1] + rm * (-drds * e[3] + lado * kk * ny);
+        double tex = kk * e[2] + lado * drds * nx, tey = kk * e[3] + lado * drds * ny;
+        if (atras) { tex = -tex; tey = -tey; }
+        // el punto de la silueta doblada con x = L/2 (aplanando la etapa local)
+        double mbx = mex, mby = mey, tbx = tex, tby = tey;
+        Path2D.Double loc = new Path2D.Double();
+        loc.moveTo(ax, ay);
+        for (double[] g : etapa) { if (g[0] == 1) loc.lineTo(g[3], g[4]); else loc.curveTo(g[3], g[4], g[5], g[6], g[7], g[8]); }
+        double[] cc = new double[6];
+        double lx = ax, ly = ay;
+        for (PathIterator it = loc.getPathIterator(null, 1e-3 * (r1 + r2)); !it.isDone(); it.next()) {
+            if (it.currentSegment(cc) != PathIterator.SEG_LINETO) continue;
+            if ((lx - sm) * (cc[0] - sm) <= 0 && cc[0] != lx) {
+                double f = (sm - lx) / (cc[0] - lx), px = lx + f * (cc[0] - lx), py = ly + f * (cc[1] - ly);
+                double[] w = mapea(px, py), tt = unit(jac(px, py, cc[0] - lx, cc[1] - ly));
+                mbx = w[0]; mby = w[1]; tbx = tt[0]; tby = tt[1];
+                break;
+            }
+            lx = cc[0]; ly = cc[1];
+        }
+        double s0 = Math.min(1, Math.abs(giro) / GIRO_RELAJO), rho = s0 * s0 * (3 - 2 * s0);
+        double mxw = (1 - rho) * mbx + rho * mex, myw = (1 - rho) * mby + rho * mey;
+        double[] tm = unit(new double[] { (1 - rho) * tbx + rho * tex, (1 - rho) * tby + rho * tey });
+        double[] pa = qa, pz = qz;
+        // spline de Hermite pa → M → pz
+        double d1 = Math.hypot(mxw - pa[0], myw - pa[1]), d2 = Math.hypot(pz[0] - mxw, pz[1] - myw);
+        out.curveTo(pa[0] + ta[0] * d1 / 3, pa[1] + ta[1] * d1 / 3, mxw - tm[0] * d1 / 3, myw - tm[1] * d1 / 3, mxw, myw);
+        out.curveTo(mxw + tm[0] * d2 / 3, myw + tm[1] * d2 / 3, pz[0] - tz[0] * d2 / 3, pz[1] - tz[1] * d2 / 3, pz[0], pz[1]);
+    }
+
+    private static double[] unit(double[] v) {
+        double n = Math.hypot(v[0], v[1]);
+        return n > 0 ? new double[] { v[0] / n, v[1] / n } : v;
     }
 
     /** Parte la cúbica local (a, b, c, d) en trozos de longitud de control <= paso y añade cada uno doblado, como cúbica de Hermite. */
