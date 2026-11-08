@@ -142,6 +142,51 @@ final class SiluetaCurva {
 
     boolean plegada() { return pliegue <= 0; }
 
+    // ---------- pertenencia ----------
+
+    /**
+     * Si el punto (px, py) está dentro de la silueta: la unión de las preimágenes del doblado. Un punto es imagen de (x, y) si
+     * p = c(x) + y·N(x), es decir, si x es un pie de perpendicular sobre el camino ((p - c(x))·T(x) = 0) con y = (p - c(x))·N(x);
+     * dentro si algún pie cae en la silueta recta ({@link Silueta#contieneLocal}); más las prolongaciones rectas de las tapas (x < 0 y x > L).
+     * Sin pliegue (pliegue() > 0) el doblado es inyectivo y coincide con el relleno de {@link #forma()}; con pliegue hay pies
+     * de orientación invertida y la regla es la unión (el relleno con winding no cero deja huecos donde las capas se cancelan).
+     * Coste lineal en la tabla del camino.
+     */
+    boolean contiene(double px, double py) {
+        return pies(px, py, null) > 0;
+    }
+
+    /** Número de pies (preimágenes) dentro de la silueta recta; si {@code signos} no es null, {@code signos[0]} recibe la suma de los signos de 1 + k·y (el winding). */
+    int pies(double px, double py, double[] signos) {
+        int n = s.length, cuenta = 0;
+        double wind = 0;
+        double dx = px - cx[0], dy = py - cy[0], nn = Math.hypot(tx[0], ty[0]), ux = tx[0] / nn, uy = ty[0] / nn;
+        double x0 = dx * ux + dy * uy;
+        if (x0 < 0 && recta.contieneLocal(x0, dx * uy - dy * ux)) { cuenta++; wind++; }     // en x0 = 0 el pie lo cuenta el barrido interior
+        dx = px - cx[n - 1]; dy = py - cy[n - 1];
+        nn = Math.hypot(tx[n - 1], ty[n - 1]); ux = tx[n - 1] / nn; uy = ty[n - 1] / nn;
+        double xe = dx * ux + dy * uy;
+        if (xe >= 0 && recta.contieneLocal(largo + xe, dx * uy - dy * ux)) { cuenta++; wind++; }
+        double gPrev = (px - cx[0]) * tx[0] + (py - cy[0]) * ty[0];
+        for (int i = 0; i + 1 < n; i++) {
+            double gNext = (px - cx[i + 1]) * tx[i + 1] + (py - cy[i + 1]) * ty[i + 1];
+            if ((gPrev <= 0 && gNext > 0) || (gPrev >= 0 && gNext < 0)) {
+                double f = gPrev / (gPrev - gNext), x = s[i] + f * (s[i + 1] - s[i]);
+                double ccx = cx[i] + f * (cx[i + 1] - cx[i]), ccy = cy[i] + f * (cy[i + 1] - cy[i]);
+                double Tx = tx[i] + f * (tx[i + 1] - tx[i]), Ty = ty[i] + f * (ty[i + 1] - ty[i]), m = Math.hypot(Tx, Ty);
+                Tx /= m; Ty /= m;
+                double y = (px - ccx) * Ty - (py - ccy) * Tx;           // N = (Ty, -Tx)
+                if (recta.contieneLocal(x, y)) {
+                    cuenta++;
+                    wind += Math.signum(1 + curvatura(x) * y);
+                }
+            }
+            gPrev = gNext;
+        }
+        if (signos != null) signos[0] = wind;
+        return cuenta;
+    }
+
     // ---------- el camino ----------
 
     /** Índice y fracción de la tabla para una longitud de arco (acotada a [0, L]). */
@@ -171,7 +216,7 @@ final class SiluetaCurva {
     }
 
     /** El punto local (x, y) llevado al plano. */
-    private double[] mapea(double x, double y) {
+    double[] mapea(double x, double y) {
         double[] e = estado(x);
         double nx = e[3], ny = -e[2];
         return new double[] { e[0] + (x - e[5]) * e[2] + y * nx, e[1] + (x - e[5]) * e[3] + y * ny };
