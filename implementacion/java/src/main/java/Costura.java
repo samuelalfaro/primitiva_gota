@@ -1,7 +1,7 @@
 /**
  * Dónde caen las costuras entre las zonas de la tira (cuerpo y tapas), común a colores y texturas: cómo se reparte
  * el interior en líneas de t constante, que van del contorno al eje y al otro contorno.
- * Valen para círculos y elipses, con solape PLANO y TRAZO.
+ * Valen con solape PLANO y TRAZO.
  */
 public enum Costura {
     /** Las líneas de t constante son normales al camino; las tapas son semidiscos. */

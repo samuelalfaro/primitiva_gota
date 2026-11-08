@@ -150,7 +150,7 @@ public class TapasDisco {
 
     static void costura() {
         Gota g = Gota.curva(p(60, 70), 24, new Gota.Vec(110, 0), p(230, 240), 58, new Gota.Vec(0, -120),
-                Perfil.recto().aspecto(1.6, 0.6));
+                Perfil.recto());
         Relleno rel0 = Colores.cadenaLateral(N1, N2, Mezcla.LCH).para(g);
         Cortes cortes = Tira.POR_DEFECTO.cortes(g);
         double c1 = cortes.c1(), c3 = cortes.c3();
@@ -161,7 +161,7 @@ public class TapasDisco {
             maxA = Math.max(maxA, maxCanal(rel0.argb(m0, new Coordenadas.Uv(u, c1)), rel0.argb(m0, new Coordenadas.Uv(u, c1 - 1e-9))));
             maxB = Math.max(maxB, maxCanal(rel0.argb(m0, new Coordenadas.Uv(u, c3)), rel0.argb(m0, new Coordenadas.Uv(u, c3 + 1e-9))));
         }
-        comprueba("costura: el color casa en v1 y v3 para todo u (elipses con pendiente de radio)", maxA <= 1 && maxB <= 1, "saltos " + maxA + " / " + maxB);
+        comprueba("costura: el color casa en v1 y v3 para todo u (con pendiente de radio)", maxA <= 1 && maxB <= 1, "saltos " + maxA + " / " + maxB);
         // la textura de referencia es discontinua en los cortes a propósito (cuatro fondos): se usa una continua
         Texturas.Textura tex = (u, v) -> 0xFF000000 | ((int) (255 * Math.min(1, Math.max(0, u))) << 16)
                 | ((int) (255 * Math.min(1, Math.max(0, v))) << 8) | (int) (255 * Math.min(1, Math.max(0, 0.5 * u + 0.5 * v)));
@@ -176,7 +176,7 @@ public class TapasDisco {
 
         // en la imagen real: saltos entre píxeles vecinos a ambos lados de la costura
         int W = 320, H = 320;
-        for (Gota gg : new Gota[] { g, Gota.curva(p(60, 70), 24, new Gota.Vec(110, 0), p(230, 240), 58, new Gota.Vec(0, -120), Perfil.recto()) }) {
+        for (Gota gg : new Gota[] { g, Gota.curva(p(60, 70), 24, new Gota.Vec(110, 0), p(230, 240), 58, new Gota.Vec(0, -120), Perfil.central(0.8)) }) {
             BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
             gg.render(im, Colores.cadenaLateral(N1, N2, Mezcla.RGB));
             int[] d = datos(im);
@@ -189,7 +189,7 @@ public class TapasDisco {
                     boolean costura = (va < kk.c1()) != (vb < kk.c1()) || (va > kk.c3()) != (vb > kk.c3());
                     if (costura) mx = Math.max(mx, maxCanal(d[j * W + i], d[j * W + i + 1]));
                 }
-            comprueba("imagen " + (gg.esElipse() ? "elíptica" : "circular") + " con pendiente de radio: salto en la costura <= 40",
+            comprueba("imagen " + (gg == g ? "de perfil recto" : "de perfil central 0,8") + " con pendiente de radio: salto en la costura <= 40",
                     mx <= 40, "salto máx entre vecinos " + mx);
         }
     }

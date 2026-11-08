@@ -8,7 +8,7 @@ import java.util.List;
  */
 public class Todas {
     static final String[] SUITES = {
-            "GotaRegresion", "GotaCadena", "GotaCombina", "GotaElipses", "GotaDisco",
+            "GotaRegresion", "GotaCadena", "GotaCombina", "GotaDisco",
             "TexturaReferencia", "TapasDisco", "ComposicionPruebas"
     };
 

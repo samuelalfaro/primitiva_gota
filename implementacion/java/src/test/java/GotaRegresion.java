@@ -43,17 +43,12 @@ public class GotaRegresion {
 
     static void perfiles() {
         Perfil.Resuelto a = Perfil.recto().resuelve(50, 20);
-        comprueba("Perfil.recto: rm = (r1 + r2)/2, tm = 1/2, suavizado 1, círculos",
-                  a.rm() == 35 && a.tm() == 0.5 && a.suavizado() == 1 && a.lam1() == 1 && a.lam2() == 1 && !a.elipses(), a.toString());
+        comprueba("Perfil.recto: rm = (r1 + r2)/2, tm = 1/2, suavizado 1",
+                  a.rm() == 35 && a.tm() == 0.5 && a.suavizado() == 1, a.toString());
         Perfil.Resuelto b = Perfil.radioMedio(-5, 0.99, 3).resuelve(10, 10);
         comprueba("Perfil: rm >= 0, tm a [0.05, 0.95] y suavizado a [0, 1]", b.rm() == 0 && b.tm() == 0.95 && b.suavizado() == 1, b.toString());
-        Perfil.Resuelto c = Perfil.recto().aspecto(100, 0.001).resuelve(10, 10);
-        comprueba("Perfil.aspecto: recortado a (0.05, 20) y activa las elipses", c.lam1() == 20 && c.lam2() == 0.05 && c.elipses(), c.toString());
-        Perfil.Resuelto d = Perfil.recto().radiosTangentes(30, 12).resuelve(10, 0);
-        comprueba("Perfil.radiosTangentes: aspecto = a / r, y 1 si el radio normal es 0", d.lam1() == 3 && d.lam2() == 1 && d.elipses(), d.toString());
-        comprueba("Perfil.forzarElipses con aspecto 1 usa el algoritmo de elipses", Perfil.recto().forzarElipses().resuelve(10, 10).elipses(), "");
         boolean lanza = true;
-        for (Perfil pf : new Perfil[] { Perfil.radioMedio(Double.NaN), Perfil.recto().aspecto(Double.POSITIVE_INFINITY, 1), Perfil.radioMedio(5, Double.NaN, 1) })
+        for (Perfil pf : new Perfil[] { Perfil.radioMedio(Double.NaN), Perfil.radioMedio(5, Double.NaN, 1) })
             try { pf.resuelve(10, 10); lanza = false; } catch (IllegalArgumentException e) { }
         comprueba("Perfil.resuelve rechaza valores no finitos", lanza, "");
     }

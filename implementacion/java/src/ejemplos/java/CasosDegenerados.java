@@ -10,7 +10,7 @@ import javax.imageio.ImageIO;
 
 /**
  * Experimento: batería de casos degenerados de la gota (tapa tangente o contenida en la otra, centros coincidentes,
- * círculos idénticos, perfil que engorda con centros iguales, elipses con centros iguales, casi coincidentes) y barrido
+ * círculos idénticos, perfil que engorda con centros iguales, casi coincidentes) y barrido
  * de la distancia entre centros hacia 0. No comprueba nada ni corrige nada: pinta lo que sale y lo mide.
  * Solo usa la API pública. Genera:
  * <ul>
@@ -54,10 +54,6 @@ public class CasosDegenerados {
                 () -> Gota.lineal(p(118, 120), 60, p(122, 120), 60, recto)));
         c.add(new Caso("Casi coincidentes, radios 2 y 1", "d = 4 px: k enorme.\nDebería parecerse a centros iguales.",
                 () -> Gota.lineal(p(118, 120), 2 * u, p(122, 120), 1 * u, recto)));
-        c.add(new Caso("Elipse idéntica", "Centros y radios iguales, aspecto 1,6:\nuna elipse con dos tapas.",
-                () -> Gota.lineal(p(120, 120), 40, p(120, 120), 40, recto.aspecto(1.6))));
-        c.add(new Caso("Elipses, centros iguales, radios 60 y 30", "Aspecto 1,4; el mismo centro.\nEl caso para la adaptación elíptica.",
-                () -> Gota.lineal(p(120, 120), 60, p(120, 120), 30, recto.aspecto(1.4))));
         return c;
     }
 

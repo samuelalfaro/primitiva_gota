@@ -82,10 +82,6 @@ public final class Coordenadas {
         double r = Math.max(g.rad(t), 1e-9);
         double dx = x - g.cx(t), dy = y - g.cy(t);
         double[] tg = g.tangente(t);
-        if (g.esElipse()) {
-            double ax = (dx * tg[0] + dy * tg[1]) / (r * g.aspecto(t)), la = (dx * tg[1] - dy * tg[0]) / r;
-            return new Muestra(t, Math.hypot(ax, la), ax, la);
-        }
         return new Muestra(t, Math.hypot(dx, dy) / r,
                            (dx * tg[0] + dy * tg[1]) / r,
                            (dx * tg[1] - dy * tg[0]) / r);   // N = (Ty, -Tx)
@@ -106,7 +102,7 @@ public final class Coordenadas {
      * Las tapas de la tira son semidiscos. Con (u, w) de la tira (w va de 0 en la costura con el cuerpo a 1 en el arco),
      * l = 2u - 1 y a = w·sqrt(1 - l²) dan el punto (l, a) del semidisco unidad (en la gota recta de radios iguales es la
      * posición real del píxel). Como w es una fracción de la profundidad de la tapa, el cuerpo y la tapa casan para
-     * cualquier pendiente del radio y para las elipses. La textura se coloca plana sobre ese semidisco (v' = c1·(1 - a))
+     * cualquier pendiente del radio. La textura se coloca plana sobre ese semidisco (v' = c1·(1 - a))
      * y el color lateral va en polares (s, th): ver {@link Lateral#enDisco}.
      */
     /** {l, a, fin} del punto de tapa de la tira (fin 0 = primera, 1 = segunda), o null si cae en el cuerpo. */

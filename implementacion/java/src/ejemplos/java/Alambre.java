@@ -53,9 +53,9 @@ public final class Alambre {
         CONTACTO("contacto", new Color(200, 50, 50), 1.0f, null, true),
         /** Nombres de P1..P4, como contornos de texto (siguen siendo Shape). */
         ETIQUETA("etiqueta", new Color(150, 40, 40), 0f, null, true),
-        /** Semiejes de los extremos: el tangente (a lo largo del camino) y, con elipses, el normal. */
+        /** Radios de los extremos, a lo largo del camino. */
         SEMIEJE("semieje", new Color(30, 140, 120), 1.6f, null, false),
-        /** Nombres de los centros y de los semiejes (C1, C2, r1, rt1, rn1...). */
+        /** Nombres de los centros y de los radios (C1, C2, r1, r2). */
         NOMBRE("nombre", new Color(30, 90, 85), 0f, null, true),
         /** Solo con diagnóstico: la sección y el punto de tm. */
         DIAGNOSTICO("diagnostico", new Color(220, 150, 50), 1.3f, null, false);
@@ -91,8 +91,7 @@ public final class Alambre {
      * @param muestras    puntos por rama del contorno
      * @param diagnostico añade la sección y el punto de tm
      * @param contactos   añade los puntos de contacto P1..P4 y los segmentos desde los centros
-     * @param radios      añade los radios de los extremos: r1 y r2 (tangentes) con círculos; rt1, rn1, rt2 y rn2 con
-     *                    elipses. r1 y rt1 salen del centro hacia atrás (contra la tangente) y r2 y rt2 hacia delante
+     * @param radios      añade los radios de los extremos: r1 sale del centro hacia atrás (contra la tangente) y r2 hacia delante
      * @param etiquetas   escribe los nombres (C1, C2, P1..P4, radios) de lo que se dibuje
      * @param ocultas     dibuja también, discontinua, la parte de la envolvente que queda dentro de la gota
      */
@@ -137,7 +136,7 @@ public final class Alambre {
 
         var zonas = new Zonas(geo, Costura.ORTOGONAL, Tira.POR_DEFECTO.cortes(geo));
         silueta(geo, zonas, aj, out);
-        if (aj.radios()) radios(zonas, geo.esElipse(), aj.etiquetas(), out);
+        if (aj.radios()) radios(zonas, aj.etiquetas(), out);
         if (aj.contactos()) contactos(zonas, aj.etiquetas(), out);
         if (aj.etiquetas()) nombresCentros(zonas, out);
 
@@ -174,22 +173,17 @@ public final class Alambre {
     private static double[] ejes(Zonas.Fr f) { return new double[] { f.tx(), f.ty(), f.nx(), f.ny() }; }
 
     /**
-     * Semiejes de los extremos. El tangente sale del centro contra la tangente en el extremo inicial (r1, rt1) y a favor
-     * en el final (r2, rt2), de modo que se lee (r1, C1, C2, r2). Con elipses se añade el normal (rn1, rn2), hacia +N.
+     * Radios de los extremos. Salen del centro contra la tangente en el extremo inicial (r1) y a favor en el final (r2),
+     * de modo que se lee (r1, C1, C2, r2).
      */
-    private static void radios(Zonas zonas, boolean elipse, boolean etiquetas, List<Trazo> out) {
+    private static void radios(Zonas zonas, boolean etiquetas, List<Trazo> out) {
         for (int e = 0; e < 2; e++) {
             Zonas.Fr f = zonas.marco(e);
             double[] m = ejes(f);
-            double sg = e == 0 ? -1 : 1, a = f.a(), b = f.b();
-            out.add(new Trazo(Rol.SEMIEJE, new Line2D.Double(f.cx(), f.cy(), f.cx() + sg * a * m[0], f.cy() + sg * a * m[1])));
-            if (etiquetas) out.add(new Trazo(Rol.NOMBRE, etiqueta((elipse ? "rt" : "r") + (e + 1),
-                f.cx() + sg * (a + 11) * m[0], f.cy() + sg * (a + 11) * m[1])));
-            if (elipse) {
-                out.add(new Trazo(Rol.SEMIEJE, new Line2D.Double(f.cx(), f.cy(), f.cx() + b * m[2], f.cy() + b * m[3])));
-                if (etiquetas) out.add(new Trazo(Rol.NOMBRE, etiqueta("rn" + (e + 1),
-                    f.cx() + (b + 11) * m[2], f.cy() + (b + 11) * m[3])));
-            }
+            double sg = e == 0 ? -1 : 1, r = f.r();
+            out.add(new Trazo(Rol.SEMIEJE, new Line2D.Double(f.cx(), f.cy(), f.cx() + sg * r * m[0], f.cy() + sg * r * m[1])));
+            if (etiquetas) out.add(new Trazo(Rol.NOMBRE, etiqueta("r" + (e + 1),
+                f.cx() + sg * (r + 11) * m[0], f.cy() + sg * (r + 11) * m[1])));
         }
     }
 
@@ -241,13 +235,10 @@ public final class Alambre {
         return new Ellipse2D.Double(x - r, y - r, 2 * r, 2 * r);
     }
 
-    /** Sección de la familia en t: elipse (círculo si el aspecto es 1) con el eje a lo largo de la dirección de la familia. */
+    /** Sección de la familia en t: el círculo de centro c(t) y radio r(t). */
     private static Shape seccion(Geometria geo, double t) {
-        double b = geo.rad(t), a = b * geo.aspecto(t);
-        double[] d = geo.dirD(t);
-        // (u, v) -> c + u T + v N, con N = (Ty, -Tx)
-        var m = new AffineTransform(d[0], d[1], d[1], -d[0], geo.cx(t), geo.cy(t));
-        return m.createTransformedShape(new Ellipse2D.Double(-a, -b, 2 * a, 2 * b));
+        double r = geo.rad(t);
+        return new Ellipse2D.Double(geo.cx(t) - r, geo.cy(t) - r, 2 * r, 2 * r);
     }
 
     /** Un punto de la envolvente: posición, normal hacia fuera (sin normalizar) y distancia del test de pertenencia. */
@@ -261,18 +252,18 @@ public final class Alambre {
 
     private static final double EPS_REL = 1e-3;
 
-    /** Punto de la elipse del marco f con parámetro angular th y normal (cos th / a, sin th / b), hacia fuera. */
-    private static Punto enElipse(Zonas.Fr f, double th) {
-        double a = Math.max(f.a(), 1e-12), b = Math.max(f.b(), 1e-12);
-        double A = f.a() * Math.cos(th), S = f.b() * Math.sin(th);
-        double nA = Math.cos(th) / a, nS = Math.sin(th) / b;
+    /** Punto del círculo del marco f con ángulo th (desde T hacia N) y normal hacia fuera. */
+    private static Punto enCirculo(Zonas.Fr f, double th) {
+        double r = Math.max(f.r(), 1e-12);
+        double A = r * Math.cos(th), S = r * Math.sin(th);
+        double nA = Math.cos(th) / r, nS = Math.sin(th) / r;
         return new Punto(f.cx() + A * f.tx() + S * f.nx(), f.cy() + A * f.ty() + S * f.ny(),
-            nA * f.tx() + nS * f.nx(), nA * f.ty() + nS * f.ny(), Math.max(EPS_REL * f.b(), 1e-4));
+            nA * f.tx() + nS * f.nx(), nA * f.ty() + nS * f.ny(), Math.max(EPS_REL * f.r(), 1e-4));
     }
 
     /** Punto de contacto del lado l (0 = -N, 1 = +N) en el marco f. */
     private static Punto enContacto(Zonas.Fr f, int l) {
-        return enElipse(f, angulo(f, l));
+        return enCirculo(f, angulo(f, l));
     }
 
     /**
@@ -285,9 +276,9 @@ public final class Alambre {
         double[] fin = barrido(angulo(f1, 0), angulo(f1, 1)), ini = barrido(angulo(f0, 1), angulo(f0, 0));
         List<double[]> saltos = saltos(zonas, 4 * muestras);
         List<Tramo> out = new ArrayList<>(ramas(zonas, saltos, 0, muestras));
-        out.add(tramo(SEGMENTOS_ARCO, s -> enElipse(f1, fin[0] + fin[1] * s)));
+        out.add(tramo(SEGMENTOS_ARCO, s -> enCirculo(f1, fin[0] + fin[1] * s)));
         out.addAll(ramas(zonas, saltos, 1, muestras));
-        out.add(tramo(SEGMENTOS_ARCO, s -> enElipse(f0, ini[0] + ini[1] * s)));
+        out.add(tramo(SEGMENTOS_ARCO, s -> enCirculo(f0, ini[0] + ini[1] * s)));
         return out;
     }
 
@@ -305,7 +296,7 @@ public final class Alambre {
         for (int i = 1; i <= n; i++) {
             double t = i / (double) n;
             Zonas.Fr f = zonas.marco(t);
-            double r = Math.max(f.b(), 1e-9);
+            double r = Math.max(f.r(), 1e-9);
             boolean quieto = Math.hypot(f.cx() - prev.cx(), f.cy() - prev.cy()) < 0.05 * r;
             for (int l = 0; l < 2 && quieto; l++) {
                 if (Math.hypot(contactoX(f, l) - contactoX(prev, l), contactoY(f, l) - contactoY(prev, l)) > 0.5 * r) {
@@ -359,7 +350,7 @@ public final class Alambre {
     }
 
     /**
-     * Arco de la elipse del salto entre el contacto del lado l justo antes (en su marco) y justo después. Se toma el arco
+     * Arco del círculo del salto entre el contacto del lado l justo antes (en su marco) y justo después. Se toma el arco
      * más corto; si son iguales (una cúspide: media vuelta) el que pasa por la punta de delante del marco de antes
      * (th = 0). Con reverso se recorre de después a antes.
      */
@@ -368,7 +359,7 @@ public final class Alambre {
         double thB = angulo(fb, l);
         double dx = contactoX(fa, l) - fb.cx(), dy = contactoY(fa, l) - fb.cy();
         double A = dx * fb.tx() + dy * fb.ty(), S = dx * fb.nx() + dy * fb.ny();
-        double thA = Math.atan2(S / fb.b(), A / fb.a());
+        double thA = Math.atan2(S / fb.r(), A / fb.r());
         double d = (thA - thB) % (2 * Math.PI);
         if (d > Math.PI) d -= 2 * Math.PI;
         if (d <= -Math.PI) d += 2 * Math.PI;
@@ -380,7 +371,7 @@ public final class Alambre {
             signo = Math.signum(d);
             barrido = Math.abs(d);
         }
-        return tramo(SEGMENTOS_ARCO, s -> enElipse(fb, thB + signo * barrido * (reverso ? 1 - s : s)));
+        return tramo(SEGMENTOS_ARCO, s -> enCirculo(fb, thB + signo * barrido * (reverso ? 1 - s : s)));
     }
 
     private static Tramo tramo(int n, java.util.function.DoubleFunction<Punto> f) {
@@ -397,11 +388,11 @@ public final class Alambre {
         return new double[] { th0, b };
     }
 
-    /** Parámetro angular (en la elipse de ejes T y N) del punto de contacto del lado l. */
+    /** Ángulo (en el círculo, desde T hacia N) del punto de contacto del lado l. */
     private static double angulo(Zonas.Fr f, int l) {
         double A = f.ox()[l] * f.tx() + f.oy()[l] * f.ty();
         double S = f.ox()[l] * f.nx() + f.oy()[l] * f.ny();
-        return Math.atan2(S / f.b(), A / f.a());
+        return Math.atan2(S / f.r(), A / f.r());
     }
 
     /** true si el punto es borde de la gota: un punto apenas más hacia fuera queda fuera. */

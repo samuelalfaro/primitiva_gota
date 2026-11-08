@@ -24,7 +24,6 @@ public class AlambreDemo {
         List<Caso> casos = List.of(
             new Caso("radios_distintos", Gota.lineal(p(90, 110), 60, p(330, 110), 30, recto)),
             new Caso("curva", Gota.curva(p(90, 150), 40, new Gota.Vec(0, -140), p(330, 150), 24, new Gota.Vec(0, 140), recto)),
-            new Caso("elipses", Gota.lineal(p(120, 110), 40, p(340, 110), 20, Perfil.central(1.2).aspecto(2, 0.6))),
             new Caso("tapa_contenida", Gota.lineal(p(180, 110), 72, p(198, 110), 18, recto)),
             new Caso("centros_iguales", Gota.lineal(p(210, 110), 72, p(210, 110), 36, recto)),
             new Caso("circulos_identicos", Gota.lineal(p(210, 110), 60, p(210, 110), 60, recto)),

@@ -20,8 +20,7 @@ public final class Gota implements Geometria {
     public record Vec(double x, double y) {}
 
     private static final int GRADO = 6;          // círculos
-    private static final int GRADO_E = 12;       // elipses (aspecto lineal en t)
-    private static final int MAX_G = 12;
+    private static final int MAX_G = 6;
     private static final double BANDA = 0.5;   // semiancho del antialiasing, en píxeles
     private static final int PROF_MAX = 24;    // profundidad máxima de subdivisión
     private static final double[][] BIN = new double[MAX_G + 1][MAX_G + 1];
@@ -41,8 +40,6 @@ public final class Gota implements Geometria {
         final double[] a;                          // controles de la cuadrática del radio en el tramo
         final double[] cx6, cy6;                   // c(t) del tramo, en Bernstein de grado 6
         final double[] kExt, kCero, kInt;          // K = |c|^2 - (r + d)^2 para d = +BANDA, 0, -BANDA
-        // Elipses (null si son círculos): F = pᵀA p - 2 pᵀB + C0 en Bernstein de grado 12
-        double[] eA11, eA12, eA22, eBx, eBy, eC0Ext, eC0Cero;
 
         Tramo(double t0, double t1, double[] pxs, double[] pys, double[] a) {
             this.t0 = t0; this.t1 = t1; this.a = a;
@@ -52,37 +49,6 @@ public final class Gota implements Geometria {
             kExt = k(c2, a, +BANDA);
             kCero = k(c2, a, 0);
             kInt = k(c2, a, -BANDA);
-        }
-
-        /**
-         * Polinomios de la pertenencia en elipse: (d·D)² + lam²(d·D⊥)² - lam² b² |D|² <= 0 con d = p - c(t),
-         * D la dirección del camino (cuadrática, no hace falta normalizarla), lam = a/b lineal y b el radio normal.
-         * kappa infla b en la banda exterior (conservador: la envolvente del desplazamiento de una elipse).
-         */
-        void elipses(double[] pxs, double[] pys, double l0, double l1, double[] dx, double[] dy, double kappa) {
-            double[] lam = { l0, l1 };
-            double[] lam2 = producto(lam, lam);                          // grado 2
-            double[] uno2 = { 1, 1, 1 };
-            double[] dx2 = producto(dx, dx), dy2 = producto(dy, dy), dxy = producto(dx, dy);   // grado 4
-            double[] a11 = suma(elevar(dx2, 6), producto(lam2, dy2));
-            double[] a22 = suma(elevar(dy2, 6), producto(lam2, dx2));
-            double[] a12 = producto(resta(uno2, lam2), dxy);
-            double[] bx9 = suma(producto(a11, pxs), producto(a12, pys));
-            double[] by9 = suma(producto(a12, pxs), producto(a22, pys));
-            double[] cac = suma(producto(pxs, bx9), producto(pys, by9));                       // grado 12
-            double[] d2 = suma(dx2, dy2);
-            eA11 = elevar(a11, GRADO_E); eA12 = elevar(a12, GRADO_E); eA22 = elevar(a22, GRADO_E);
-            eBx = elevar(bx9, GRADO_E); eBy = elevar(by9, GRADO_E);
-            eC0Cero = c0(cac, lam2, d2, 0);
-            eC0Ext = c0(cac, lam2, d2, kappa * BANDA);
-        }
-
-        private double[] c0(double[] cac, double[] lam2, double[] d2, double o) {
-            double[] bo = { a[0] + o, a[1] + o, a[2] + o };
-            double[] t = elevar(producto(lam2, producto(producto(bo, bo), d2)), GRADO_E);
-            double[] out = new double[GRADO_E + 1];
-            for (int i = 0; i <= GRADO_E; i++) out[i] = cac[i] - t[i];
-            return out;
         }
 
         double rad(double t) {
@@ -104,9 +70,6 @@ public final class Gota implements Geometria {
     final double rm, tm, suav;    // perfil efectivo (tras recortar)
     final Tramo[] tramos;         // 1 tramo (cuadrática) o 2 (partido en tm)
     private final boolean interiorValido;
-    final boolean elipses;          // algoritmo de elipses (grado 12) en vez de círculos (grado 6)
-    final double lam1, lam2;        // aspecto a/b en los extremos
-    final double[] dxq, dyq;        // dirección D(t) del camino: cuadrática regularizada (solo elipses)
     private final Rectangle2D.Double bounds;
     final int muestras;
     /** Coordenadas intrínsecas de esta gota, una por combinación de costura y tira (se crean al pedirlas). */
@@ -137,9 +100,6 @@ public final class Gota implements Geometria {
         this.rm = pr.rm();
         this.tm = pr.tm();
         this.suav = pr.suavizado();
-        this.lam1 = pr.lam1();
-        this.lam2 = pr.lam2();
-        this.elipses = pr.elipses();
 
         px = new double[] { c1.getX(), c1.getX() + v1.x(), c2.getX() + v2.x(), c2.getX() };
         py = new double[] { c1.getY(), c1.getY() + v1.y(), c2.getY() + v2.y(), c2.getY() };
@@ -163,61 +123,6 @@ public final class Gota implements Geometria {
                 new Tramo(tm, 1, bx, by, new double[] { rm, rm + mR * w / 2, this.r2 }) };
         }
 
-        // Dirección del camino para las elipses: derivada de la cúbica (cuadrática) con los controles nulos
-        // sustituidos por el vecino y una pequeña regularización constante en la dirección de la cuerda,
-        // de modo que D no se anule nunca (si D = 0 en algún t, el polinomio vale 0 para todo p).
-        double[] ddx = new double[3], ddy = new double[3];
-        for (int i = 0; i < 3; i++) { ddx[i] = 3 * (px[i + 1] - px[i]); ddy[i] = 3 * (py[i + 1] - py[i]); }
-        double mx = 0;
-        for (int i = 0; i < 3; i++) mx = Math.max(mx, Math.hypot(ddx[i], ddy[i]));
-        // Eje de referencia e: la cuerda; si es nula, el mayor de los controles; si no, el eje x.
-        double cx0 = px[3] - px[0], cy0 = py[3] - py[0], cn = Math.hypot(cx0, cy0);
-        double ex = 1, ey = 0;
-        if (cn > 1e-9 * Math.max(mx, 1e-300) && cn > 0) { ex = cx0 / cn; ey = cy0 / cn; }
-        else if (mx > 0) {
-            for (int i = 0; i < 3; i++)
-                if (Math.hypot(ddx[i], ddy[i]) == mx) { ex = ddx[i] / mx; ey = ddy[i] / mx; break; }
-        }
-        // Camino sobre una recta (todos los controles paralelos a e): la orientación es e en todo t. Así la
-        // elipse no gira ni siquiera donde el camino da la vuelta (D cambia de signo y el polinomio tendría una
-        // raíz doble para todo p, que la subdivisión no sabe descartar).
-        boolean colineal = true;
-        for (int i = 0; i < 3; i++) if (Math.abs(ddx[i] * ey - ddy[i] * ex) > 1e-9 * mx) colineal = false;
-        if (colineal) {
-            ddx = new double[] { ex, ex, ex };
-            ddy = new double[] { ey, ey, ey };
-        } else {
-            for (int i = 0; i < 3; i++) {
-                if (Math.hypot(ddx[i], ddy[i]) > 1e-6 * mx) continue;
-                int[] orden = i == 0 ? new int[] { 1, 2 } : i == 2 ? new int[] { 1, 0 } : new int[] { 0, 2 };
-                boolean hecho = false;
-                for (int j : orden)
-                    if (Math.hypot(ddx[j], ddy[j]) > 1e-6 * mx) { ddx[i] = ddx[j]; ddy[i] = ddy[j]; hecho = true; break; }
-                if (!hecho) { ddx[i] = ex; ddy[i] = ey; }
-            }
-            double eps = 1e-5 * mx;
-            for (int i = 0; i < 3; i++) { ddx[i] += eps * ex; ddy[i] += eps * ey; }
-        }
-        dxq = ddx; dyq = ddy;
-        if (elipses) {
-            double lmin = Math.min(lam1, lam2);
-            double smax = Math.max((lam1 + 1) / (2 * Math.sqrt(lam1)), (lam2 + 1) / (2 * Math.sqrt(lam2)));
-            double kappa = Math.max(1, 1 / lmin) * smax;
-            for (Tramo t : tramos) {
-                double[] cxl = px, cyl = py, dxl = dxq, dyl = dyq;
-                if (tramos.length == 2) {
-                    double[] l = new double[4], r = new double[4], l2c = new double[3], r2c = new double[3];
-                    double[] ly = new double[4], ry = new double[4], l2y = new double[3], r2y = new double[3];
-                    dividirEn(px, tm, l, r); dividirEn(py, tm, ly, ry);
-                    dividirEn(dxq, tm, l2c, r2c); dividirEn(dyq, tm, l2y, r2y);
-                    boolean primero = t == tramos[0];
-                    cxl = primero ? l : r; cyl = primero ? ly : ry;
-                    dxl = primero ? l2c : r2c; dyl = primero ? l2y : r2y;
-                }
-                t.elipses(cxl, cyl, lam1 + (lam2 - lam1) * t.t0, lam1 + (lam2 - lam1) * t.t1, dxl, dyl, kappa);
-            }
-        }
-
         double minX = px[0], maxX = px[0], minY = py[0], maxY = py[0], largo = 0, rc = 0, rmin = Double.MAX_VALUE;
         for (int i = 0; i < 4; i++) {
             minX = Math.min(minX, px[i]); maxX = Math.max(maxX, px[i]);
@@ -225,8 +130,8 @@ public final class Gota implements Geometria {
             if (i > 0) largo += Math.hypot(px[i] - px[i - 1], py[i] - py[i - 1]);
         }
         for (Tramo t : tramos) { rc = Math.max(rc, t.maxControl()); rmin = Math.min(rmin, t.minControl()); }
-        interiorValido = !elipses && rmin >= BANDA;   // sin atajo de interior para elipses (el desplazamiento no es una elipse)
-        double rmax = rc * (elipses ? Math.max(1, Math.max(lam1, lam2)) : 1) + 1;
+        interiorValido = rmin >= BANDA;
+        double rmax = rc + 1;
         bounds = new Rectangle2D.Double(minX - rmax, minY - rmax, maxX - minX + 2 * rmax, maxY - minY + 2 * rmax);
         muestras = (int) Math.max(32, Math.min(512, largo / 2 + 16));
     }
@@ -248,17 +153,6 @@ public final class Gota implements Geometria {
 
     /** Suavizado efectivo del perfil, en [0, 1]. */
     public double suavizado() { return suav; }
-
-    /** true si la gota usa elipses (algún aspecto distinto de 1); con false son círculos. */
-    @Override public boolean esElipse() { return elipses; }
-
-    /** Aspecto a/b en t (1 en las gotas de círculos). */
-    @Override public double aspecto(double t) { return elipses ? lam(t) : 1; }
-
-    @Override public double dAspecto(double t) { return elipses ? lam2 - lam1 : 0; }
-
-    /** Radio tangente al camino en t: aspecto(t) · radio(t). */
-    public double radioTangente(double t) { return aspecto(t) * radio(t); }
 
     public Point2D centro(double t) { return new Point2D.Double(cx(t), cy(t)); }
 
@@ -374,25 +268,11 @@ public final class Gota implements Geometria {
 
     private boolean dentro(double x, double y, int banda) {
         if (!Double.isFinite(x) || !Double.isFinite(y)) return false;   // con NaN la subdivisión nunca decide
-        if (elipses) return dentroElipses(x, y, banda);
         double pp = x * x + y * y;
         double[] b = new double[GRADO + 1];
         for (Tramo t : tramos) {
             double[] K = banda == EXT ? t.kExt : banda == INT ? t.kInt : t.kCero;
             for (int i = 0; i <= GRADO; i++) b[i] = pp - 2 * (x * t.cx6[i] + y * t.cy6[i]) + K[i];
-            if (hayNoPositivo(b, PROF_MAX)) return true;
-        }
-        return false;
-    }
-
-    /** Pertenencia con elipses: banda EXT usa la elipse inflada (conservadora), CERO la exacta. INT no se usa. */
-    private boolean dentroElipses(double x, double y, int banda) {
-        double[] b = new double[GRADO_E + 1];
-        double xx = x * x, xy2 = 2 * x * y, yy = y * y;
-        for (Tramo t : tramos) {
-            double[] c0 = banda == EXT ? t.eC0Ext : t.eC0Cero;
-            for (int i = 0; i <= GRADO_E; i++)
-                b[i] = xx * t.eA11[i] + xy2 * t.eA12[i] + yy * t.eA22[i] - 2 * (x * t.eBx[i] + y * t.eBy[i]) + c0[i];
             if (hayNoPositivo(b, PROF_MAX)) return true;
         }
         return false;
@@ -438,7 +318,6 @@ public final class Gota implements Geometria {
     // ---------- Minimización numérica (sdf y t*) ----------
 
     private double f(double x, double y, double t, boolean porRho) {
-        if (elipses) return fElipse(x, y, t, porRho);
         double dx = x - cx(t), dy = y - cy(t);
         double d = Math.sqrt(dx * dx + dy * dy), r = rad(t);
         return porRho ? d / Math.max(r, 1e-9) : d - r;
@@ -502,83 +381,8 @@ public final class Gota implements Geometria {
         return out;
     }
 
-    // ---------- Elipses: orientación, aspecto y distancia ----------
-
-    /** Aspecto a/b en t (lineal). */
-    double lam(double t) { return lam1 + (lam2 - lam1) * t; }
-
-    double ddx(double t) { double u = 1 - t; return u * u * dxq[0] + 2 * u * t * dxq[1] + t * t * dxq[2]; }
-    double ddy(double t) { double u = 1 - t; return u * u * dyq[0] + 2 * u * t * dyq[1] + t * t * dyq[2]; }
-
-    /** Eje tangente unitario de la elipse en t (la dirección regularizada del camino). */
-    @Override public double[] dirD(double t) {
-        double x = ddx(t), y = ddy(t), n = Math.hypot(x, y);
-        return n > 0 ? new double[] { x / n, y / n } : new double[] { 1, 0 };
-    }
-
-    /** Velocidad angular del eje D respecto a t: (D x D') / |D|^2. */
-    @Override public double giroD(double t) {
-        double dx = ddx(t), dy = ddy(t), n = Math.hypot(dx, dy), u = 1 - t;
-        double dxp = 2 * (u * (dxq[1] - dxq[0]) + t * (dxq[2] - dxq[1]));
-        double dyp = 2 * (u * (dyq[1] - dyq[0]) + t * (dyq[2] - dyq[1]));
-        return (dx * dyp - dy * dxp) / (n * n);
-    }
-
-    /**
-     * Valor de la familia en t para elipses: ρ_e (norma elíptica, igual que ρ si son círculos) o la distancia
-     * con signo a la elipse (exacta).
-     */
-    private double fElipse(double x, double y, double t, boolean porRho) {
-        double dx = x - cx(t), dy = y - cy(t);
-        double[] d = dirD(t);
-        double u = dx * d[0] + dy * d[1], v = dx * d[1] - dy * d[0];
-        double b = rad(t), a = lam(t) * b;
-        if (porRho) return Math.hypot(u / Math.max(a, 1e-9), v / Math.max(b, 1e-9));
-        if (b <= 1e-12) return Math.hypot(u, v);
-        return distElipse(a, b, u, v);
-    }
-
-    /**
-     * Distancia con signo (negativa dentro) de (u, v) a la elipse (x/a)² + (y/b)² = 1; raíz por bisección
-     * (Eberly, "Distance from a point to an ellipse"). Exacta a precisión de punto flotante.
-     */
-    static double distElipse(double a, double b, double u, double v) {
-        double e0 = a, e1 = b, y0 = Math.abs(u), y1 = Math.abs(v);
-        if (e0 < e1) { double s = e0; e0 = e1; e1 = s; s = y0; y0 = y1; y1 = s; }
-        if (e1 <= 1e-12) return Math.hypot(Math.max(y0 - e0, 0), y1);
-        double z0 = y0 / e0, z1 = y1 / e1, g = z0 * z0 + z1 * z1 - 1;
-        double dist;
-        if (y1 > 0) {
-            if (y0 > 0) {
-                if (g == 0) return 0;
-                double r0 = (e0 / e1) * (e0 / e1), n0 = r0 * z0;
-                double s0 = z1 - 1, s1 = g < 0 ? 0 : Math.hypot(n0, z1) - 1, s = 0;
-                for (int i = 0; i < 400; i++) {
-                    s = 0.5 * (s0 + s1);
-                    if (s == s0 || s == s1) break;
-                    double ra = n0 / (s + r0), rb = z1 / (s + 1), gg = ra * ra + rb * rb - 1;
-                    if (gg > 0) s0 = s; else if (gg < 0) s1 = s; else break;
-                }
-                double x0 = r0 * y0 / (s + r0), x1 = y1 / (s + 1);
-                dist = Math.hypot(x0 - y0, x1 - y1);
-            } else {
-                dist = Math.abs(y1 - e1);
-            }
-        } else {
-            double num = e0 * y0, den = e0 * e0 - e1 * e1;
-            if (num < den) {
-                double xde = num / den, x0 = e0 * xde, x1 = e1 * Math.sqrt(1 - xde * xde);
-                dist = Math.hypot(x0 - y0, x1);
-            } else {
-                dist = Math.abs(y0 - e0);
-            }
-        }
-        return g < 0 ? -dist : dist;
-    }
-
     /** Tangente unitaria del camino en t; si la derivada es nula usa la secante, y si no, el eje x. */
     @Override public double[] tangente(double t) {
-        if (elipses) return dirD(t);
         double u = 1 - t;
         double dx = 3 * (u * u * (px[1] - px[0]) + 2 * u * t * (px[2] - px[1]) + t * t * (px[3] - px[2]));
         double dy = 3 * (u * u * (py[1] - py[0]) + 2 * u * t * (py[2] - py[1]) + t * t * (py[3] - py[2]));
