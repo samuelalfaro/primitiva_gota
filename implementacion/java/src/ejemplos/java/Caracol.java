@@ -5,7 +5,7 @@ import javax.imageio.ImageIO;
 
 /** Dibujo libre solo con la API de Composicion: un caracol sobre una hoja (concha en espiral como cadena de nodos de radio decreciente). */
 public class Caracol {
-    static final int W = 640, H = 480, FONDO = 0xFFF4F1EA;
+    static final int W = 640, H = 620, FONDO = 0xFFF4F1EA, RECORTE = 130, ALTO = 480;
 
     static Composicion cuerpo() {
         Composicion c = new Composicion();
@@ -45,22 +45,40 @@ public class Caracol {
         return c;
     }
 
+    /** Estrías: finas líneas oscuras semitransparentes cada 1/7 de v, más marcadas hacia el borde (u = 0 y 1). */
+    static final Texturas.Textura ESTRIAS = (u, v) -> {
+        double f = Math.abs(((v * 9) % 1 + 1) % 1 - 0.5);
+        double a = f > 0.40 ? (f - 0.40) / 0.10 : 0;
+        double borde = Math.abs(2 * u - 1);
+        int alfa = (int) Math.round(110 * Math.min(1, a) * (0.35 + 0.65 * borde));
+        return alfa << 24 | 0x5A2A0C;
+    };
+
+    /** Un sol difuso: un disco de la primitiva con degradado del centro al borde. */
+    static void sol(BufferedImage im, double x, double y) {
+        java.awt.geom.Point2D.Double a = new java.awt.geom.Point2D.Double(x, y), b = new java.awt.geom.Point2D.Double(x + 0.5, y);
+        Gota.lineal(a, 46, b, 46, Perfil.recto()).render(im, Colores.cuatroColores(0xFFFFF3B0, 0xFFFFF3B0, 0xFFFFCF5A, 0xFFFFCF5A, Mezcla.RGB));
+    }
+
     static BufferedImage dibuja() {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), FONDO);
+        sol(im, 540, 215);
         Composicion hoja = Hoja.limbo(new Hoja.Tr(30, 440, Math.toRadians(-4), 0.9), 3.6);
         hoja.render(im);
         Hoja.venas(hoja, 1.0, 0.55).render(im);
         cuerpo().render(im);
         antena(458, 308, 484, 236, 4, -30).render(im);
         antena(440, 306, 432, 232, -6, -30).render(im);
-        concha(300, 300).render(im);
+        Composicion concha = concha(300, 300);
+        concha.render(im);
+        concha.render(im, ESTRIAS);            // las estrías de crecimiento: líneas transversales al camino, con alfa, sobre el color
         // ojos
         for (double[] o : new double[][] { { 484, 236 }, { 432, 232 } }) {
             java.awt.geom.Point2D.Double a = new java.awt.geom.Point2D.Double(o[0] + 1, o[1] - 1), b = new java.awt.geom.Point2D.Double(o[0] + 1.5, o[1] - 1);
             Gota.lineal(a, 3, b, 3, Perfil.recto()).render(im, Colores.cuatroColores(0xFF444444, 0xFF444444, 0xFF111111, 0xFF111111, Mezcla.RGB));
         }
-        return im;
+        return im.getSubimage(0, RECORTE, W, ALTO);
     }
 
     public static void main(String[] args) throws Exception {
