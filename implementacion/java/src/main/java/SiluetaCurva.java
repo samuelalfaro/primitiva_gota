@@ -178,6 +178,76 @@ final class SiluetaCurva {
 
     // ---------- la forma ----------
 
+    /** El contorno en construcción: el camino y, por cada cúbica, sus puntos y la longitud de arco s del camino a la que pertenece (para la regla del trazo). */
+    private static final class Acum {
+        final Path2D.Double path = new Path2D.Double();
+        final java.util.List<double[]> tr = new java.util.ArrayList<>();      // {x0, y0, x1, y1, x2, y2, x3, y3, s0, s1}
+        double px, py;
+
+        void moveTo(double x, double y) { path.moveTo(x, y); px = x; py = y; }
+
+        void curveTo(double a, double b, double c, double d, double x, double y, double s0, double s1) {
+            path.curveTo(a, b, c, d, x, y);
+            tr.add(new double[] { px, py, a, b, c, d, x, y, s0, s1 });
+            px = x;
+            py = y;
+        }
+
+        void closePath() { path.closePath(); }
+    }
+
+    private double acota(double x) { return Math.min(Math.max(x, 0), largo); }
+
+
+    /** El contorno según la regla del trazo: {@code visible} lo que no tapan los círculos posteriores y {@code oculto} lo tapado (trazos abiertos). */
+    record Trazo(Path2D.Double visible, Path2D.Double oculto) { }
+
+    /**
+     * Regla del trazo aplicada a la silueta: el contorno se "dibuja" a lo largo del camino (cada punto lleva la longitud de arco s de su
+     * círculo; la tapa 1 es s = 0 y la tapa 2 s = L, prolongaciones del camino) y los círculos posteriores tapan los trazos anteriores.
+     * Un punto con etiqueta s queda oculto si está dentro (más de {@code eps}) de algún círculo c(t'), r(t') con t' > s.
+     */
+    Trazo trazo() {
+        Acum a = construye();
+        double eps = 2e-3 * (r1 + r2);
+        Path2D.Double vis = new Path2D.Double(), oc = new Path2D.Double();
+        final int m = 12;
+        boolean[] abierto = new boolean[2];
+        for (double[] g : a.tr) {
+            double px = 0, py = 0;
+            boolean ocAnt = false;
+            for (int i = 0; i <= m; i++) {
+                double u = (double) i / m, v = 1 - u;
+                double x = v * v * v * g[0] + 3 * v * v * u * g[2] + 3 * v * u * u * g[4] + u * u * u * g[6];
+                double y = v * v * v * g[1] + 3 * v * v * u * g[3] + 3 * v * u * u * g[5] + u * u * u * g[7];
+                double st = g[8] + u * (g[9] - g[8]);
+                boolean tapado = tapado(x, y, st, eps);
+                if (i > 0) {
+                    // el tramo (p → q) toma el estado del extremo más oculto
+                    boolean h = tapado || ocAnt;
+                    Path2D.Double d = h ? oc : vis;
+                    Path2D.Double o = h ? vis : oc;
+                    boolean[] ab = abierto;
+                    int k = h ? 1 : 0;
+                    if (!ab[k]) { d.moveTo(px, py); ab[k] = true; }
+                    d.lineTo(x, y);
+                    ab[1 - k] = false;
+                }
+                px = x; py = y; ocAnt = tapado;
+            }
+        }
+        return new Trazo(vis, oc);
+    }
+
+    private boolean tapado(double x, double y, double st, double eps) {
+        for (int i = 0; i < s.length; i++) {
+            if (s[i] <= st) continue;
+            double r = r1 + (r2 - r1) * s[i] / largo;
+            if (Math.hypot(x - cx[i], y - cy[i]) < r - eps) return true;
+        }
+        return false;
+    }
+
     /** Los extremos P1..P4 de {@link Silueta#extremos()}, doblados. */
     Point2D.Double[] extremos() {
         Point2D.Double[] l = recta.extremosLocales();
@@ -194,7 +264,9 @@ final class SiluetaCurva {
      * Hermite con los extremos y las tangentes transformadas (G1 con el doblado exacto en los extremos de cada trozo).
      * Los conectores relajados (véase {@link Relajo}) se sustituyen por una spline en el plano.
      */
-    Path2D.Double forma() {
+    Path2D.Double forma() { return construye().path; }
+
+    private Acum construye() {
         // 1. los segmentos locales, repartidos en cuatro etapas: conector +y (P1→P3), tapa 2, conector -y (P4→P2), tapa 1
         java.util.List<double[]> seg = new java.util.ArrayList<>();            // {tipo, x0, y0, c...}
         double[] c = new double[6];
@@ -225,7 +297,7 @@ final class SiluetaCurva {
         boolean relajaMas = relajo == Relajo.AMBOS || (relajo == Relajo.EXTERIOR && extMas) || (relajo == Relajo.INTERIOR && !extMas);
         boolean relajaMenos = relajo == Relajo.AMBOS || (relajo == Relajo.EXTERIOR && !extMas) || (relajo == Relajo.INTERIOR && extMas);
         double paso = 0.04 * (r1 + r2);
-        Path2D.Double out = new Path2D.Double();
+        Acum out = new Acum();
         double[] q0 = mapea(e[0].x, e[0].y);
         out.moveTo(q0[0], q0[1]);
         for (int i = 0; i < 4; i++) {
@@ -234,8 +306,9 @@ final class SiluetaCurva {
                 anadeLocal(out, et.get(i), i == 0 ? +1 : -1, relajo == Relajo.EXTERIOR || relajo == Relajo.AMBOS, relajo == Relajo.INTERIOR || relajo == Relajo.AMBOS);
             else if (relaja && metodo == Metodo.SPLINE_MEDIO) anadeSpline(out, et.get(i), i == 0 ? +1 : -1);
             else for (double[] g : et.get(i)) {
-                if (g[0] == 1) trozos(out, g[1], g[2], g[1] + (g[3] - g[1]) / 3, g[2] + (g[4] - g[2]) / 3, g[1] + 2 * (g[3] - g[1]) / 3, g[2] + 2 * (g[4] - g[2]) / 3, g[3], g[4], paso);
-                else trozos(out, g[1], g[2], g[3], g[4], g[5], g[6], g[7], g[8], paso);
+                double fijo = i == 1 ? largo : i == 3 ? 0 : Double.NaN;      // las tapas son la prolongación del camino: la 2 en s = L, la 1 en s = 0
+                if (g[0] == 1) trozos(out, g[1], g[2], g[1] + (g[3] - g[1]) / 3, g[2] + (g[4] - g[2]) / 3, g[1] + 2 * (g[3] - g[1]) / 3, g[2] + 2 * (g[4] - g[2]) / 3, g[3], g[4], paso, fijo);
+                else trozos(out, g[1], g[2], g[3], g[4], g[5], g[6], g[7], g[8], paso, fijo);
             }
         }
         out.closePath();
@@ -259,7 +332,7 @@ final class SiluetaCurva {
      * envolvente. M es el contacto de la envolvente con el círculo medio, c(L/2) + rm·(-r'·T + lado·√(1-r'²)·N), mezclado con el punto de
      * la silueta doblada según el giro del camino (con el camino recto sigue el arco elíptico).
      */
-    private void anadeSpline(Path2D.Double out, java.util.List<double[]> etapa, int lado) {
+    private void anadeSpline(Acum out, java.util.List<double[]> etapa, int lado) {
         double[] dir = direcciones(etapa);
         double[] a = etapa.get(0), z = etapa.get(etapa.size() - 1);
         double ax = a[1], ay = a[2], zx = z[0] == 1 ? z[3] : z[7], zy = z[0] == 1 ? z[4] : z[8];
@@ -298,8 +371,8 @@ final class SiluetaCurva {
         double[] pa = qa, pz = qz;
         // spline de Hermite pa → M → pz
         double d1 = Math.hypot(mxw - pa[0], myw - pa[1]), d2 = Math.hypot(pz[0] - mxw, pz[1] - myw);
-        out.curveTo(pa[0] + ta[0] * d1 / 3, pa[1] + ta[1] * d1 / 3, mxw - tm[0] * d1 / 3, myw - tm[1] * d1 / 3, mxw, myw);
-        out.curveTo(mxw + tm[0] * d2 / 3, myw + tm[1] * d2 / 3, pz[0] - tz[0] * d2 / 3, pz[1] - tz[1] * d2 / 3, pz[0], pz[1]);
+        out.curveTo(pa[0] + ta[0] * d1 / 3, pa[1] + ta[1] * d1 / 3, mxw - tm[0] * d1 / 3, myw - tm[1] * d1 / 3, mxw, myw, acota(ax), sm);
+        out.curveTo(mxw + tm[0] * d2 / 3, myw + tm[1] * d2 / 3, pz[0] - tz[0] * d2 / 3, pz[1] - tz[1] * d2 / 3, pz[0], pz[1], sm, acota(zx));
     }
 
     private static double suave(double t) {
@@ -313,7 +386,7 @@ final class SiluetaCurva {
      * w = (exterior: suave(lado·k·r̄/κ0)) + (interior: suave(-lado·k·r̄/κ0)), por un borde que anula w en los extremos del conector y fuera de [0, L].
      * Con el camino recto (k = 0) w = 0 y queda el arco elíptico. La curva se lleva como cúbicas de Hermite con tangentes de diferencias centrales.
      */
-    private void anadeLocal(Path2D.Double out, java.util.List<double[]> etapa, int lado, boolean ext, boolean inte) {
+    private void anadeLocal(Acum out, java.util.List<double[]> etapa, int lado, boolean ext, boolean inte) {
         double[] a = etapa.get(0);
         Path2D.Double loc = new Path2D.Double();
         loc.moveTo(a[1], a[2]);
@@ -329,6 +402,7 @@ final class SiluetaCurva {
         double total = pt.get(pt.size() - 1)[2];
         int n = 96;
         double[][] Q = new double[n + 1][2];
+        double[] X = new double[n + 1];
         double rbar = (r1 + r2) / 2, drds = (r2 - r1) / largo, kk = Math.sqrt(Math.max(0, 1 - drds * drds));
         int j = 0;
         for (int i = 0; i <= n; i++) {
@@ -338,6 +412,7 @@ final class SiluetaCurva {
             double f = v[2] > u[2] ? (t - u[2]) / (v[2] - u[2]) : 0;
             double x = u[0] + f * (v[0] - u[0]), y = u[1] + f * (v[1] - u[1]);
             double[] B = mapea(x, y);
+            X[i] = acota(x);
             double w = 0;
             if (x > 0 && x < largo) {
                 double kx = lado * curvatura(x) * rbar / KAPPA_RELAJO;
@@ -365,7 +440,7 @@ final class SiluetaCurva {
         m[0] = new double[] { ta[0] * l0, ta[1] * l0 };
         m[n] = new double[] { tz[0] * l1, tz[1] * l1 };
         for (int i = 0; i < n; i++)
-            out.curveTo(Q[i][0] + m[i][0] / 3, Q[i][1] + m[i][1] / 3, Q[i + 1][0] - m[i + 1][0] / 3, Q[i + 1][1] - m[i + 1][1] / 3, Q[i + 1][0], Q[i + 1][1]);
+            out.curveTo(Q[i][0] + m[i][0] / 3, Q[i][1] + m[i][1] / 3, Q[i + 1][0] - m[i + 1][0] / 3, Q[i + 1][1] - m[i + 1][1] / 3, Q[i + 1][0], Q[i + 1][1], X[i], X[i + 1]);
     }
 
     private static double[] unit(double[] v) {
@@ -374,7 +449,7 @@ final class SiluetaCurva {
     }
 
     /** Parte la cúbica local (a, b, c, d) en trozos de longitud de control <= paso y añade cada uno doblado, como cúbica de Hermite. */
-    private void trozos(Path2D.Double out, double ax, double ay, double bx, double by, double cx2, double cy2, double dx, double dy, double paso) {
+    private void trozos(Acum out, double ax, double ay, double bx, double by, double cx2, double cy2, double dx, double dy, double paso, double fijo) {
         double largoCtl = Math.hypot(bx - ax, by - ay) + Math.hypot(cx2 - bx, cy2 - by) + Math.hypot(dx - cx2, dy - cy2);
         int n = Math.max(2, (int) Math.ceil(largoCtl / paso));
         double[] prev = null;
@@ -385,7 +460,8 @@ final class SiluetaCurva {
             double[] q0 = prev != null ? prev : mapea(p0[0], p0[1]);
             double[] q1 = mapea(p1[0], p1[1]);
             double[] w0 = jac(p0[0], p0[1], v0[0] * du, v0[1] * du), w1 = jac(p1[0], p1[1], v1[0] * du, v1[1] * du);
-            out.curveTo(q0[0] + w0[0] / 3, q0[1] + w0[1] / 3, q1[0] - w1[0] / 3, q1[1] - w1[1] / 3, q1[0], q1[1]);
+            double t0 = Double.isNaN(fijo) ? acota(p0[0]) : fijo, t1 = Double.isNaN(fijo) ? acota(p1[0]) : fijo;
+            out.curveTo(q0[0] + w0[0] / 3, q0[1] + w0[1] / 3, q1[0] - w1[0] / 3, q1[1] - w1[1] / 3, q1[0], q1[1], t0, t1);
             prev = q1;
         }
     }
