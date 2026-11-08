@@ -28,6 +28,16 @@ final class SiluetaCurva {
      */
     enum Relajo { NINGUNO, EXTERIOR, INTERIOR, AMBOS }
 
+    /**
+     * Cómo se relaja un conector. SPLINE_MEDIO: una spline por el contacto de la envolvente con el círculo medio (exterior/interior según el giro
+     * total del camino). LOCAL: punto a punto, el contorno doblado se mezcla con el contacto de la envolvente en cada x según la curvatura
+     * local del camino (exterior: lado con 1 + k·y > 1; interior: lado con 1 + k·y < 1), que sirve también con caminos en S o con curvatura variable.
+     */
+    enum Metodo { SPLINE_MEDIO, LOCAL }
+
+    /** Curvatura local (por el radio medio) con la que el relajo LOCAL llega al máximo. */
+    static final double KAPPA_RELAJO = 0.25;
+
     /** Con giros menores que esto el relajo se atenúa (se conservan los arcos elípticos con el camino recto); es el giro total en radianes. */
     static final double GIRO_RELAJO = Math.toRadians(20);
 
@@ -37,9 +47,11 @@ final class SiluetaCurva {
     private final double[] s, cx, cy, tx, ty, k;    // tabla del camino por longitud de arco
     private final double pliegue, giro;
     private final Relajo relajo;
+    private final Metodo metodo;
 
-    private SiluetaCurva(Point2D p0, Point2D h1, Point2D h2, Point2D p3, double r1, double r2, Silueta.Conector conector, Relajo relajo) {
+    private SiluetaCurva(Point2D p0, Point2D h1, Point2D h2, Point2D p3, double r1, double r2, Silueta.Conector conector, Relajo relajo, Metodo metodo) {
         this.relajo = relajo;
+        this.metodo = metodo;
         if (!(r1 > 0 && r2 > 0)) throw new IllegalArgumentException("los radios deben ser positivos");
         this.r1 = r1;
         this.r2 = r2;
@@ -97,11 +109,15 @@ final class SiluetaCurva {
     }
 
     static SiluetaCurva de(Point2D p0, Point2D h1, Point2D h2, Point2D p3, double r1, double r2, Silueta.Conector conector) {
-        return new SiluetaCurva(p0, h1, h2, p3, r1, r2, conector, Relajo.NINGUNO);
+        return new SiluetaCurva(p0, h1, h2, p3, r1, r2, conector, Relajo.NINGUNO, Metodo.SPLINE_MEDIO);
     }
 
     static SiluetaCurva de(Point2D p0, Point2D h1, Point2D h2, Point2D p3, double r1, double r2, Silueta.Conector conector, Relajo relajo) {
-        return new SiluetaCurva(p0, h1, h2, p3, r1, r2, conector, relajo);
+        return new SiluetaCurva(p0, h1, h2, p3, r1, r2, conector, relajo, Metodo.SPLINE_MEDIO);
+    }
+
+    static SiluetaCurva de(Point2D p0, Point2D h1, Point2D h2, Point2D p3, double r1, double r2, Silueta.Conector conector, Relajo relajo, Metodo metodo) {
+        return new SiluetaCurva(p0, h1, h2, p3, r1, r2, conector, relajo, metodo);
     }
 
     /** Giro total del camino en radianes, con signo (> 0: el lado +y de la silueta, hacia N, es el exterior de la curva). */
@@ -214,7 +230,9 @@ final class SiluetaCurva {
         out.moveTo(q0[0], q0[1]);
         for (int i = 0; i < 4; i++) {
             boolean relaja = (i == 0 && relajaMas) || (i == 2 && relajaMenos);
-            if (relaja) anadeSpline(out, et.get(i), i == 0 ? +1 : -1);
+            if (metodo == Metodo.LOCAL && (i == 0 || i == 2) && relajo != Relajo.NINGUNO)
+                anadeLocal(out, et.get(i), i == 0 ? +1 : -1, relajo == Relajo.EXTERIOR || relajo == Relajo.AMBOS, relajo == Relajo.INTERIOR || relajo == Relajo.AMBOS);
+            else if (relaja && metodo == Metodo.SPLINE_MEDIO) anadeSpline(out, et.get(i), i == 0 ? +1 : -1);
             else for (double[] g : et.get(i)) {
                 if (g[0] == 1) trozos(out, g[1], g[2], g[1] + (g[3] - g[1]) / 3, g[2] + (g[4] - g[2]) / 3, g[1] + 2 * (g[3] - g[1]) / 3, g[2] + 2 * (g[4] - g[2]) / 3, g[3], g[4], paso);
                 else trozos(out, g[1], g[2], g[3], g[4], g[5], g[6], g[7], g[8], paso);
@@ -282,6 +300,72 @@ final class SiluetaCurva {
         double d1 = Math.hypot(mxw - pa[0], myw - pa[1]), d2 = Math.hypot(pz[0] - mxw, pz[1] - myw);
         out.curveTo(pa[0] + ta[0] * d1 / 3, pa[1] + ta[1] * d1 / 3, mxw - tm[0] * d1 / 3, myw - tm[1] * d1 / 3, mxw, myw);
         out.curveTo(mxw + tm[0] * d2 / 3, myw + tm[1] * d2 / 3, pz[0] - tz[0] * d2 / 3, pz[1] - tz[1] * d2 / 3, pz[0], pz[1]);
+    }
+
+    private static double suave(double t) {
+        double u = Math.min(Math.max(t, 0), 1);
+        return u * u * (3 - 2 * u);
+    }
+
+    /**
+     * Relajo LOCAL de un conector (lado = ±1): se muestrea el contorno recto de la etapa por longitud de arco, se dobla (B) y se mezcla con el
+     * contacto de la envolvente (E) del círculo de la misma x, c(x) + r(x)·(-r'·T + lado·√(1-r'²)·N): Q = B + w·(E - B), con
+     * w = (exterior: suave(lado·k·r̄/κ0)) + (interior: suave(-lado·k·r̄/κ0)), por un borde que anula w en los extremos del conector y fuera de [0, L].
+     * Con el camino recto (k = 0) w = 0 y queda el arco elíptico. La curva se lleva como cúbicas de Hermite con tangentes de diferencias centrales.
+     */
+    private void anadeLocal(Path2D.Double out, java.util.List<double[]> etapa, int lado, boolean ext, boolean inte) {
+        double[] a = etapa.get(0);
+        Path2D.Double loc = new Path2D.Double();
+        loc.moveTo(a[1], a[2]);
+        for (double[] g : etapa) { if (g[0] == 1) loc.lineTo(g[3], g[4]); else loc.curveTo(g[3], g[4], g[5], g[6], g[7], g[8]); }
+        java.util.List<double[]> pt = new java.util.ArrayList<>();
+        double[] cc = new double[6];
+        pt.add(new double[] { a[1], a[2], 0 });
+        for (PathIterator it = loc.getPathIterator(null, 5e-4 * (r1 + r2)); !it.isDone(); it.next())
+            if (it.currentSegment(cc) == PathIterator.SEG_LINETO) {
+                double[] q = pt.get(pt.size() - 1);
+                pt.add(new double[] { cc[0], cc[1], q[2] + Math.hypot(cc[0] - q[0], cc[1] - q[1]) });
+            }
+        double total = pt.get(pt.size() - 1)[2];
+        int n = 96;
+        double[][] Q = new double[n + 1][2];
+        double rbar = (r1 + r2) / 2, drds = (r2 - r1) / largo, kk = Math.sqrt(Math.max(0, 1 - drds * drds));
+        int j = 0;
+        for (int i = 0; i <= n; i++) {
+            double t = total * i / n;
+            while (j < pt.size() - 2 && pt.get(j + 1)[2] < t) j++;
+            double[] u = pt.get(j), v = pt.get(j + 1);
+            double f = v[2] > u[2] ? (t - u[2]) / (v[2] - u[2]) : 0;
+            double x = u[0] + f * (v[0] - u[0]), y = u[1] + f * (v[1] - u[1]);
+            double[] B = mapea(x, y);
+            double w = 0;
+            if (x > 0 && x < largo) {
+                double kx = lado * curvatura(x) * rbar / KAPPA_RELAJO;
+                double e = (ext ? suave(kx) : 0) + (inte ? suave(-kx) : 0);
+                double borde = suave(4.0 * i / n) * suave(4.0 * (n - i) / n) * suave(x / (0.1 * largo)) * suave((largo - x) / (0.1 * largo));
+                w = Math.min(1, e) * borde;
+            }
+            if (w > 0) {
+                double[] st = estado(x);
+                double rx = r1 + (r2 - r1) * x / largo, nx = st[3], ny = -st[2];
+                double ex = st[0] + rx * (-drds * st[2] + lado * kk * nx), ey = st[1] + rx * (-drds * st[3] + lado * kk * ny);
+                B[0] += w * (ex - B[0]);
+                B[1] += w * (ey - B[1]);
+            }
+            Q[i] = B;
+        }
+        double[] dir = direcciones(etapa);
+        double[] ta = unit(jac(a[1], a[2], dir[0], dir[1]));
+        double[] z = etapa.get(etapa.size() - 1);
+        double zx = z[0] == 1 ? z[3] : z[7], zy = z[0] == 1 ? z[4] : z[8];
+        double[] tz = unit(jac(zx, zy, dir[2], dir[3]));
+        double[][] m = new double[n + 1][2];
+        for (int i = 1; i < n; i++) { m[i][0] = (Q[i + 1][0] - Q[i - 1][0]) / 2; m[i][1] = (Q[i + 1][1] - Q[i - 1][1]) / 2; }
+        double l0 = Math.hypot(Q[1][0] - Q[0][0], Q[1][1] - Q[0][1]), l1 = Math.hypot(Q[n][0] - Q[n - 1][0], Q[n][1] - Q[n - 1][1]);
+        m[0] = new double[] { ta[0] * l0, ta[1] * l0 };
+        m[n] = new double[] { tz[0] * l1, tz[1] * l1 };
+        for (int i = 0; i < n; i++)
+            out.curveTo(Q[i][0] + m[i][0] / 3, Q[i][1] + m[i][1] / 3, Q[i + 1][0] - m[i + 1][0] / 3, Q[i + 1][1] - m[i + 1][1] / 3, Q[i + 1][0], Q[i + 1][1]);
     }
 
     private static double[] unit(double[] v) {

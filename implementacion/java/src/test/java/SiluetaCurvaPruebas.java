@@ -182,6 +182,28 @@ public class SiluetaCurvaPruebas {
         }
     }
 
+    static void relajoLocal() {
+        System.out.println("-- (7) relajo LOCAL (curvatura local del camino)");
+        var L = SiluetaCurva.Metodo.LOCAL;
+        var p0 = camino(0, 0.9 * 108);
+        double a0 = SiluetaPruebas.area(SiluetaCurva.de(p0[0], p0[1], p0[2], p0[3], 72, 36).forma());
+        for (var r : SiluetaCurva.Relajo.values()) {
+            double a = SiluetaPruebas.area(SiluetaCurva.de(p0[0], p0[1], p0[2], p0[3], 72, 36, Silueta.Conector.ELIPSE, r, L).forma());
+            comprueba("camino recto, relajo LOCAL " + r + ": se conserva el arco elíptico (área a menos del 0,1 %)", Math.abs(a / a0 - 1) < 1e-3, String.format("%.4f %%", 100 * (a / a0 - 1)));
+        }
+        var p = camino(150, 0.9 * 120);
+        double d0 = dif(SiluetaCurva.de(p[0], p[1], p[2], p[3], 60, 60).forma(), p, 60, 60);
+        double d1 = dif(SiluetaCurva.de(p[0], p[1], p[2], p[3], 60, 60, Silueta.Conector.ELIPSE, SiluetaCurva.Relajo.AMBOS, L).forma(), p, 60, 60);
+        comprueba("horquilla 60/60 (150°, δ = 0,9): relajar ambos se acerca a la unión de círculos (relleno no cero)", d1 <= d0, String.format("%.2f %% → %.2f %%", 100 * d0, 100 * d1));
+        // un camino en S: el giro total es 0 pero el relajo LOCAL actúa
+        var q = new Point2D.Double[] { new Point2D.Double(0, 0), new Point2D.Double(40, 80), new Point2D.Double(60, -80), new Point2D.Double(100, 0) };
+        var sN = SiluetaCurva.de(q[0], q[1], q[2], q[3], 40, 30, Silueta.Conector.ELIPSE, SiluetaCurva.Relajo.NINGUNO, L);
+        var sA = SiluetaCurva.de(q[0], q[1], q[2], q[3], 40, 30, Silueta.Conector.ELIPSE, SiluetaCurva.Relajo.AMBOS, L);
+        double dN = dif(sN.forma(), q, 40, 30), dA = dif(sA.forma(), q, 40, 30);
+        comprueba("camino en S: giro total ~ 0 y el relajo LOCAL acerca el relleno a la unión de círculos", Math.abs(sN.giro()) < 0.2 && dA < dN,
+            String.format("giro %.1f°, %.2f %% → %.2f %%", Math.toDegrees(sN.giro()), 100 * dN, 100 * dA));
+    }
+
     public static void main(String[] args) {
         recto();
         sinEsquinas();
@@ -189,6 +211,7 @@ public class SiluetaCurvaPruebas {
         pliegues();
         escalaYOrientacion();
         relajo();
+        relajoLocal();
         System.out.printf("%n%d pruebas, %d fallos%n", pruebas, fallos);
         if (fallos > 0) System.exit(1);
     }
