@@ -91,11 +91,19 @@ final class SiluetaCurva {
         this.recta = Silueta.de(new Point2D.Double(0, 0), r1, new Point2D.Double(largo, 0), r2, 1, 0, conector);
         double mf = 1;
         double[] c = new double[6];
+        double px = 0, py = 0, paso = 2e-3 * (r1 + r2);
         for (PathIterator it = recta.formaLocal().getPathIterator(null, 1e-3 * (r1 + r2)); !it.isDone(); it.next()) {
             int t = it.currentSegment(c);
             if (t == PathIterator.SEG_CLOSE) continue;
-            double x = c[0], y = c[1];
-            if (x > 0 && x < largo) mf = Math.min(mf, 1 + curvatura(x) * y);
+            if (t == PathIterator.SEG_MOVETO) { px = c[0]; py = c[1]; continue; }
+            // se miran también los puntos interiores de cada segmento: el conector recto (d >= r1 + r2) es uno solo, sin vértices intermedios
+            int m = Math.max(1, (int) Math.ceil(Math.hypot(c[0] - px, c[1] - py) / paso));
+            for (int i = 1; i <= m; i++) {
+                double x = px + (c[0] - px) * i / m, y = py + (c[1] - py) * i / m;
+                if (x > 0 && x < largo) mf = Math.min(mf, 1 + curvatura(x) * y);
+            }
+            px = c[0];
+            py = c[1];
         }
         this.pliegue = mf;
         double g = 0;
