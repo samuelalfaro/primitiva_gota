@@ -13,8 +13,8 @@ public class Todas {
             ,"TexturaReferencia"
             ,"TapasDisco"
             ,"ComposicionPruebas"
-            ,"SiluetaPruebas"
-            ,"SiluetaCurvaPruebas"
+            //FIXME ,"SiluetaPruebas"
+            //FIXME ,"SiluetaCurvaPruebas"
             ,"SiluetaMatriz"
             ,"ColoresMatriz"
     };
