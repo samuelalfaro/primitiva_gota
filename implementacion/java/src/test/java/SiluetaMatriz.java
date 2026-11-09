@@ -9,7 +9,7 @@ import javax.imageio.ImageIO;
 
 /**
  * Matriz de siluetas con color sólido. Filas: separación horizontal d = 5, 4, 3 de dos centros de radio 2, con la espina
- * recta, en Bézier suave, en S y en ჲ (un bucle). Columnas: r1 crece y r2 decrece (r1 + r2 = 4) hasta r2 = 0.
+ * recta, en Bézier suave, en S y en ჲ (un bucle). Columnas: r1 crece de 0 a 4 y r2 decrece de 4 a 0 (r1 + r2 = 4): cada extremo se anula una vez.
  * Deja la imagen en {@code silueta_matriz.png}; las comprobaciones son mínimas (la gota se construye y deja huella).
  */
 public class SiluetaMatriz {
@@ -23,7 +23,7 @@ public class SiluetaMatriz {
 
     static final double[] SEPARACIONES = { 5, 4, 3 };
     static final String[] FORMAS = { "recta", "suave", "S", "ჲ" };
-    static final double[][] RADIOS = { { 2, 2 }, { 2.5, 1.5 }, { 3, 1 }, { 3.5, 0.5 }, { 4, 0 } };
+    static final double[][] RADIOS = { { 0, 4 }, { 0.5, 3.5 }, { 1, 3 }, { 1.5, 2.5 }, { 2, 2 }, { 2.5, 1.5 }, { 3, 1 }, { 3.5, 0.5 }, { 4, 0 } };
 
     static final double ESCALA = 22;          // píxeles por unidad
     static final int CW = 300, CH = 260;      // tamaño de celda
