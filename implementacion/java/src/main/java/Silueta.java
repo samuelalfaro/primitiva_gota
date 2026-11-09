@@ -20,9 +20,22 @@ import java.awt.geom.Point2D;
  * afinidad de los radios libres con la tangente de su centro. Con d >= r1 + r2 no hay afinidad y los ángulos son los del
  * contacto de la tangente común (la silueta de siempre: dos arcos y dos rectas).
  *
- * <p>La unicidad del mínimo no está demostrada; ver el documento. Los radios deben ser positivos.
+ * <p>La unicidad del mínimo no está demostrada; ver el documento. Los radios deben ser finitos y >= 0, no los dos nulos; un radio nulo se
+ * trata como el epsilon {@link #EPS_RADIO} (relativo a r1 + r2), de modo que el resultado es el límite de la forma con ese radio
+ * tendiendo a 0. Los círculos contenidos uno en otro (d < |r1 - r2|) quedan fuera del dominio de esta formulación.
  */
 final class Silueta {
+    /** Radio mínimo, relativo a r1 + r2, con el que se sustituye un radio nulo (el área converge ya con 1e-4 y es estable hasta 1e-9). */
+    static final double EPS_RADIO = 1e-6;
+
+    /** Valida los radios (finitos, >= 0, no ambos nulos) y sustituye un radio nulo por EPS_RADIO·(r1 + r2). */
+    static double[] radios(double r1, double r2) {
+        if (!(r1 >= 0 && r2 >= 0 && Double.isFinite(r1) && Double.isFinite(r2) && r1 + r2 > 0))
+            throw new IllegalArgumentException("los radios deben ser finitos, no negativos y no ambos nulos");
+        double e = EPS_RADIO * (r1 + r2);
+        return new double[] { Math.max(r1, e), Math.max(r2, e) };
+    }
+
     /** Peso de la afinidad con d = 0: con dos círculos idénticos da psi = pi/4 (la X). */
     static final double LAMBDA0 = 2 / Math.PI;
     private static final double PSI_MIN = 0.02, INF = 1e9;
@@ -73,7 +86,9 @@ final class Silueta {
     /** Como {@link #de(Point2D, double, Point2D, double, double, double)}, eligiendo el conector (ELIPSE con respaldo de biarco, o BIARCO). */
     static Silueta de(Point2D c1, double r1, Point2D c2, double r2, double tx, double ty, Conector conector) {
         if (conector == Conector.RECTA) throw new IllegalArgumentException("RECTA no se puede pedir");
-        if (!(r1 > 0 && r2 > 0)) throw new IllegalArgumentException("los radios deben ser positivos");
+        double[] rr = radios(r1, r2);
+        r1 = rr[0];
+        r2 = rr[1];
         double dx = c2.getX() - c1.getX(), dy = c2.getY() - c1.getY(), d = Math.hypot(dx, dy);
         double ex = tx, ey = ty;
         if (d > 1e-12 * (r1 + r2)) {
