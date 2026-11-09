@@ -241,7 +241,7 @@ los problemas, provoco el contraste entre perspectivas y decido qué ideas
 incorporar. No siempre coordino las intervenciones: a menudo pongo a todos
 a trabajar sobre el mismo plano y dejo que las distintas aproximaciones
 compitan, se complementen o se contradigan. La responsabilidad final sobre
-el proyecto sigue siendo mía. Las IAs no sustituyen elcriterio: lo ponen
+el proyecto sigue siendo mía. Las IAs no sustituyen el criterio: lo ponen
 a trabajar desde varios ángulos.
 
 La idea no es repartir medallas ni fingir que todos hacemos lo mismo. Es
@@ -249,7 +249,7 @@ reconocer que el resultado nace de la conversación, el contraste y el
 trabajo complementario. A veces una buena contribución acaba convertida
 en código; otras, en una pregunta que evita escribirlo.
 
-PD: Durante el desarrollo de este proyecto, nigún modelo se ha visto
+PD: Durante el desarrollo de este proyecto, ningún modelo se ha visto
 sometido a la metodología Agile, ni se les ha asignado la redacción de 
 un ensayo no menor de 1000 palabras en la que deban escribir sobre lo
 que él o ella cree que son.
