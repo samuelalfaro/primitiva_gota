@@ -221,4 +221,10 @@ Con pliegue (1 + k·y <= 0 en algún punto del contorno) hay pies de orientació
 
 Elegida la unión: contiene todo lo que cubre el contorno doblado y puede cubrir más. `SiluetaCurva.pies(x, y, signos)` da el número de pies y el winding con la misma pasada. Consecuencia pendiente: en la zona plegada el contorno doblado (Path2D) tiene un lazo que queda dentro de la unión, así que el borde visible de la máscara no es ese contorno.
 
+### 13.3 Distancia con signo en el caso curvo
+
+`SiluetaCurva.distancia(x, y)`: cada pie (x, y) es una capa, y el doblado tiene diferencial de columnas (1 + k·y)·T y N, de modo que la distancia recta D se convierte en la del borde de esa capa con la regla de primer orden D / |∇(D∘Φ⁻¹)|, con |∇(D∘Φ⁻¹)|² = (∂D/∂x / (1 + k·y))² + (∂D/∂y)². La silueta es la unión de las capas y la distancia con signo de una unión es el máximo de las de sus capas (exacto fuera, cota inferior dentro); un borde de capa que queda dentro de la unión no cuenta porque otra capa lo cubre. Su signo es el de `contiene` (0 discrepancias en 874 800 puntos, también con pliegue).
+
+Medido contra el contorno doblado (400 caminos cúbicos aleatorios, malla de 120 x 120): a menos de un píxel del borde, sin pliegue (1 + k·y > 0,5), mediana 0,000, p99 0,001 y máximo 0,008 píxeles; con 0,2 < pliegue < 0,5 el máximo es 0,35 píxeles, y cerca del pliegue (0 a 0,2) llega a 1,0 píxel, porque ahí 1 + k·y se anula y el borde tiene cúspides. A 1-3 píxeles aparecen valores atípicos de hasta 2-3 píxeles que no he investigado. En la prueba (`SiluetaCurvaPruebas`, sin pliegue con pliegue() > 0,3) el peor error relativo a r1 + r2 es 9·10⁻⁴.
+
 Límites: el barrido de pies es lineal en la tabla del camino (2049 muestras); `pliegue()` solo se ha corregido para el conector recto (PR #12); no se ha probado con relajo ni con caminos que se cruzan globalmente.

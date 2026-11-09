@@ -266,6 +266,39 @@ public class SiluetaCurvaPruebas {
         comprueba("el centro de la tapa 1 está dentro (al menos un pie) y sin pliegue el winding es 1", pies >= 1 && w[0] == 1 && cu.contiene(p[0].x, p[0].y), "pies " + pies + ", winding " + w[0]);
     }
 
+    static void distancia() {
+        System.out.println("-- (7) distancia con signo de la silueta doblada");
+        int casos = 0, sinPliegue = 0, signoMal = 0;
+        long puntos = 0;
+        double peor = 0;
+        for (double[] rr : new double[][] { { 72, 36 }, { 60, 60 }, { 36, 72 } })
+            for (double d : new double[] { 0.3, 0.6, 0.9, 1.0, 1.5, 2.0 })
+                for (double g : new double[] { 0, 30, 60, 90, 120, 150 }) {
+                    var cu = curva(rr[0], rr[1], d, g);
+                    casos++;
+                    var ref = referencia(cu);
+                    var seg = SiluetaPruebas.segmentos(ref);
+                    var b = ref.getBounds2D();
+                    double esc = rr[0] + rr[1], mg = 0.1 * Math.max(b.getWidth(), b.getHeight());
+                    int n = 90;
+                    boolean sin = cu.pliegue() > 0.3;      // más cerca del pliegue la regla de primer orden se degrada
+                    if (sin) sinPliegue++;
+                    for (int j = 0; j < n; j++)
+                        for (int i = 0; i < n; i++) {
+                            double x = b.getMinX() - mg + (i + .5) * (b.getWidth() + 2 * mg) / n, y = b.getMinY() - mg + (j + .5) * (b.getHeight() + 2 * mg) / n;
+                            double est = cu.distancia(x, y);
+                            puntos++;
+                            if ((est >= 0) != cu.contiene(x, y)) signoMal++;
+                            if (sin) {
+                                double dt = SiluetaPruebas.distSegmentos(seg, x, y);
+                                if (dt < 0.02 * esc) peor = Math.max(peor, Math.abs(est - (ref.contains(x, y) ? dt : -dt)) / esc);
+                            }
+                        }
+                }
+        comprueba(String.format("el signo de distancia() es el de contiene() (%d casos, %d puntos, también con pliegue)", casos, puntos), signoMal == 0, signoMal + " puntos distintos");
+        comprueba(String.format("sin pliegue (%d casos): a menos del 2 %% de r1 + r2 del borde, la distancia estimada difiere de la real menos de 1e-3 (de r1 + r2)", sinPliegue), peor < 1e-3, String.format("peor %.1e", peor));
+    }
+
     public static void main(String[] args) {
         recto();
         sinEsquinas();
@@ -275,6 +308,7 @@ public class SiluetaCurvaPruebas {
         relajo();
         relajoLocal();
         pertenencia();
+        distancia();
         System.out.printf("%n%d pruebas, %d fallos%n", pruebas, fallos);
         if (fallos > 0) System.exit(1);
     }
