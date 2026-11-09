@@ -43,13 +43,15 @@ public class AlambreDemo {
         g.fillRect(0, 0, img.getWidth(), img.getHeight());
         for (int i = 0; i < casos.size(); i++) {
             Caso c = casos.get(i);
-            List<Alambre.Trazo> trazos = Alambre.trazos(c.gota(), ajustes);
             var celda = (Graphics2D) g.create(i % cols * w, i / cols * h, w, h);
-            Alambre.render(celda, trazos);
+            new PlotterAlambre(celda, ajustes).plot(c.gota());
             celda.setColor(new Color(0x333333));
             celda.drawString(c.nombre(), 8, 16);
             celda.dispose();
-            if (svg) Svg.escribe(trazos, c.gota().bounds(), Path.of(nombre + "_" + c.nombre() + ".svg"));
+            if (svg) {
+                var trazos = Alambre.trazos(c.gota(), ajustes);
+                Svg.escribe(trazos, c.gota().bounds(), Path.of(nombre + "_" + c.nombre() + ".svg"));
+            }
         }
         g.dispose();
         ImageIO.write(img, "png", new File(nombre + ".png"));
