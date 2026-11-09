@@ -15,6 +15,7 @@ public class Todas {
             ,"ComposicionPruebas"
             ,"SiluetaPruebas"
             ,"SiluetaCurvaPruebas"
+            ,"SiluetaMatriz"
     };
 
     public static void main(String[] args) throws Exception {
