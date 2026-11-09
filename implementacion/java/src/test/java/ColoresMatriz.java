@@ -55,7 +55,7 @@ public class ColoresMatriz {
             new Colores.Lateral(ROJO,     VERDE,   AZUL),   // nodo 2
             Mezcla.RGB);
 
-    static final Opciones OPCIONES = Opciones.POR_DEFECTO;  // ESPIGA + PLANO + tira 1:2:1
+    static final Opciones OPCIONES = Opciones.POR_DEFECTO.conSolape(Solape.TRAZO);  // ESPIGA + TRAZO + tira 1:2:1
 
     /** Vectores de control (relativos a cada centro) de cada forma; y hacia arriba. */
     static Gota.Vec[] controles(String forma, double d) {
