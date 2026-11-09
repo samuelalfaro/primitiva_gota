@@ -32,6 +32,46 @@ public final class Coordenadas {
 
     Coordenadas(Geometria g, Costura modo, Cortes cortes) { this.g = g; this.modo = modo; this.cortes = cortes; }
 
+    // ---------- Las coordenadas de una gota (la gota solo guarda la caché) ----------
+
+    private record Clave(Costura costura, Tira tira) {}
+
+    /** Las coordenadas de la gota para unas opciones: se crean al pedirlas, una por combinación de costura y tira. */
+    static Coordenadas de(Gota g, Opciones op) {
+        return g.cacheCoordenadas().computeIfAbsent(new Clave(op.costura(), op.tira()),
+                k -> new Coordenadas(g, op.costura(), op.tira().cortes(g)));
+    }
+
+    /** Coordenadas del píxel como un todo, según el solape y la costura. */
+    private static Costurado ganador(Gota g, double x, double y, Opciones op) {
+        return op.solape().ganador(de(g, op), x, y);
+    }
+
+    /** El punto (x, y) visto desde la gota: su muestra y sus coordenadas de tira se calculan al pedirlas, una sola vez. */
+    static Punto punto(Gota g, double x, double y, Opciones op) {
+        return de(g, op).punto(x, y, () -> ganador(g, x, y, op));
+    }
+
+    /**
+     * Muestra del píxel: el círculo de la familia al que la costura (ver {@link Costura}) asigna el punto.
+     * Es la misma t de la que salen las coordenadas de la tira ({@link #uv}), así que colores y texturas coinciden.
+     */
+    static Muestra parametros(Gota g, double x, double y, Opciones op) {
+        return muestra(g, x, y, ganador(g, x, y, op).t());
+    }
+
+    /** Coordenadas de textura de la tira en el punto (valores en [0, 1] dentro de la gota). */
+    static Uv uv(Gota g, double x, double y, Opciones op) { return ganador(g, x, y, op).uv(); }
+
+    /** Muestra del círculo en el que el píxel está más centrado (mínimo de rho): decide qué gota manda en una composición. */
+    static Muestra porRho(Geometria g, double x, double y, Solape solape) {
+        if (solape == Solape.TRAZO) {   // la capa más tardía que contiene el punto
+            java.util.List<Geometria.Hebra> hs = g.hebras(x, y, 0);
+            if (!hs.isEmpty()) return muestra(g, x, y, hs.get(hs.size() - 1).t());
+        }
+        return muestra(g, x, y, g.minimizar(x, y, true)[0]);
+    }
+
     /** Cortes del eje v de la tira con los que se calculan estas coordenadas. */
     Cortes cortes() { return cortes; }
 

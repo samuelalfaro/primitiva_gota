@@ -41,13 +41,13 @@ public class TapasDisco {
         double r = 40, cx = 100, cy = 100;
         Gota g = recta(cx, cy, r);
         BufferedImage im = new BufferedImage(220, 300, BufferedImage.TYPE_INT_ARGB);
-        g.render(im, Texturas.tira(tex));
+        Plotter.raster(im).plot(g, Texturas.tira(tex));
         int[] d = datos(im);
         int n = 0, mal = 0, maxE = 0, nTapas = 0;
         for (int j = 0; j < 300; j++)
             for (int i = 0; i < 220; i++) {
                 double x = i + 0.5, y = j + 0.5;
-                if (g.sdf(x, y) > -2) continue;
+                if (g.distancia(x, y) > -2) continue;
                 n++;
                 if (y < cy || y > cy + 2 * r) nTapas++;
                 int esperado = tex.muestrea((x - (cx - r)) / (2 * r), (y - (cy - r)) / (4 * r));
@@ -59,14 +59,14 @@ public class TapasDisco {
                 "píxeles " + n + " (tapas " + nTapas + "), distintos " + mal + ", máx " + maxE);
         // y coincide con el mapeo en disco
         BufferedImage di = new BufferedImage(220, 300, BufferedImage.TYPE_INT_ARGB);
-        g.render(di, Texturas.discoCapsula(tex));
+        Plotter.raster(di).plot(g, Texturas.discoCapsula(tex));
         int[] dd = datos(di);
         int dif = 0, borde = 0;
         for (int j = 0; j < 300; j++)
             for (int i = 0; i < 220; i++) {
                 int k = j * 220 + i;
                 if (maxCanal(dd[k], d[k]) <= 2) continue;
-                if (g.sdf(i + 0.5, j + 0.5) < 0) dif++; else borde++;
+                if (g.distancia(i + 0.5, j + 0.5) < 0) dif++; else borde++;
             }
         comprueba("tira coincide con discoCapsula en el interior de la gota recta", dif == 0,
                 "distintos dentro " + dif + "; en la franja de borde (sdf > 0, la tira acota u a la silueta) " + borde);
@@ -79,14 +79,14 @@ public class TapasDisco {
         Gota g = recta(cx, cy, r);
         Relleno rel = Colores.cadenaLateral(N1, N2, Mezcla.RGB);
         BufferedImage im = new BufferedImage(220, 300, BufferedImage.TYPE_INT_ARGB);
-        g.render(im, rel);
+        Plotter.raster(im).plot(g, rel);
         int[] d = datos(im);
         int n = 0, mal = 0, maxE = 0;
         for (int j = 0; j < 300; j++)
             for (int i = 0; i < 220; i++) {
                 double px = i + 0.5, py = j + 0.5;
-                if (g.sdf(px, py) > -2) continue;
-                Coordenadas.Muestra m = g.parametros(px, py);
+                if (g.distancia(px, py) > -2) continue;
+                Coordenadas.Muestra m = Coordenadas.parametros(g, px, py, Opciones.POR_DEFECTO);
                 int esperado;
                 if (py < cy) esperado = N1.enDisco(m.lateral(), -m.axial(), Mezcla.RGB);
                 else if (py > cy + 2 * r) esperado = N2.enDisco(m.lateral(), m.axial(), Mezcla.RGB);
@@ -178,14 +178,14 @@ public class TapasDisco {
         int W = 320, H = 320;
         for (Gota gg : new Gota[] { g, Gota.curva(p(60, 70), 24, new Gota.Vec(110, 0), p(230, 240), 58, new Gota.Vec(0, -120), Perfil.central(0.8)) }) {
             BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
-            gg.render(im, Colores.cadenaLateral(N1, N2, Mezcla.RGB));
+            Plotter.raster(im).plot(gg, Colores.cadenaLateral(N1, N2, Mezcla.RGB));
             int[] d = datos(im);
             int mx = 0;
             Cortes kk = Tira.POR_DEFECTO.cortes(gg);
             for (int j = 0; j < H; j++)
                 for (int i = 0; i + 1 < W; i++) {
-                    if (gg.sdf(i + 0.5, j + 0.5) > -3 || gg.sdf(i + 1.5, j + 0.5) > -3) continue;
-                    double va = gg.uv(i + 0.5, j + 0.5).v(), vb = gg.uv(i + 1.5, j + 0.5).v();
+                    if (gg.distancia(i + 0.5, j + 0.5) > -3 || gg.distancia(i + 1.5, j + 0.5) > -3) continue;
+                    double va = Coordenadas.uv(gg, i + 0.5, j + 0.5, Opciones.POR_DEFECTO).v(), vb = Coordenadas.uv(gg, i + 1.5, j + 0.5, Opciones.POR_DEFECTO).v();
                     boolean costura = (va < kk.c1()) != (vb < kk.c1()) || (va > kk.c3()) != (vb > kk.c3());
                     if (costura) mx = Math.max(mx, maxCanal(d[j * W + i], d[j * W + i + 1]));
                 }
@@ -202,7 +202,7 @@ public class TapasDisco {
         Mezcla M = Mezcla.RGB;
         Relleno rel = Colores.cadenaLateral(N1, N2, M);
         BufferedImage im = new BufferedImage(560, 340, BufferedImage.TYPE_INT_ARGB);
-        g.render(im, rel);
+        Plotter.raster(im).plot(g, rel);
         int[] px = datos(im);
         // tangente exterior del lado +N (arriba en pantalla, N = (0, -1)): n·(C2 - C1) = r1 - r2 con n = (1/7, -sqrt(1 - 1/49))
         double nx = (r1 - r2) / d, ny = -Math.sqrt(1 - nx * nx);

@@ -15,7 +15,7 @@ public enum Solape {
      */
     PLANO {
         @Override void capas(Geometria g, Coordenadas c, double x, double y, Consumer<Capa> out) {
-            double cob = g.cobertura(x, y);
+            double cob = g.mascara().cobertura(x, y);
             if (cob > 0) out.accept(new Capa(cob, c.punto(x, y, () -> c.costurado(x, y))));
         }
 
@@ -28,7 +28,7 @@ public enum Solape {
      */
     TRAZO {
         @Override void capas(Geometria g, Coordenadas c, double x, double y, Consumer<Capa> out) {
-            List<Geometria.Hebra> hs = g.hebras(x, y);
+            List<Geometria.Hebra> hs = g.mascara().hebras(x, y);
             Memo memo = new Memo(c, x, y);
             for (int h = 0; h < hs.size(); h++) {            // t creciente: la posterior tapa a la anterior
                 Geometria.Hebra hb = hs.get(h);

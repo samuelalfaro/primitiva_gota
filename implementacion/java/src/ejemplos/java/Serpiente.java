@@ -24,7 +24,7 @@ public class Serpiente {
 
     static void disco(BufferedImage im, double x, double y, double r, int centro, int borde) {
         Point2D.Double a = new Point2D.Double(x, y), b = new Point2D.Double(x + 0.5, y);
-        Gota.lineal(a, r, b, r, Perfil.recto()).render(im, Colores.cuatroColores(centro, centro, borde, borde, Mezcla.RGB));
+        Plotter.raster(im).plot(Gota.lineal(a, r, b, r, Perfil.recto()), Colores.cuatroColores(centro, centro, borde, borde, Mezcla.RGB));
     }
 
     /** El desierto: una gota enorme de arena (centro claro, borde ocre) y otra más para la duna del fondo. */

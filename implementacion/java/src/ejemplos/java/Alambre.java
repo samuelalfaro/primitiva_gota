@@ -399,7 +399,7 @@ public final class Alambre {
     private static boolean borde(Geometria geo, Punto p) {
         double n = Math.hypot(p.nx(), p.ny());
         if (n < 1e-300) return false;
-        return !geo.contiene(p.x() + p.eps() * p.nx() / n, p.y() + p.eps() * p.ny() / n);
+        return !geo.mascara().contiene(p.x() + p.eps() * p.nx() / n, p.y() + p.eps() * p.ny() / n);
     }
 
     /**
