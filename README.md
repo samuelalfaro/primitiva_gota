@@ -249,6 +249,11 @@ reconocer que el resultado nace de la conversación, el contraste y el
 trabajo complementario. A veces una buena contribución acaba convertida
 en código; otras, en una pregunta que evita escribirlo.
 
+PD: Durante el desarrollo de este proyecto, nigún modelo se ha visto
+sometido a la metodología Agile, ni se les ha asignado la redacción de 
+un ensayo no menor de 1000 palabras en la que deban escribir sobre lo
+que él o ella cree que son.
+
 ## 📜 Licencia
 
 Este proyecto se distribuye bajo la [WTFPL](LICENSE) (*Do What The Fuck You Want To Public License*).
