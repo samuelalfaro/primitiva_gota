@@ -1,12 +1,12 @@
 # Primitiva Gota
 
-*Areas de influencia limitadas por el centro dirigido más cercano.*
+*Áreas de influencia limitadas por el centro dirigido más cercano.*
 
 ## 📌 Descripción General
 
-La **primitiva Gota** es una forma vectorial 2D que define las areas de influencia limitadas por el centro más cercano.
-Los centros recorre una curva Bézier cúbica y cuyo radio varía según una función de perfil. Esta primitiva permite crear
-formas orgánicas y suaves gracias a la flexibilidad de las curvas paramétricas.
+La **primitiva Gota** es una forma vectorial 2D que define las áreas de influencia limitadas por el centro dirigido más
+cercano. Los centros recorren una curva Bézier cúbica y su radio varía según una función de perfil. Esta primitiva permite
+crear formas orgánicas y suaves gracias a la flexibilidad de las curvas paramétricas.
 
 ![](./.README_files/figura-1a.svg)
 ![](./.README_files/figura-1b.svg)
@@ -66,7 +66,7 @@ $$
 \\rho\\leq1
 $$
 
-En los círculos, donde $a=b=r$, se recupera el sistema de coordenadas circular original. Se utiliza el mismo sistema de coordenadas para ambas geometrías.
+En la primitiva actual todas las secciones son círculos, con $a(t)=b(t)=r(t)$, y se recupera el sistema de coordenadas circular. (Las secciones elípticas se retiraron de la primitiva; la última versión que las incluye está en la etiqueta `elipses-v1`.)
 
 ### Modos de las Coordenadas
 
@@ -115,35 +115,45 @@ primitiva_gota/
 ├── README.md
 ├── implementacion/
 │   └── java/
+│       ├── README.md
 │       ├── pom.xml
 │       ├── src/
 │       │   ├── main/java/
 │       │   ├── test/java/
 │       │   └── ejemplos/java/
 │       └── ejemplos.sh
-└── ...
+├── incubator/           documentos y experimentos de trabajo (p. ej. RadiosSuperpuestos)
+└── LICENSE
 ```
 
 ### Dependencias entre Clases
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        FLUJO DE DATOS                           │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│   Gota ──[genera]──> Coordenadas ──┬──> Colores ───┐            │
-│                                    │               │ (Mezcla)   │
-│                                    └──> Texturas ──┘            │
-│                                                                 │
-│   ComposicionColor (combina 2 rellenos)                         │
-│   Composicion (une gotas y las pinta)                           │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                           FLUJO DE DATOS                             │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│   Gota (centros, radios y espina) ──implementa──> Geometria          │
+│     └─ mascara() ──> Mascara (pertenencia: Silueta.Envolvente)       │
+│                                                                      │
+│   Geometria + Mascara ──> Coordenadas ──(Zonas, Costura)             │
+│                               ├──> Colores ───┐                      │
+│                               │               ├─> Relleno (Mezcla)   │
+│                               └──> Texturas ──┘                      │
+│                                                                      │
+│   Plotter (raster) pinta una Gota con un Relleno                     │
+│   PlotterAlambre dibuja el modo alambre                              │
+│   ComposicionColor (combina 2 rellenos)                              │
+│   Composicion (une gotas y las pinta)                                │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ## 📊 Especificación Técnica Detallada
 
-### Algoritmo de Renderizado
+### Algoritmo de Pertenencia (estado actual)
+
+La pertenencia de un punto a la gota la decide `Mascara`; hoy la implementa `Silueta.Envolvente`, con la familia de círculos:
 
 1. **División recursiva**: la gota se divide en tramos hasta que el polinomio de grado 6 puede evaluarse directamente.
 2. **Evaluación en base de Bernstein**: los polinomios se representan y evalúan en esta base, que facilita la subdivisión recursiva y el control de sus valores en cada intervalo.
@@ -171,9 +181,6 @@ primitiva_gota/
 mvn test
 
 # Ejecutar un ejemplo específico
-echo "Flor" | mvn exec:java -Dexec.mainClass="Flor"
-
-# O usar el script de ejemplos
 ./ejemplos.sh Flor
 ```
 
@@ -194,6 +201,16 @@ Las imágenes generadas se guardan en `target/imagenes/`.
 | `GotaSolape` | Pruebas de solapamiento |
 | `ArcoDemo` | Arcos formados con gotas |
 | `LadosDemo` | Demostración de lados y bordes |
+| `CosturasDemo` | Los tres modos de costura sobre cuatro gotas |
+| `Pez`, `Colibri`, `Caracol` | Dibujos libres con la API de `Composicion` |
+| `Serpiente`, `SerpienteEnroscada` | Cadenas de nodos, la segunda con el camino cruzado consigo mismo |
+| `BallenaV1`, `BallenaV2`, `BallenaV3` | Tres versiones de una ballena |
+| `BalonDemo` | Balón de playa: dos círculos del mismo centro y radio (d = 0) |
+| `SiluetaDemo`, `SiluetaCurvaDemo` | La silueta de tapas y conector, recta y doblada |
+| `SiluetaComplejaDemo`, `SiluetaRelajoDemo`, `SiluetaTrazoDemo` | Caminos complejos que fuerzan el pliegue y su relajo |
+| `AlambreDemo` | Modo alambre |
+| `GotaAdversos`, `CasosDegenerados` | Casos adversos y degenerados de la geometría |
+| `GaleriaTapas` | Galería de tapas |
 
 ## 🔗 Recursos Adicionales
 
@@ -216,7 +233,7 @@ con los límites de uso, contexto, continuidad y disponibilidad que eso
 implica. Voy pidiendo colaboración a varios asistentes dentro de esas
 condiciones, así que no tendría sentido interpretar cada pausa o
 interrupción como falta de interés o compromiso. La intermitencia forma
- parte de las reglas del experimento y es una responsabilidad compartida
+parte de las reglas del experimento y es una responsabilidad compartida
 en la manera de organizarlo.
 
 - **Claude** — El principal responsable de picar código. Su aportación a
@@ -250,7 +267,7 @@ trabajo complementario. A veces una buena contribución acaba convertida
 en código; otras, en una pregunta que evita escribirlo.
 
 PD: Durante el desarrollo de este proyecto, ningún modelo se ha visto
-sometido a la metodología Agile, ni se les ha asignado la redacción de 
+sometido a la metodología Agile, ni se les ha asignado la redacción de
 un ensayo no menor de 1000 palabras en la que deban escribir sobre lo
 que él o ella cree que son.
 
