@@ -33,7 +33,7 @@ public class GotaDemo {
         boolean ok = true;
         for (int i = 0; i < gotas.length; i++) {
             long t0 = System.nanoTime();
-            gotas[i].render(img, Relleno.solido(colores[i]));
+            Plotter.raster(img).plot(gotas[i], Relleno.solido(colores[i]));
             double ms = (System.nanoTime() - t0) / 1e6;
             int[] r = comparar(gotas[i]);
             System.out.printf("%-20s render %6.1f ms | dentro=%6d  difs vs fuerza bruta=%d  difs signo sdf=%d%n",
@@ -62,14 +62,14 @@ public class GotaDemo {
         for (int y = y0; y < y1; y++) {
             for (int x = x0; x < x1; x++) {
                 double px = x + 0.5, py = y + 0.5;
-                boolean a = g.contiene(px, py), bf = false;
+                boolean a = g.mascara().contiene(px, py), bf = false;
                 for (int k = 0; k <= n && !bf; k++) {
                     double dx = px - cx[k], dy = py - cy[k];
                     bf = dx * dx + dy * dy <= rr[k];
                 }
                 if (a) dentro++;
                 if (a != bf) disc++;
-                double s = g.sdf(px, py);
+                double s = g.distancia(px, py);
                 if ((s < 0) != a && Math.abs(s) > 1e-3) discSdf++;
             }
         }

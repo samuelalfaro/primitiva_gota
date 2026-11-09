@@ -1,15 +1,11 @@
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferInt;
-import java.awt.image.SinglePixelPackedSampleModel;
-import java.awt.image.WritableRaster;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.IntStream;
 
 /**
  * Composición de gotas: varias gotas que comparten nodos (una línea abierta, un ciclo, una estrella...).
@@ -184,7 +180,7 @@ public final class Composicion {
     /** Pertenencia exacta a la unión dura (el suavizado solo afecta al pintado y a la sdf). */
     public boolean contiene(double x, double y) {
         construye();
-        for (Gota g : gotas) if (g.contiene(x, y)) return true;
+        for (Gota g : gotas) if (g.mascara().contiene(x, y)) return true;
         return false;
     }
 
@@ -192,7 +188,7 @@ public final class Composicion {
     public double sdf(double x, double y) {
         construye();
         double s = Double.MAX_VALUE;
-        for (Gota g : gotas) s = s == Double.MAX_VALUE ? g.sdf(x, y) : smin(s, g.sdf(x, y), suaviza);
+        for (Gota g : gotas) s = s == Double.MAX_VALUE ? g.distancia(x, y) : smin(s, g.distancia(x, y), suaviza);
         return s;
     }
 
@@ -249,35 +245,19 @@ public final class Composicion {
     }
 
     private void pinta(BufferedImage dst, List<Relleno> rellenos, Opciones op) {
-        if (dst.getType() != BufferedImage.TYPE_INT_ARGB)
-            throw new IllegalArgumentException("Se requiere BufferedImage.TYPE_INT_ARGB");
-        final WritableRaster raster = dst.getRaster();
-        if (!(raster.getSampleModel() instanceof SinglePixelPackedSampleModel sm))
-            throw new IllegalArgumentException("Raster no soportado: se requiere INT_ARGB empaquetado");
-        final int[] datos = ((DataBufferInt) raster.getDataBuffer()).getData();
-        final int stride = sm.getScanlineStride();
-        final int base = raster.getDataBuffer().getOffset()
-                - raster.getSampleModelTranslateY() * stride - raster.getSampleModelTranslateX();
-        final int w = dst.getWidth();
+        final Plotter.Raster raster = new Plotter.Raster(dst);
         final double marg = 2 + suaviza;
-        final int x0 = Math.max(0, (int) Math.floor(bounds.getMinX() - marg));
-        final int x1 = Math.min(w, (int) Math.ceil(bounds.getMaxX() + marg));
-        final int y0 = Math.max(0, (int) Math.floor(bounds.getMinY() - marg));
-        final int y1 = Math.min(dst.getHeight(), (int) Math.ceil(bounds.getMaxY() + marg));
-        if (x0 >= x1 || y0 >= y1) return;
+        final Plotter.Raster.Zona z = raster.zona(bounds.getMinX(), bounds.getMaxX(), bounds.getMinY(), bounds.getMaxY(), marg);
+        if (z == null) return;
         final List<Relleno> rel = new ArrayList<>();
         for (int i = 0; i < gotas.size(); i++) rel.add(rellenos.get(i).para(gotas.get(i), op));
-        IntStream.range(y0, y1).parallel().forEach(j -> {
-            for (int i = x0; i < x1; i++) {
-                double x = i + 0.5, y = j + 0.5;
-                double[] ev = evalua(x, y, op);
-                if (ev[1] < 0) continue;
-                Gota g = gotas.get((int) ev[1]);
-                Relleno rl = rel.get((int) ev[1]);
-                int c = g.color(rl, x, y, op);
-                int idx = base + j * stride + i;
-                datos[idx] = sobre(datos[idx], c, ev[0]);
-            }
+        raster.recorre(z, (i, j) -> {
+            double x = i + 0.5, y = j + 0.5;
+            double[] ev = evalua(x, y, op);
+            if (ev[1] < 0) return;
+            Gota g = gotas.get((int) ev[1]);
+            int c = rel.get((int) ev[1]).argb(Coordenadas.punto(g, x, y, op));
+            raster.set(i, j, sobre(raster.get(i, j), c, ev[0]));
         });
     }
 
@@ -300,7 +280,7 @@ public final class Composicion {
             Rectangle2D bb = gotas.get(k).bounds();
             if (x < bb.getMinX() - marg || x > bb.getMaxX() + marg || y < bb.getMinY() - marg || y > bb.getMaxY() + marg)
                 continue;
-            s[k] = gotas.get(k).sdf(x, y);
+            s[k] = gotas.get(k).distancia(x, y);
             smin = smin == Double.MAX_VALUE ? s[k] : smin(smin, s[k], suaviza);
         }
         if (smin == Double.MAX_VALUE) return new double[] { 0, -1 };
@@ -308,7 +288,7 @@ public final class Composicion {
         if (cob <= 0) return new double[] { 0, -1 };
         for (int k = 0; k < gotas.size(); k++) {
             if (s[k] >= 0.75 + suaviza) continue;
-            double rho = gotas.get(k).porRho(x, y, op.solape()).rho();
+            double rho = Coordenadas.porRho(gotas.get(k), x, y, op.solape()).rho();
             if (rho < rmin) { rmin = rho; mejor = k; }
         }
         return new double[] { cob, mejor };

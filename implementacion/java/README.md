@@ -62,7 +62,7 @@ semidisco. Ver `Coordenadas.discoTapa` y `Colores.Lateral`.
 ## Modos de costura
 
 `Costura` decide cómo se reparte la tira entre cuerpo y tapas, igual para colores y texturas
-(`gota.render(dst, relleno, Opciones.POR_DEFECTO.conCostura(...))`; por defecto ESPIGA): ORTOGONAL (líneas de t constante normales al camino, tapas semidiscos),
+(`Plotter.raster(dst).plot(gota, relleno, Opciones.POR_DEFECTO.conCostura(...))`; por defecto ESPIGA): ORTOGONAL (líneas de t constante normales al camino, tapas semidiscos),
 ESPIGA (cada mitad es el radio al punto de tangencia, tapas polares) y SUAVIZADO (como ESPIGA, con Hermites C1 en el eje).
 Valen con solape PLANO y TRAZO. En TRAZO el píxel puede tener varias soluciones (el camino pasa varias veces por él) y manda la de mayor clave: t en la banda, y las tapas como si prolongaran el trazo (la inicial, más cerca del centro es posterior; la final, más lejos del centro es posterior).
 

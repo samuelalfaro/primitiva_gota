@@ -130,10 +130,10 @@ public class GotaDisco {
         int malosH = 0, malosV = 0, malosT = 0, n = 0;
         for (int i = 0; i < 400; i++) {
             double x = 40 + rnd.nextDouble() * 170, y = 70 + rnd.nextDouble() * 60;
-            if (!h.contiene(x, y)) continue;
+            if (!h.mascara().contiene(x, y)) continue;
             Relleno rt = Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.TANGENTE).para(h);
             Relleno rf = Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.FIJA).para(h);
-            Coordenadas.Muestra m = h.parametros(x, y);
+            Coordenadas.Muestra m = Coordenadas.parametros(h, x, y, Opciones.POR_DEFECTO);
             double[] a = coords(rt, m), b = coords(rf, m);
             n++;
             if (Math.abs(a[0] - b[0]) > 1e-9 || Math.abs(a[1] - b[1]) > 1e-9) malosH++;
@@ -144,9 +144,9 @@ public class GotaDisco {
         }
         for (int i = 0; i < 400; i++) {   // camino vertical: FIJA sigue siendo el desplazamiento en pantalla; TANGENTE no
             double x = 70 + rnd.nextDouble() * 60, y = 40 + rnd.nextDouble() * 170;
-            if (!v.contiene(x, y)) continue;
+            if (!v.mascara().contiene(x, y)) continue;
             Relleno rf = Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.FIJA).para(v);
-            Coordenadas.Muestra m = v.parametros(x, y);
+            Coordenadas.Muestra m = Coordenadas.parametros(v, x, y, Opciones.POR_DEFECTO);
             double[] b = coords(rf, m);
             double cx = v.centro(m.t()).getX(), cy = v.centro(m.t()).getY(), r = v.radio(m.t());
             double ex = 0.5 + 0.4 * ((x - cx) / r), ey = 0.5 + 0.4 * ((y - cy) / r);
@@ -158,7 +158,7 @@ public class GotaDisco {
 
         // TANGENTE con camino vertical: la textura gira 90° respecto a FIJA
         Relleno rt = Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.TANGENTE).para(v);
-        Coordenadas.Muestra m = v.parametros(100, 110 + 8);
+        Coordenadas.Muestra m = Coordenadas.parametros(v, 100, 110 + 8, Opciones.POR_DEFECTO);
         double[] a = coords(rt, m);
         double cx = v.centro(m.t()).getX(), cy = v.centro(m.t()).getY(), r = v.radio(m.t());
         double x = (100 - cx) / r, y = (118 - cy) / r;   // desplazamiento en pantalla
@@ -172,9 +172,8 @@ public class GotaDisco {
         for (Solape s : Solape.values()) {
             BufferedImage img = new BufferedImage(300, 300, BufferedImage.TYPE_INT_ARGB);
             try {
-                arco.render(img, ComposicionColor.combinar(Colores.cadena(0xFF1E1B4B, 0xFFFFE27A, 0xFF2563EB, 0xFF7C2D12),
-                        Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.FIJA), ComposicionColor.Modo.MODULATE),
-                        Opciones.POR_DEFECTO.conSolape(s));
+                Plotter.raster(img).plot(arco, ComposicionColor.combinar(Colores.cadena(0xFF1E1B4B, 0xFFFFE27A, 0xFF2563EB, 0xFF7C2D12),
+                        Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.FIJA), ComposicionColor.Modo.MODULATE), Opciones.POR_DEFECTO.conSolape(s));
             } catch (RuntimeException ex) { ok = false; }
         }
         comprueba("combinar(cadena, disco FIJA) se renderiza en PLANO y TRAZO sobre un arco", ok, "");
@@ -196,7 +195,7 @@ public class GotaDisco {
                 case 1 -> Texturas.disco(tex, ins, giro, Texturas.Orientacion.TANGENTE, Mezcla.Tono.CORTO);
                 default -> Texturas.disco(tex, peq, peq, Texturas.Orientacion.FIJA);
             };
-            g.render(img, rel);
+            Plotter.raster(img).plot(g, rel);
         }
         ImageIO.write(img, "png", new File("gota_disco.png"));
     }

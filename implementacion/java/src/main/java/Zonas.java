@@ -270,7 +270,7 @@ final class Zonas {
                     double sg = s == 1 ? 1 : -1, lo = 0, hi = 4 * f.r + 50;
                     for (int it = 0; it < 45; it++) {
                         double mid = (lo + hi) / 2;
-                        if (g.contiene(f.cx + sg * mid * f.nx, f.cy + sg * mid * f.ny)) lo = mid; else hi = mid;
+                        if (g.mascara().contiene(f.cx + sg * mid * f.nx, f.cy + sg * mid * f.ny)) lo = mid; else hi = mid;
                     }
                     hw[s][i] = Math.max(lo, 1e-6);
                 }

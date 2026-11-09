@@ -97,7 +97,7 @@ public class CasosDegenerados {
         Graphics2D gc = celda.createGraphics();
         gc.setColor(new Color(FONDO)); gc.fillRect(0, 0, w, h);
         try {
-            caso.gota().get().render(celda, relleno, op);
+            Plotter.raster(celda).plot(caso.gota().get(), relleno, op);
         } catch (RuntimeException ex) {
             gc.setColor(Color.RED); gc.drawLine(0, 0, w, h); gc.drawLine(0, h, w, 0);
             gc.setFont(new Font("SansSerif", Font.PLAIN, 11)); gc.drawString(String.valueOf(ex), 6, 14);
@@ -157,9 +157,9 @@ public class CasosDegenerados {
         for (int j = y0; j < y1; j++)
             for (int i = x0; i < x1; i++) {
                 double x = i + 0.5, y = j + 0.5;
-                if (!g.contiene(x, y)) continue;
+                if (!g.mascara().contiene(x, y)) continue;
                 dentro++;
-                Coordenadas.Uv uv = g.uv(x, y, op);
+                Coordenadas.Uv uv = Coordenadas.uv(g, x, y, op);
                 boolean malo = Double.isNaN(uv.u()) || Double.isNaN(uv.v());
                 boolean aT = (x - cx0) * t0[0] + (y - cy0) * t0[1] < 0, aD = (x - cx1) * t1[0] + (y - cy1) * t1[1] > 0;
                 if (aT) atras++;
