@@ -1,10 +1,6 @@
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferInt;
-import java.awt.image.SinglePixelPackedSampleModel;
-import java.awt.image.WritableRaster;
-import java.util.stream.IntStream;
 
 /**
  * Primitiva 2D "gota": envolvente de la familia de círculos (c(t), r(t)), t en [0,1].
@@ -163,13 +159,6 @@ public final class Gota implements Geometria {
 
     @Deprecated public Punto punto(double x, double y, Opciones op) { return Coordenadas.punto(this, x, y, op); }
 
-    /** Color del relleno en el píxel (con las opciones por defecto). */
-    int color(Relleno rel, double x, double y) { return color(rel, x, y, Opciones.POR_DEFECTO); }
-
-    int color(Relleno rel, double x, double y, Opciones op) {
-        return rel.argb(Coordenadas.punto(this, x, y, op));
-    }
-
     /** La pertenencia a la envolvente de la familia de círculos (para quien ya no pase por los delegados). */
     Silueta.Envolvente envolvente() { return envolvente; }
 
@@ -180,42 +169,13 @@ public final class Gota implements Geometria {
 
     @Override public boolean tieneCodo() { return tramos.length == 2; }
 
-    // ---------- Render ----------
+    // ---------- Render (delegado: lo hace el Plotter) ----------
 
-    /** Pinta sobre dst (TYPE_INT_ARGB) con antialiasing y composición alfa, con las opciones por defecto. */
-    public void render(BufferedImage dst, Relleno relleno) { render(dst, relleno, Opciones.POR_DEFECTO); }
+    /** Pinta sobre dst (TYPE_INT_ARGB) con las opciones por defecto. Delega en {@link Plotter#raster}. */
+    @Deprecated public void render(BufferedImage dst, Relleno relleno) { Plotter.raster(dst).plot(this, relleno, Opciones.POR_DEFECTO); }
 
-    /** Pinta sobre dst (TYPE_INT_ARGB) con antialiasing y composición alfa. */
-    public void render(BufferedImage dst, Relleno relleno, Opciones op) {
-        if (dst.getType() != BufferedImage.TYPE_INT_ARGB)
-            throw new IllegalArgumentException("Se requiere BufferedImage.TYPE_INT_ARGB");
-        // El píxel (i, j) no está en j * ancho + i si dst es una subimagen: el raster comparte el búfer del
-        // padre y conserva su desplazamiento y su stride. Se calcula el índice real a partir del raster.
-        final WritableRaster raster = dst.getRaster();
-        if (!(raster.getSampleModel() instanceof SinglePixelPackedSampleModel sm))
-            throw new IllegalArgumentException("Raster no soportado: se requiere INT_ARGB empaquetado");
-        final int[] datos = ((DataBufferInt) raster.getDataBuffer()).getData();
-        final int stride = sm.getScanlineStride();
-        final int base = raster.getDataBuffer().getOffset()
-                - raster.getSampleModelTranslateY() * stride - raster.getSampleModelTranslateX();
-        final int w = dst.getWidth();
-        final int x0 = Math.max(0, (int) Math.floor(bounds.getMinX()));
-        final int x1 = Math.min(w, (int) Math.ceil(bounds.getMaxX()));
-        final int y0 = Math.max(0, (int) Math.floor(bounds.getMinY()));
-        final int y1 = Math.min(dst.getHeight(), (int) Math.ceil(bounds.getMaxY()));
-        if (x0 >= x1 || y0 >= y1) return;
-        final Relleno rel = relleno.para(this, op);
-        final Solape solape = op.solape();
-        final Coordenadas coord = Coordenadas.de(this, op);
-
-        IntStream.range(y0, y1).parallel().forEach(j -> {
-            for (int i = x0; i < x1; i++) {
-                final int idx = base + j * stride + i;
-                solape.capas(this, coord, i + 0.5, j + 0.5,
-                        capa -> datos[idx] = componer(datos[idx], rel.argb(capa.punto()), capa.cobertura()));
-            }
-        });
-    }
+    /** Pinta sobre dst (TYPE_INT_ARGB) con antialiasing y composición alfa. Delega en {@link Plotter#raster}. */
+    @Deprecated public void render(BufferedImage dst, Relleno relleno, Opciones op) { Plotter.raster(dst).plot(this, relleno, op); }
 
     /** Fracción del píxel que cubre la unión de la gota. Delega en {@link Silueta.Envolvente#cobertura}. */
     @Deprecated @Override public double cobertura(double x, double y) { return envolvente.cobertura(this, x, y); }
@@ -257,19 +217,4 @@ public final class Gota implements Geometria {
 
     /** Tramo del perfil que contiene t (en el codo, el izquierdo). */
     Tramo tramoDe(double t) { return tramos.length == 1 || t <= tm ? tramos[0] : tramos[1]; }
-
-    // ---------- Composición alfa (src-over, no premultiplicado) ----------
-
-    private static int componer(int dst, int src, double cob) {
-        double sa = ((src >>> 24) & 0xFF) / 255.0 * cob;
-        if (sa <= 0) return dst;
-        double da = ((dst >>> 24) & 0xFF) / 255.0;
-        double kd = da * (1 - sa);
-        double oa = sa + kd;
-        int r = (int) Math.round((((src >> 16) & 0xFF) * sa + ((dst >> 16) & 0xFF) * kd) / oa);
-        int g = (int) Math.round((((src >> 8) & 0xFF) * sa + ((dst >> 8) & 0xFF) * kd) / oa);
-        int b = (int) Math.round(((src & 0xFF) * sa + (dst & 0xFF) * kd) / oa);
-        int a = (int) Math.round(oa * 255);
-        return a << 24 | r << 16 | g << 8 | b;
-    }
 }
