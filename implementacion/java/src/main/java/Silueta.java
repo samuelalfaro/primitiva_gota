@@ -517,7 +517,7 @@ final class Silueta {
      * subdivisión, sin contornos ni tangentes explícitas. Es exacta y rápida mientras la silueta coincide con la envolvente
      * (d >= r1 + r2); los tramos son los trozos del camino en los que el perfil del radio es una sola cuadrática.
      */
-    static final class Envolvente {
+    static final class Envolvente implements Mascara {
         static final double BANDA = 0.5;                  // semiancho del antialiasing, en píxeles
         private static final int GRADO = 6;
         private static final int PROF_MAX = 24;           // profundidad máxima de subdivisión
@@ -534,9 +534,11 @@ final class Silueta {
         private final double[][] cx6, cy6;                // c(t) de cada tramo, en Bernstein de grado 6
         private final double[][] kExt, kCero, kInt;       // K = |c|^2 - (r + d)^2 para d = +BANDA, 0, -BANDA
         private final boolean interiorValido;
+        private final Geometria geo;                      // para la distancia (franja del borde) y las hebras
 
         /** Un elemento por tramo: los controles de c(t) (cúbica) y los de r(t) (cuadrática) en ese tramo. */
-        Envolvente(double[][] pxs, double[][] pys, double[][] radios) {
+        Envolvente(Geometria geo, double[][] pxs, double[][] pys, double[][] radios) {
+            this.geo = geo;
             int n = pxs.length;
             cx6 = new double[n][]; cy6 = new double[n][];
             kExt = new double[n][]; kCero = new double[n][]; kInt = new double[n][];
@@ -554,18 +556,18 @@ final class Silueta {
         }
 
         /** Pertenencia exacta (a precisión de punto flotante). */
-        boolean contiene(double x, double y) { return dentro(x, y, CERO); }
+        @Override public boolean contiene(double x, double y) { return dentro(x, y, CERO); }
 
         /** Fracción del píxel que cubre la unión (0 a más de BANDA del borde, 1 a más de BANDA de profundidad). */
-        double cobertura(Geometria g, double x, double y) {
+        @Override public double cobertura(double x, double y) {
             if (!dentro(x, y, EXT)) return 0;
             if (interiorValido && dentro(x, y, INT)) return 1;
-            return Math.max(0, Math.min(1, 0.5 - g.distancia(x, y)));        // franja del borde
+            return Math.max(0, Math.min(1, 0.5 - geo.distancia(x, y)));        // franja del borde
         }
 
-        java.util.List<Geometria.Hebra> hebras(Geometria g, double x, double y) {
+        @Override public java.util.List<Geometria.Hebra> hebras(double x, double y) {
             if (!dentro(x, y, EXT)) return java.util.List.of();
-            return g.hebras(x, y, BANDA);
+            return geo.hebras(x, y, BANDA);
         }
 
         private boolean dentro(double x, double y, int banda) {

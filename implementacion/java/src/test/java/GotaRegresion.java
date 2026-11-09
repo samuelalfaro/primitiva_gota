@@ -61,9 +61,9 @@ public class GotaRegresion {
         boolean cont = true, sdf = true;
         StringBuilder det = new StringBuilder();
         for (double m : malos) {
-            boolean a = g.contiene(m, 0), b = g.contiene(0, m), c = g.contiene(m, m);
+            boolean a = g.mascara().contiene(m, 0), b = g.mascara().contiene(0, m), c = g.mascara().contiene(m, m);
             if (a || b || c) { cont = false; det.append(String.format("contiene(%s,..)=%b,%b,%b ", m, a, b, c)); }
-            if (g.sdf(m, 0) != Double.POSITIVE_INFINITY || g.sdf(0, m) != Double.POSITIVE_INFINITY) sdf = false;
+            if (g.distancia(m, 0) != Double.POSITIVE_INFINITY || g.distancia(0, m) != Double.POSITIVE_INFINITY) sdf = false;
         }
         comprueba("contiene() rechaza coordenadas no finitas", cont, det.toString());
         comprueba("sdf() devuelve +infinito con coordenadas no finitas", sdf, "");
@@ -99,9 +99,9 @@ public class GotaRegresion {
         Gota g = Gota.lineal(p(7, 10), 6, p(23, 10), 4, Perfil.central(1));
         int rojo = 0xFFFF0000;
         BufferedImage ref = new BufferedImage(sw, sh, BufferedImage.TYPE_INT_ARGB);
-        g.render(ref, Relleno.solido(rojo));
+        Plotter.raster(ref).plot(g, Relleno.solido(rojo));
         BufferedImage sub = base.getSubimage(sx, sy, sw, sh);
-        g.render(sub, Relleno.solido(rojo));
+        Plotter.raster(sub).plot(g, Relleno.solido(rojo));
 
         int fuera = 0, mal = 0, cubiertos = 0;
         for (int y = 0; y < H; y++) {
@@ -140,8 +140,8 @@ public class GotaRegresion {
         for (double d : deltas) {
             int malFuera = 0, malDentro = 0;
             for (double[] n : normales) {
-                if (g.contiene(n[0] + (10 + d) * n[2], n[1] + (10 + d) * n[3])) malFuera++;
-                if (!g.contiene(n[0] + (10 - d) * n[2], n[1] + (10 - d) * n[3])) malDentro++;
+                if (g.mascara().contiene(n[0] + (10 + d) * n[2], n[1] + (10 + d) * n[3])) malFuera++;
+                if (!g.mascara().contiene(n[0] + (10 - d) * n[2], n[1] + (10 - d) * n[3])) malDentro++;
             }
             tabla.append(String.format("δ=%.0e: fuera mal %d/%d, dentro mal %d/%d%n    ",
                     d, malFuera, normales.size(), malDentro, normales.size()));
@@ -188,14 +188,14 @@ public class GotaRegresion {
                 double far = 2 * Math.hypot(b.getWidth(), b.getHeight()) + 10;
                 double ax = c.getX(), ay = c.getY();
                 double bx = ax + far * Math.cos(ang), by = ay + far * Math.sin(ang);
-                if (!g.contiene(ax, ay) || g.contiene(bx, by)) continue;
+                if (!g.mascara().contiene(ax, ay) || g.mascara().contiene(bx, by)) continue;
                 double lo = 0, hi = 1;
                 for (int it = 0; it < 80; it++) {
                     double mid = (lo + hi) / 2;
-                    if (g.contiene(ax + (bx - ax) * mid, ay + (by - ay) * mid)) lo = mid; else hi = mid;
+                    if (g.mascara().contiene(ax + (bx - ax) * mid, ay + (by - ay) * mid)) lo = mid; else hi = mid;
                 }
                 double qx = ax + (bx - ax) * lo, qy = ay + (by - ay) * lo;
-                double s = Math.abs(g.sdf(qx, qy));
+                double s = Math.abs(g.distancia(qx, qy));
                 n++;
                 if (s > peor) { peor = s; det = String.format("geometría %d, frontera (%.4f, %.4f)", gi, qx, qy); }
             }
@@ -216,14 +216,14 @@ public class GotaRegresion {
         String primero = "";
         for (int gi = 0; gi < gs.length; gi++) {
             BufferedImage img = new BufferedImage(200, 200, BufferedImage.TYPE_INT_ARGB);
-            gs[gi].render(img, Relleno.solido(0xFFFFFFFF));
+            Plotter.raster(img).plot(gs[gi], Relleno.solido(0xFFFFFFFF));
             for (int y = 0; y < 200; y++) {
                 for (int x = 0; x < 200; x++) {
                     int a = img.getRGB(x, y) >>> 24;
                     int dentro = 0;
                     for (int dy = -1; dy <= 1; dy++)
                         for (int dx = -1; dx <= 1; dx++)
-                            if (gs[gi].contiene(x + 0.5 + dx, y + 0.5 + dy)) dentro++;
+                            if (gs[gi].mascara().contiene(x + 0.5 + dx, y + 0.5 + dy)) dentro++;
                     if (a > 0 && a < 255) parciales++;
                     boolean error = (dentro == 9 && a != 255) || (dentro == 0 && a != 0);
                     if (error) {
@@ -258,14 +258,14 @@ public class GotaRegresion {
             for (int k = 0; k < puntos; k++) {
                 double x = b.getMinX() + rnd.nextDouble() * b.getWidth();
                 double y = b.getMinY() + rnd.nextDouble() * b.getHeight();
-                boolean a = g.contiene(x, y), bf = false;
+                boolean a = g.mascara().contiene(x, y), bf = false;
                 for (int i = 0; i <= N && !bf; i++) {
                     double dx = x - cx[i], dy = y - cy[i];
                     bf = dx * dx + dy * dy <= rr[i];
                 }
                 total++;
                 if (a) dentro++;
-                double s = g.sdf(x, y);
+                double s = g.distancia(x, y);
                 if ((s < 0) != a && Math.abs(s) > 1e-3) signoMal++;
                 if (a != bf) {
                     if (Math.abs(s) < 0.01) cerca++;           // dentro del error de muestreo de la referencia
@@ -321,7 +321,7 @@ public class GotaRegresion {
             for (int s : fuentes) {
                 BufferedImage img = new BufferedImage(50, 40, BufferedImage.TYPE_INT_ARGB);
                 Arrays.fill(datos(img), f);
-                g.render(img, Relleno.solido(s));
+                Plotter.raster(img).plot(g, Relleno.solido(s));
                 int got = img.getRGB(20, 20), exp = refSrcOver(f, s);
                 if (!cercano(got, exp)) {
                     malos++;
@@ -338,9 +338,9 @@ public class GotaRegresion {
             Gota gg = curva;
             Opciones op = Opciones.POR_DEFECTO.conSolape(sol);
             BufferedImage a1 = fondoRuido(200, 180, 7), a2 = fondoRuido(200, 180, 7);
-            gg.render(a1, rel, op);
+            Plotter.raster(a1).plot(gg, rel, op);
             ForkJoinPool una = new ForkJoinPool(1);
-            try { una.submit(() -> gg.render(a2, rel, op)).get(); } finally { una.shutdown(); }
+            try { una.submit(() -> Plotter.raster(a2).plot(gg, rel, op)).get(); } finally { una.shutdown(); }
             if (!Arrays.equals(datos(a1), datos(a2))) iguales = false;
         }
         comprueba("render paralelo == render con un solo hilo (PLANO y TRAZO, fondo con ruido)", iguales, "");

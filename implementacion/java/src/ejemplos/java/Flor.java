@@ -48,7 +48,7 @@ public class Flor {
     /** El corazón de la flor: un disco de la primitiva con centro amarillo y borde naranja. */
     static void corazon(BufferedImage im) {
         java.awt.geom.Point2D.Double a = new java.awt.geom.Point2D.Double(250, 235), b = new java.awt.geom.Point2D.Double(250.5, 235);
-        Gota.lineal(a, 15, b, 15, Perfil.recto()).render(im, Colores.cuatroColores(0xFFFFF59D, 0xFFFFF59D, 0xFFFF9800, 0xFFFF9800, Mezcla.RGB));
+        Plotter.raster(im).plot(Gota.lineal(a, 15, b, 15, Perfil.recto()), Colores.cuatroColores(0xFFFFF59D, 0xFFFFF59D, 0xFFFF9800, 0xFFFF9800, Mezcla.RGB));
     }
 
     static BufferedImage dibuja(double rPetalo) {

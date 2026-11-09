@@ -180,7 +180,7 @@ public final class Composicion {
     /** Pertenencia exacta a la unión dura (el suavizado solo afecta al pintado y a la sdf). */
     public boolean contiene(double x, double y) {
         construye();
-        for (Gota g : gotas) if (g.contiene(x, y)) return true;
+        for (Gota g : gotas) if (g.mascara().contiene(x, y)) return true;
         return false;
     }
 
@@ -188,7 +188,7 @@ public final class Composicion {
     public double sdf(double x, double y) {
         construye();
         double s = Double.MAX_VALUE;
-        for (Gota g : gotas) s = s == Double.MAX_VALUE ? g.sdf(x, y) : smin(s, g.sdf(x, y), suaviza);
+        for (Gota g : gotas) s = s == Double.MAX_VALUE ? g.distancia(x, y) : smin(s, g.distancia(x, y), suaviza);
         return s;
     }
 
@@ -280,7 +280,7 @@ public final class Composicion {
             Rectangle2D bb = gotas.get(k).bounds();
             if (x < bb.getMinX() - marg || x > bb.getMaxX() + marg || y < bb.getMinY() - marg || y > bb.getMaxY() + marg)
                 continue;
-            s[k] = gotas.get(k).sdf(x, y);
+            s[k] = gotas.get(k).distancia(x, y);
             smin = smin == Double.MAX_VALUE ? s[k] : smin(smin, s[k], suaviza);
         }
         if (smin == Double.MAX_VALUE) return new double[] { 0, -1 };
@@ -288,7 +288,7 @@ public final class Composicion {
         if (cob <= 0) return new double[] { 0, -1 };
         for (int k = 0; k < gotas.size(); k++) {
             if (s[k] >= 0.75 + suaviza) continue;
-            double rho = gotas.get(k).porRho(x, y, op.solape()).rho();
+            double rho = Coordenadas.porRho(gotas.get(k), x, y, op.solape()).rho();
             if (rho < rmin) { rmin = rho; mejor = k; }
         }
         return new double[] { cob, mejor };

@@ -108,7 +108,7 @@ public final class Gota implements Geometria {
         }
         double[][] controles = new double[tramos.length][];
         for (int i = 0; i < tramos.length; i++) { rc = Math.max(rc, tramos[i].maxControl()); controles[i] = tramos[i].a; }
-        envolvente = new Silueta.Envolvente(pxs, pys, controles);
+        envolvente = new Silueta.Envolvente(this, pxs, pys, controles);
         double rmax = rc + 1;
         bounds = new Rectangle2D.Double(minX - rmax, minY - rmax, maxX - minX + 2 * rmax, maxY - minY + 2 * rmax);
         muestras = (int) Math.max(32, Math.min(512, largo / 2 + 16));
@@ -131,36 +131,10 @@ public final class Gota implements Geometria {
 
     public double radio(double t) { return rad(t); }
 
-    // ---------- Delegados (la lógica vive en Silueta, Geometria y Coordenadas; se quitarán cuando se corrijan las llamadas) ----------
+    // ---------- La máscara y las coordenadas viven fuera (Silueta, Coordenadas); el pintado, en Plotter ----------
 
-    /** Pertenencia exacta (a precisión de punto flotante). Delega en {@link Silueta.Envolvente#contiene}. */
-    @Deprecated @Override public boolean contiene(double x, double y) { return envolvente.contiene(x, y); }
-
-    /** Distancia con signo. Delega en {@link Geometria#distancia}. */
-    @Deprecated public double sdf(double x, double y) { return distancia(x, y); }
-
-    /** Delega en {@link Coordenadas#parametros}. */
-    @Deprecated public Coordenadas.Muestra parametros(double x, double y) { return Coordenadas.parametros(this, x, y, Opciones.POR_DEFECTO); }
-
-    @Deprecated public Coordenadas.Muestra parametros(double x, double y, Opciones op) { return Coordenadas.parametros(this, x, y, op); }
-
-    /** Delega en {@link Coordenadas#porRho}. */
-    @Deprecated Coordenadas.Muestra porRho(double x, double y) { return Coordenadas.porRho(this, x, y, Solape.PLANO); }
-
-    @Deprecated Coordenadas.Muestra porRho(double x, double y, Solape solape) { return Coordenadas.porRho(this, x, y, solape); }
-
-    /** Delega en {@link Coordenadas#uv}. */
-    @Deprecated public Coordenadas.Uv uv(double x, double y) { return Coordenadas.uv(this, x, y, Opciones.POR_DEFECTO); }
-
-    @Deprecated public Coordenadas.Uv uv(double x, double y, Opciones op) { return Coordenadas.uv(this, x, y, op); }
-
-    /** Delega en {@link Coordenadas#punto}. */
-    @Deprecated public Punto punto(double x, double y) { return Coordenadas.punto(this, x, y, Opciones.POR_DEFECTO); }
-
-    @Deprecated public Punto punto(double x, double y, Opciones op) { return Coordenadas.punto(this, x, y, op); }
-
-    /** La pertenencia a la envolvente de la familia de círculos (para quien ya no pase por los delegados). */
-    Silueta.Envolvente envolvente() { return envolvente; }
+    /** La máscara de la gota: pertenencia, cobertura (antialiasing) y pasadas del camino. */
+    @Override public Mascara mascara() { return envolvente; }
 
     /** Caché de coordenadas de esta gota (la usa {@link Coordenadas#de}). */
     java.util.concurrent.ConcurrentMap<Object, Coordenadas> cacheCoordenadas() { return coords; }
@@ -168,19 +142,6 @@ public final class Gota implements Geometria {
     @Override public int muestras() { return muestras; }
 
     @Override public boolean tieneCodo() { return tramos.length == 2; }
-
-    // ---------- Render (delegado: lo hace el Plotter) ----------
-
-    /** Pinta sobre dst (TYPE_INT_ARGB) con las opciones por defecto. Delega en {@link Plotter#raster}. */
-    @Deprecated public void render(BufferedImage dst, Relleno relleno) { Plotter.raster(dst).plot(this, relleno, Opciones.POR_DEFECTO); }
-
-    /** Pinta sobre dst (TYPE_INT_ARGB) con antialiasing y composición alfa. Delega en {@link Plotter#raster}. */
-    @Deprecated public void render(BufferedImage dst, Relleno relleno, Opciones op) { Plotter.raster(dst).plot(this, relleno, op); }
-
-    /** Fracción del píxel que cubre la unión de la gota. Delega en {@link Silueta.Envolvente#cobertura}. */
-    @Deprecated @Override public double cobertura(double x, double y) { return envolvente.cobertura(this, x, y); }
-
-    @Override public java.util.List<Hebra> hebras(double x, double y) { return envolvente.hebras(this, x, y); }
 
     /** Tangente unitaria del camino en t; si la derivada es nula usa la secante, y si no, el eje x. */
     @Override public double[] tangente(double t) {

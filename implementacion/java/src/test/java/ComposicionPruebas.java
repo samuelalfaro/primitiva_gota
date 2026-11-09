@@ -146,7 +146,7 @@ public class ComposicionPruebas {
                     double a = Math.toRadians(s * 5);
                     for (double f : new double[] { 0.97, 0.5 }) {
                         double x = n.x() + Math.cos(a) * n.radio() * f, y = n.y() + Math.sin(a) * n.radio() * f;
-                        if (!g.contiene(x, y)) todos = false;
+                        if (!g.mascara().contiene(x, y)) todos = false;
                         if (!c.contiene(x, y)) unidos = false;
                     }
                 }

@@ -121,8 +121,8 @@ public class GotaCadena {
         for (Gota g : gs) {
             for (Mezcla m : new Mezcla[] { Mezcla.RGB, Mezcla.LCH }) {
                 BufferedImage i1 = lienzo(300, 300), i2 = lienzo(300, 300);
-                g.render(i1, Colores.dosColores(a, b, m));
-                g.render(i2, Colores.dosColores(a, b, 0.5, m));
+                Plotter.raster(i1).plot(g, Colores.dosColores(a, b, m));
+                Plotter.raster(i2).plot(g, Colores.dosColores(a, b, 0.5, m));
                 peor = Math.max(peor, maxDif(datos(i1), datos(i2)));
             }
         }
@@ -181,7 +181,7 @@ public class GotaCadena {
         Opciones op = Opciones.POR_DEFECTO.conTira(Tira.pesos(1, 8, 1));
         Cortes cortes = op.tira().cortes(g);
         BufferedImage img = lienzo(300, 300);
-        g.render(img, Colores.cadena(e1, c1, c2, e2), op);
+        Plotter.raster(img).plot(g, Colores.cadena(e1, c1, c2, e2), op);
         int pix1 = datos(img)[150 * 300 + 60], pix2 = datos(img)[150 * 300 + 240];   // centros exactos de los círculos
         comprueba("la cadena sigue los cortes de la tira: el color de cada centro es exacto (v1 = " +
                   String.format("%.3f", cortes.c1()) + ", v3 = " + String.format("%.3f", cortes.c3()) + ")",
@@ -190,7 +190,7 @@ public class GotaCadena {
 
         // en TRAZO también: el color de v es el mismo que el de la textura
         BufferedImage img3 = lienzo(300, 300);
-        g.render(img3, Colores.cadena(e1, c1, c2, e2), op.conSolape(Solape.TRAZO));
+        Plotter.raster(img3).plot(g, Colores.cadena(e1, c1, c2, e2), op.conSolape(Solape.TRAZO));
         comprueba("modo TRAZO: mismo color exacto en los centros", datos(img3)[150 * 300 + 60] == c1 && datos(img3)[150 * 300 + 240] == c2, "");
     }
 
@@ -217,8 +217,8 @@ public class GotaCadena {
         comprueba("opciones con tira nula: NullPointerException", nulo, "");
         // el reparto cambia las coordenadas sin tocar la forma
         Point2D c = g.centro(0.15);   // en la primera mitad del cuerpo (tm = 0.3): v difiere entre repartos
-        double vd = g.uv(c.getX(), c.getY()).v(), vp = g.uv(c.getX(), c.getY(), Opciones.POR_DEFECTO.conTira(Tira.pesos(1, 8, 1))).v();
-        comprueba("la tira cambia la v de un punto del cuerpo y no la pertenencia", Math.abs(vd - vp) > 0.05 && g.contiene(c.getX(), c.getY()), String.format("v = %.3f / %.3f", vd, vp));
+        double vd = Coordenadas.uv(g, c.getX(), c.getY(), Opciones.POR_DEFECTO).v(), vp = Coordenadas.uv(g, c.getX(), c.getY(), Opciones.POR_DEFECTO.conTira(Tira.pesos(1, 8, 1))).v();
+        comprueba("la tira cambia la v de un punto del cuerpo y no la pertenencia", Math.abs(vd - vp) > 0.05 && g.mascara().contiene(c.getX(), c.getY()), String.format("v = %.3f / %.3f", vd, vp));
     }
 
     static void tmManda() {
@@ -229,7 +229,7 @@ public class GotaCadena {
             Opciones op = Opciones.POR_DEFECTO.conTira(Tira.pesos(1, 8, 1));
             Cortes k = op.tira().cortes(g);
             Point2D c = g.centro(g.tm());
-            double v = g.uv(c.getX(), c.getY(), op).v(), esperado = k.c1() + (k.c3() - k.c1()) * g.tm();
+            double v = Coordenadas.uv(g, c.getX(), c.getY(), op).v(), esperado = k.c1() + (k.c3() - k.c1()) * g.tm();
             if (Math.abs(k.c2() - esperado) > 1e-12 || Math.abs(v - esperado) > 1e-3) { ok = false; det += String.format(" tm=%.1f v=%.4f esp=%.4f", tm, v, esperado); }
         }
         comprueba("tm manda: el corte central v2 = v1 + (v3 - v1)·tm y el centro en t = tm tiene v = v2", ok, det);
@@ -248,7 +248,7 @@ public class GotaCadena {
         for (int i = 0; i < ajustes.length; i++) {
             double ox = (i % 3) * 300, oy = (i / 3) * 300;
             Gota g = Gota.lineal(p(ox + 60, oy + 150), 50, p(ox + 240, oy + 150), 25, Perfil.central(1.2));
-            g.render(img, Colores.cadena(e1, c1, c2, e2, ajustes[i][0], ajustes[i][1], ajustes[i][2]));
+            Plotter.raster(img).plot(g, Colores.cadena(e1, c1, c2, e2, ajustes[i][0], ajustes[i][1], ajustes[i][2]));
         }
         ImageIO.write(img, "png", new File("gota_cadena.png"));
     }

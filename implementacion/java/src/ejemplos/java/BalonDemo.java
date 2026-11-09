@@ -77,7 +77,7 @@ public class BalonDemo {
         try {
             Relleno col = Colores.cuatroColores(CENTRO, CENTRO, ROJO, AZUL);
             Relleno rel = ComposicionColor.combinar(col, Texturas.disco(TEX), ComposicionColor.Modo.MODULATE);
-            Gota.lineal(c, R, c, R, Perfil.central(1.0)).render(img, rel);
+            Plotter.raster(img).plot(Gota.lineal(c, R, c, R, Perfil.central(1.0)), rel);
         } catch (RuntimeException ex) {
             Graphics2D g = img.createGraphics();
             g.setColor(Color.RED);
