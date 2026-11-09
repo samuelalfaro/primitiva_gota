@@ -14,8 +14,8 @@ import javax.imageio.ImageIO;
  * en Bézier suave, en S y en ჲ (un bucle).
  * Columnas: r1 crece de 0 a 4 y r2 decrece de 4 a 0 (r1 + r2 = 4).
  *
- * Cada celda se dibuja con {@link PlotterAlambre}: contorno, costillas, camino y
- * envolvente oculta (discontinua). Las etiquetas se omiten para no saturar la matriz.
+ * Cada celda se dibuja con {@link PlotterAlambre}: contorno, pocas costillas grises,
+ * radios de las dos tapas, corte central (tm) y envolvente oculta. Sin etiquetas.
  *
  * Deja la imagen en {@code alambre_matriz.png}. Las comprobaciones son mínimas
  * (la gota se construye, se traza y deja huella).
@@ -44,13 +44,15 @@ public class AlambreMatriz {
     static final Color FONDO = new Color(0xF4F1EA);
 
     /**
-     * Contorno + costillas interiores + camino + envolvente oculta.
-     * Sin etiquetas ni contactos para mantener la matriz legible.
+     * Contorno, pocas costillas, radios de las dos tapas, corte central (tm)
+     * y envolvente oculta. Tiradores en gris suave. Sin etiquetas ni contactos.
      */
     static final Alambre.Ajustes AJUSTES = Alambre.Ajustes.POR_DEFECTO
             .conEtiquetas(false)
-            .conSecciones(6)
-            .conOcultas(true);
+            .conOcultas(false)
+            .conSecciones(2)     // Sin círculos intermedios
+            .conRadios(true)     // r1 y r2 de las tapas
+            .conContactos(true);
 
     /** Vectores de control (relativos a cada centro) de cada forma; y hacia arriba. */
     static Gota.Vec[] controles(String forma, double d) {
