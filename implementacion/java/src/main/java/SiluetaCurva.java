@@ -52,7 +52,9 @@ final class SiluetaCurva {
     private SiluetaCurva(Point2D p0, Point2D h1, Point2D h2, Point2D p3, double r1, double r2, Silueta.Conector conector, Relajo relajo, Metodo metodo) {
         this.relajo = relajo;
         this.metodo = metodo;
-        if (!(r1 > 0 && r2 > 0)) throw new IllegalArgumentException("los radios deben ser positivos");
+        double[] rr = Silueta.radios(r1, r2);
+        r1 = rr[0];
+        r2 = rr[1];
         this.r1 = r1;
         this.r2 = r2;
         int n = N_MUESTRAS + 1;

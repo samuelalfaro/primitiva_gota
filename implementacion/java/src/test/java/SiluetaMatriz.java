@@ -47,6 +47,41 @@ public class SiluetaMatriz {
                           c2, r2 * ESCALA, new Gota.Vec(v[1].x() * ESCALA, -v[1].y() * ESCALA), Perfil.recto());
     }
 
+    /** Área de la silueta curva, contando píxeles en una ventana de 500 x 500. */
+    static int area(SiluetaCurva s) {
+        int n = 0;
+        for (int y = 0; y < 500; y++) for (int x = 0; x < 500; x++) if (s.contiene(x + .5, y + .5)) n++;
+        return n;
+    }
+
+    /** Un radio nulo se comporta como un epsilon: mismo área que con un radio pequeño, en los dos extremos y para cada forma. */
+    static void radioNulo() {
+        double S = ESCALA, d = 5;   // d > |r1 - r2|: fuera del caso de círculos contenidos
+        for (String forma : FORMAS) {
+            Gota.Vec[] v = controles(forma, d);
+            for (int extremo = 0; extremo < 2; extremo++) {
+                double r1 = extremo == 0 ? 0 : 4, r2 = extremo == 0 ? 4 : 0, e1 = extremo == 0 ? 1e-3 : 4, e2 = extremo == 0 ? 4 : 1e-3;
+                String nombre = String.format("radio nulo = epsilon (%s, r1=%.0f, r2=%.0f)", forma, r1, r2);
+                try {
+                    int a0 = area(silueta(v, d, r1 * S, r2 * S)), a1 = area(silueta(v, d, e1 * S, e2 * S));
+                    comprueba(nombre, Math.abs(a0 - a1) <= 0.002 * a1, "área " + a0 + " frente a " + a1);
+                } catch (RuntimeException ex) {
+                    comprueba(nombre, false, ex.toString());
+                }
+            }
+        }
+        boolean lanza = false;
+        try { silueta(null, d, 0, 0); } catch (IllegalArgumentException ex) { lanza = true; }
+        comprueba("dos radios nulos se rechazan", lanza, "");
+    }
+
+    static SiluetaCurva silueta(Gota.Vec[] v, double d, double r1, double r2) {
+        double S = ESCALA, dd = d * S, ox = 120, oy = 250;
+        Point2D h1 = v == null ? new Point2D.Double(ox + dd / 3, oy) : new Point2D.Double(ox + v[0].x() * S, oy - v[0].y() * S);
+        Point2D h2 = v == null ? new Point2D.Double(ox + 2 * dd / 3, oy) : new Point2D.Double(ox + dd + v[1].x() * S, oy - v[1].y() * S);
+        return SiluetaCurva.de(new Point2D.Double(ox, oy), h1, h2, new Point2D.Double(ox + dd, oy), r1, r2);
+    }
+
     public static void main(String[] args) throws Exception {
         int filas = SEPARACIONES.length * FORMAS.length, cols = RADIOS.length;
         int w = MARGEN_X + cols * CW, h = MARGEN_Y + filas * CH;
@@ -99,6 +134,7 @@ public class SiluetaMatriz {
         gg.dispose();
         ImageIO.write(img, "png", new File("silueta_matriz.png"));
 
+        radioNulo();
         System.out.printf("%n%d pruebas, %d fallos%n", pruebas, fallos);
         if (fallos > 0) System.exit(1);
     }
