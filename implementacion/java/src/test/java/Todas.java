@@ -17,6 +17,7 @@ public class Todas {
             //FIXME ,"SiluetaCurvaPruebas"
             ,"SiluetaMatriz"
             ,"ColoresMatriz"
+            ,"AlambreMatriz"
     };
 
     public static void main(String[] args) throws Exception {
