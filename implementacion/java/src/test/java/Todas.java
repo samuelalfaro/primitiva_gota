@@ -16,6 +16,7 @@ public class Todas {
             ,"SiluetaPruebas"
             ,"SiluetaCurvaPruebas"
             ,"SiluetaMatriz"
+            ,"ColoresMatriz"
     };
 
     public static void main(String[] args) throws Exception {
