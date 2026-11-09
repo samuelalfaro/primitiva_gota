@@ -8,11 +8,20 @@ import java.io.File;
 import javax.imageio.ImageIO;
 
 /**
- * Matriz de siluetas con color sólido. Filas: separación horizontal d = 5, 4, 3 de dos centros de radio 2, con la espina
- * recta, en Bézier suave, en S y en ჲ (un bucle). Columnas: r1 crece de 0 a 4 y r2 decrece de 4 a 0 (r1 + r2 = 4): cada extremo se anula una vez.
- * Deja la imagen en {@code silueta_matriz.png}; las comprobaciones son mínimas (la gota se construye y deja huella).
+ * Matriz de siluetas con la cadena lateral de 6 colores (modo ESPIGA).
+ *
+ * Filas: separación horizontal d = 5, 4, 3 de dos centros, con la espina recta,
+ * en Bézier suave, en S y en ჲ (un bucle).
+ * Columnas: r1 crece de 0 a 4 y r2 decrece de 4 a 0 (r1 + r2 = 4).
+ *
+ * Colores (orientación ESPIGA, camino L→R, N apunta abajo):
+ *   nodo 1 (izquierda):  contra=amarillo (arriba), centro=magenta, normal=cian (abajo)
+ *   nodo 2 (derecha):    contra=rojo     (arriba), centro=verde,   normal=azul (abajo)
+ *
+ * Deja la imagen en {@code colores_matriz.png}. Las comprobaciones son mínimas
+ * (la gota se construye, se pinta y deja huella de color).
  */
-public class SiluetaMatriz {
+public class SuiteMatriz_03_Colores {
     static int pruebas = 0, fallos = 0;
 
     static void comprueba(String n, boolean ok, String d) {
@@ -23,13 +32,32 @@ public class SiluetaMatriz {
 
     static final double[] SEPARACIONES = { 5, 4, 3 };
     static final String[] FORMAS = { "recta", "suave", "S", "ჲ" };
-    static final double[][] RADIOS = { { 0, 4 }, { 0.5, 3.5 }, { 1, 3 }, { 1.5, 2.5 }, { 2, 2 }, { 2.5, 1.5 }, { 3, 1 }, { 3.5, 0.5 }, { 4, 0 } };
+    static final double[][] RADIOS = {
+        { 0, 4 }, { 0.5, 3.5 }, { 1, 3 }, { 1.5, 2.5 }, { 2, 2 },
+        { 2.5, 1.5 }, { 3, 1 }, { 3.5, 0.5 }, { 4, 0 }
+    };
 
     static final double ESCALA = 22;          // píxeles por unidad
     static final int CW = 300, CH = 260;      // tamaño de celda
     static final int MARGEN_X = 70, MARGEN_Y = 30;
 
-    /** Vectores de control (relativos a cada centro) de cada forma, en unidades del dibujo; y hacia arriba. */
+    // 6 anclas del ejemplo clásico (ARGB)
+    static final int AMARILLO = 0xFFFFFF00;
+    static final int CIAN     = 0xFF00FFFF;
+    static final int ROJO     = 0xFFFF0000;
+    static final int AZUL     = 0xFF0000FF;
+    static final int MAGENTA  = 0xFFFF00FF;
+    static final int VERDE    = 0xFF00FF00;
+
+    /** Relleno de 6 colores en ESPIGA (por defecto). */
+    static final Relleno RELLENO = Colores.cadenaLateral(
+            new Colores.Lateral(CIAN, MAGENTA, AMARILLO), // nodo 1: abajo / centro / arriba
+            new Colores.Lateral(AZUL, VERDE,  ROJO),      // nodo 2
+            Mezcla.RGB);
+
+    static final Opciones OPCIONES = Opciones.POR_DEFECTO.conSolape(Solape.TRAZO);  // ESPIGA + TRAZO + tira 1:2:1
+
+    /** Vectores de control (relativos a cada centro) de cada forma; y hacia arriba. */
     static Gota.Vec[] controles(String forma, double d) {
         return switch (forma) {
             case "suave" -> new Gota.Vec[] { new Gota.Vec(d / 3, d / 2), new Gota.Vec(-d / 3, d / 2) };
@@ -47,41 +75,6 @@ public class SiluetaMatriz {
                           c2, r2 * ESCALA, new Gota.Vec(v[1].x() * ESCALA, -v[1].y() * ESCALA), Perfil.recto());
     }
 
-    /** Área de la silueta curva, contando píxeles en una ventana de 500 x 500. */
-    static int area(SiluetaCurva s) {
-        int n = 0;
-        for (int y = 0; y < 500; y++) for (int x = 0; x < 500; x++) if (s.contiene(x + .5, y + .5)) n++;
-        return n;
-    }
-
-    /** Un radio nulo se comporta como un epsilon: mismo área que con un radio pequeño, en los dos extremos y para cada forma. */
-    static void radioNulo() {
-        double S = ESCALA, d = 5;   // d > |r1 - r2|: fuera del caso de círculos contenidos
-        for (String forma : FORMAS) {
-            Gota.Vec[] v = controles(forma, d);
-            for (int extremo = 0; extremo < 2; extremo++) {
-                double r1 = extremo == 0 ? 0 : 4, r2 = extremo == 0 ? 4 : 0, e1 = extremo == 0 ? 1e-3 : 4, e2 = extremo == 0 ? 4 : 1e-3;
-                String nombre = String.format("radio nulo = epsilon (%s, r1=%.0f, r2=%.0f)", forma, r1, r2);
-                try {
-                    int a0 = area(silueta(v, d, r1 * S, r2 * S)), a1 = area(silueta(v, d, e1 * S, e2 * S));
-                    comprueba(nombre, Math.abs(a0 - a1) <= 0.002 * a1, "área " + a0 + " frente a " + a1);
-                } catch (RuntimeException ex) {
-                    comprueba(nombre, false, ex.toString());
-                }
-            }
-        }
-        boolean lanza = false;
-        try { silueta(null, d, 0, 0); } catch (IllegalArgumentException ex) { lanza = true; }
-        comprueba("dos radios nulos se rechazan", lanza, "");
-    }
-
-    static SiluetaCurva silueta(Gota.Vec[] v, double d, double r1, double r2) {
-        double S = ESCALA, dd = d * S, ox = 120, oy = 250;
-        Point2D h1 = v == null ? new Point2D.Double(ox + dd / 3, oy) : new Point2D.Double(ox + v[0].x() * S, oy - v[0].y() * S);
-        Point2D h2 = v == null ? new Point2D.Double(ox + 2 * dd / 3, oy) : new Point2D.Double(ox + dd + v[1].x() * S, oy - v[1].y() * S);
-        return SiluetaCurva.de(new Point2D.Double(ox, oy), h1, h2, new Point2D.Double(ox + dd, oy), r1, r2);
-    }
-
     public static void main(String[] args) throws Exception {
         int filas = SEPARACIONES.length * FORMAS.length, cols = RADIOS.length;
         int w = MARGEN_X + cols * CW, h = MARGEN_Y + filas * CH;
@@ -91,7 +84,6 @@ public class SiluetaMatriz {
         g2.fillRect(0, 0, w, h);
         g2.dispose();
 
-        int negro = 0xFF000000;
         int fila = 0;
         for (String forma : FORMAS) {
             for (double d : SEPARACIONES) {
@@ -102,9 +94,11 @@ public class SiluetaMatriz {
                     String nombre = String.format("%s d=%.0f r1=%.1f r2=%.1f", forma, d, r1, r2);
                     try {
                         Gota g = gota(forma, d, r1, r2, 90, CH * 0.62);
-                        Plotter.raster(celda).plot(g, Relleno.solido(negro));
+                        Plotter.raster(celda).plot(g, RELLENO, OPCIONES);
                         int opacos = 0;
-                        for (int y = 0; y < CH; y++) for (int x = 0; x < CW; x++) if ((celda.getRGB(x, y) >>> 24) != 0) opacos++;
+                        for (int y = 0; y < CH; y++)
+                            for (int x = 0; x < CW; x++)
+                                if ((celda.getRGB(x, y) >>> 24) != 0) opacos++;
                         comprueba(nombre + ": deja huella", opacos > 0, "sin píxeles");
                     } catch (RuntimeException e) {
                         comprueba(nombre + ": se construye y se pinta", false, e.toString());
@@ -130,11 +124,12 @@ public class SiluetaMatriz {
         gg.setColor(Color.DARK_GRAY);
         gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
         for (int c = 0; c < cols; c++)
-            gg.drawString(String.format("r1 = %.1f   r2 = %.1f", RADIOS[c][0], RADIOS[c][1]), MARGEN_X + c * CW + 8, 18);
+            gg.drawString(String.format("r1 = %.1f   r2 = %.1f", RADIOS[c][0], RADIOS[c][1]),
+                    MARGEN_X + c * CW + 8, 18);
         gg.dispose();
-        ImageIO.write(img, "png", new File("silueta_matriz.png"));
 
-        radioNulo();
+        ImageIO.write(img, "png", new File("suite_matriz_03_colores.png"));
+
         System.out.printf("%n%d pruebas, %d fallos%n", pruebas, fallos);
         if (fallos > 0) System.exit(1);
     }

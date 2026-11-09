@@ -15,9 +15,9 @@ public class Todas {
             ,"ComposicionPruebas"
             //FIXME ,"SiluetaPruebas"
             //FIXME ,"SiluetaCurvaPruebas"
-            ,"SiluetaMatriz"
-            ,"ColoresMatriz"
-            ,"AlambreMatriz"
+            ,"SuiteMatriz_01_Alambre"
+            ,"SuiteMatriz_02_Siluetas"
+            ,"SuiteMatriz_03_Colores"
     };
 
     public static void main(String[] args) throws Exception {

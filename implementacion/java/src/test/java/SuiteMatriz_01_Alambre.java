@@ -8,20 +8,19 @@ import java.io.File;
 import javax.imageio.ImageIO;
 
 /**
- * Matriz de siluetas con la cadena lateral de 6 colores (modo ESPIGA).
+ * Matriz de gotas en modo alambre. Misma batería que {@link SiluetaMatriz} y {@link ColoresMatriz}:
  *
  * Filas: separación horizontal d = 5, 4, 3 de dos centros, con la espina recta,
  * en Bézier suave, en S y en ჲ (un bucle).
  * Columnas: r1 crece de 0 a 4 y r2 decrece de 4 a 0 (r1 + r2 = 4).
  *
- * Colores (orientación ESPIGA, camino L→R, N apunta abajo):
- *   nodo 1 (izquierda):  contra=amarillo (arriba), centro=magenta, normal=cian (abajo)
- *   nodo 2 (derecha):    contra=rojo     (arriba), centro=verde,   normal=azul (abajo)
+ * Cada celda se dibuja con {@link PlotterAlambre}: contorno, pocas costillas grises,
+ * radios de las dos tapas, corte central (tm) y envolvente oculta. Sin etiquetas.
  *
- * Deja la imagen en {@code colores_matriz.png}. Las comprobaciones son mínimas
- * (la gota se construye, se pinta y deja huella de color).
+ * Deja la imagen en {@code alambre_matriz.png}. Las comprobaciones son mínimas
+ * (la gota se construye, se traza y deja huella).
  */
-public class ColoresMatriz {
+public class SuiteMatriz_01_Alambre {
     static int pruebas = 0, fallos = 0;
 
     static void comprueba(String n, boolean ok, String d) {
@@ -41,21 +40,19 @@ public class ColoresMatriz {
     static final int CW = 300, CH = 260;      // tamaño de celda
     static final int MARGEN_X = 70, MARGEN_Y = 30;
 
-    // 6 anclas del ejemplo clásico (ARGB)
-    static final int AMARILLO = 0xFFFFFF00;
-    static final int CIAN     = 0xFF00FFFF;
-    static final int ROJO     = 0xFFFF0000;
-    static final int AZUL     = 0xFF0000FF;
-    static final int MAGENTA  = 0xFFFF00FF;
-    static final int VERDE    = 0xFF00FF00;
+    /** Fondo de celda (mismo tono que AlambreDemo). */
+    static final Color FONDO = new Color(0xF4F1EA);
 
-    /** Relleno de 6 colores en ESPIGA (por defecto). */
-    static final Relleno RELLENO = Colores.cadenaLateral(
-            new Colores.Lateral(AMARILLO, MAGENTA, CIAN),   // nodo 1: arriba / centro / abajo
-            new Colores.Lateral(ROJO,     VERDE,   AZUL),   // nodo 2
-            Mezcla.RGB);
-
-    static final Opciones OPCIONES = Opciones.POR_DEFECTO.conSolape(Solape.TRAZO);  // ESPIGA + TRAZO + tira 1:2:1
+    /**
+     * Contorno, pocas costillas, radios de las dos tapas, corte central (tm)
+     * y envolvente oculta. Tiradores en gris suave. Sin etiquetas ni contactos.
+     */
+    static final Alambre.Ajustes AJUSTES = Alambre.Ajustes.POR_DEFECTO
+            .conEtiquetas(false)
+            .conOcultas(false)
+            .conSecciones(2)     // Sin círculos intermedios
+            .conRadios(true)     // r1 y r2 de las tapas
+            .conContactos(true);
 
     /** Vectores de control (relativos a cada centro) de cada forma; y hacia arriba. */
     static Gota.Vec[] controles(String forma, double d) {
@@ -91,17 +88,24 @@ public class ColoresMatriz {
                     double r1 = RADIOS[c][0], r2 = RADIOS[c][1];
                     int x0 = MARGEN_X + c * CW, y0 = MARGEN_Y + fila * CH;
                     BufferedImage celda = new BufferedImage(CW, CH, BufferedImage.TYPE_INT_ARGB);
+                    Graphics2D gc = celda.createGraphics();
+                    gc.setColor(FONDO);
+                    gc.fillRect(0, 0, CW, CH);
+                    gc.dispose();
+
                     String nombre = String.format("%s d=%.0f r1=%.1f r2=%.1f", forma, d, r1, r2);
                     try {
                         Gota g = gota(forma, d, r1, r2, 90, CH * 0.62);
-                        Plotter.raster(celda).plot(g, RELLENO, OPCIONES);
+                        PlotterAlambre.sobre(celda, AJUSTES).plot(g);
                         int opacos = 0;
                         for (int y = 0; y < CH; y++)
                             for (int x = 0; x < CW; x++)
-                                if ((celda.getRGB(x, y) >>> 24) != 0) opacos++;
-                        comprueba(nombre + ": deja huella", opacos > 0, "sin píxeles");
+                                if ((celda.getRGB(x, y) >>> 24) != 0
+                                        && (celda.getRGB(x, y) & 0xFFFFFF) != (FONDO.getRGB() & 0xFFFFFF))
+                                    opacos++;
+                        comprueba(nombre + ": deja huella", opacos > 0, "sin trazos");
                     } catch (RuntimeException e) {
-                        comprueba(nombre + ": se construye y se pinta", false, e.toString());
+                        comprueba(nombre + ": se construye y se traza", false, e.toString());
                     }
                     Graphics2D gg = img.createGraphics();
                     gg.drawImage(celda, x0, y0, null);
@@ -128,7 +132,7 @@ public class ColoresMatriz {
                     MARGEN_X + c * CW + 8, 18);
         gg.dispose();
 
-        ImageIO.write(img, "png", new File("colores_matriz.png"));
+        ImageIO.write(img, "png", new File("suite_matriz_01_alambre.png"));
 
         System.out.printf("%n%d pruebas, %d fallos%n", pruebas, fallos);
         if (fallos > 0) System.exit(1);
