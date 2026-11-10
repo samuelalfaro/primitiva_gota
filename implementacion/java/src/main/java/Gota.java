@@ -44,7 +44,10 @@ public final class Gota implements Geometria {
     final Tramo[] tramos;         // 1 tramo (cuadrática) o 2 (partido en tm)
     private final Rectangle2D.Double bounds;
     final int muestras;
-    /** La máscara de la gota: la silueta de dos tapas y conectores, doblada a lo largo del camino. Vive en {@link SiluetaCurva}. */
+    /**
+     * La máscara de la gota. Con una longitud de camino d >= r1 + r2 es la unión de la familia de círculos ({@link Silueta.Envolvente});
+     * con d < r1 + r2 la silueta de dos tapas y dos conectores no admite deformación: se descarta la curva y se toma la recta de los centros.
+     */
     private final Mascara mascara;
     /** Coordenadas intrínsecas de esta gota, una por combinación de costura y tira: las gestiona {@link Coordenadas#de}. */
     private final java.util.concurrent.ConcurrentMap<Object, Coordenadas> coords = new java.util.concurrent.ConcurrentHashMap<>();
@@ -108,10 +111,22 @@ public final class Gota implements Geometria {
         }
         double[][] controles = new double[tramos.length][];
         for (int i = 0; i < tramos.length; i++) { rc = Math.max(rc, tramos[i].maxControl()); controles[i] = tramos[i].a; }
-        // sin los dos radios nulos no hay silueta: la gota queda vacía
-        mascara = this.r1 + this.r2 > 0
-            ? SiluetaCurva.de(c1, new Point2D.Double(px[1], py[1]), new Point2D.Double(px[2], py[2]), c2, this.r1, this.r2)
-            : VACIA;
+        if (!(this.r1 + this.r2 > 0)) mascara = VACIA;                  // sin los dos radios nulos no hay silueta: la gota queda vacía
+        else if (longitudCamino(px, py) < this.r1 + this.r2) {          // forma rígida sobre la recta de los centros
+            double ex = c2.getX() - c1.getX(), ey = c2.getY() - c1.getY();
+            if (Math.hypot(ex, ey) <= 1e-9 * (this.r1 + this.r2)) {       // centros coincidentes: la tangente inicial del camino orienta la forma
+                ex = px[1] - px[0]; ey = py[1] - py[0];
+                if (ex == 0 && ey == 0) { ex = px[2] - px[0]; ey = py[2] - py[0]; }
+                if (ex == 0 && ey == 0) { ex = px[3] - px[0]; ey = py[3] - py[0]; }
+                double n = Math.hypot(ex, ey);
+                if (n == 0) { ex = 1; ey = 0; n = 1; }
+                double e = 1e-9 * (this.r1 + this.r2) / n;
+                ex *= e; ey *= e;
+            }
+            mascara = SiluetaCurva.de(c1, new Point2D.Double(c1.getX() + ex / 3, c1.getY() + ey / 3),
+                new Point2D.Double(c1.getX() + 2 * ex / 3, c1.getY() + 2 * ey / 3), new Point2D.Double(c1.getX() + ex, c1.getY() + ey), this.r1, this.r2);
+        }
+        else mascara = new Silueta.Envolvente(this, pxs, pys, controles);
         double rmax = rc + 1;
         bounds = new Rectangle2D.Double(minX - rmax, minY - rmax, maxX - minX + 2 * rmax, maxY - minY + 2 * rmax);
         muestras = (int) Math.max(32, Math.min(512, largo / 2 + 16));
@@ -138,6 +153,20 @@ public final class Gota implements Geometria {
 
     /** La máscara de la gota: pertenencia, cobertura (antialiasing) y pasadas del camino. */
     @Override public Mascara mascara() { return mascara; }
+
+    /** Longitud de arco de la cúbica de Bézier de controles (px, py), por muestreo. */
+    private static double longitudCamino(double[] px, double[] py) {
+        final int n = 256;
+        double l = 0, x0 = px[0], y0 = py[0];
+        for (int i = 1; i <= n; i++) {
+            double t = i / (double) n, u = 1 - t;
+            double a = u * u * u, b = 3 * u * u * t, c = 3 * u * t * t, d = t * t * t;
+            double x = a * px[0] + b * px[1] + c * px[2] + d * px[3], y = a * py[0] + b * py[1] + c * py[2] + d * py[3];
+            l += Math.hypot(x - x0, y - y0);
+            x0 = x; y0 = y;
+        }
+        return l;
+    }
 
     /** La máscara de una gota sin radio. */
     private static final Mascara VACIA = new Mascara() {
