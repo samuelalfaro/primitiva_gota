@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Escribe un alambre como SVG. Cada trazo es un {@code <path>} con la clase de su {@link Alambre.Rol}; el estilo va en
+ * Escribe un alambre como SVG. Cada trazo es un {@code <path>} con la clase de su {@link Trazos.Rol}; el estilo va en
  * un bloque {@code <style>} (generado desde el propio enum), de modo que se puede retocar en el SVG sin regenerarlo.
  */
 public final class Svg {
@@ -20,7 +20,7 @@ public final class Svg {
     private static final double MARGEN = 30;
 
     /** Escribe el SVG con la vista dada (en coordenadas de imagen) más un margen. */
-    public static void escribe(List<Alambre.Trazo> trazos, Rectangle2D vista, Writer out) throws IOException {
+    public static void escribe(List<Trazos.Trazo> trazos, Rectangle2D vista, Writer out) throws IOException {
         double x = vista.getX() - MARGEN, y = vista.getY() - MARGEN;
         double w = vista.getWidth() + 2 * MARGEN, h = vista.getHeight() + 2 * MARGEN;
         out.write(String.format(Locale.ROOT,
@@ -28,20 +28,20 @@ public final class Svg {
             num(x), num(y), num(w), num(h), num(w), num(h)));
         out.write("<style>\n");
         out.write("  path { fill: none; stroke-linecap: round; stroke-linejoin: round; }\n");
-        for (Alambre.Rol r : Alambre.Rol.values()) {
+        for (Trazos.Rol r : Trazos.Rol.values()) {
             out.write(String.format(Locale.ROOT, "  .%s { stroke: %s; stroke-width: %s;%s%s }%n", r.clase, rgb(r),
                 num(r.ancho),
                 r.guiones == null ? "" : " stroke-dasharray: " + num(r.guiones[0]) + " " + num(r.guiones[1]) + ";",
                 r.relleno ? " fill: " + rgb(r) + ";" : ""));
         }
         out.write("</style>\n");
-        for (Alambre.Trazo t : trazos) {
+        for (Trazos.Trazo t : trazos) {
             out.write("<path class=\"" + t.rol().clase + "\" d=\"" + camino(t.forma()) + "\"/>\n");
         }
         out.write("</svg>\n");
     }
 
-    public static void escribe(List<Alambre.Trazo> trazos, Rectangle2D vista, Path destino) throws IOException {
+    public static void escribe(List<Trazos.Trazo> trazos, Rectangle2D vista, Path destino) throws IOException {
         try (Writer w = Files.newBufferedWriter(destino, StandardCharsets.UTF_8)) {
             escribe(trazos, vista, w);
         }
@@ -71,7 +71,7 @@ public final class Svg {
         return s.equals("-0") ? "0" : s;
     }
 
-    private static String rgb(Alambre.Rol r) {
+    private static String rgb(Trazos.Rol r) {
         return String.format("#%02x%02x%02x", r.color.getRed(), r.color.getGreen(), r.color.getBlue());
     }
 }

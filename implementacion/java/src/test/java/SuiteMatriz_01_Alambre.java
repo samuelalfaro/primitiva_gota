@@ -47,7 +47,7 @@ public class SuiteMatriz_01_Alambre {
      * Contorno, pocas costillas, radios de las dos tapas, corte central (tm)
      * y envolvente oculta. Tiradores en gris suave. Sin etiquetas ni contactos.
      */
-    static final Alambre.Ajustes AJUSTES = Alambre.Ajustes.POR_DEFECTO
+    static final Trazos.Ajustes AJUSTES = Trazos.Ajustes.POR_DEFECTO
             .conEtiquetas(false)
             .conOcultas(false)
             .conSecciones(2)     // Sin círculos intermedios
