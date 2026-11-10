@@ -101,6 +101,21 @@ public class SuiteMatriz_02_Siluetas {
                 Math.toDegrees(x.angulos().psi1()) + ", " + Math.toDegrees(x.angulos().psi2()));
     }
 
+    /**
+     * Continuidad en d = 0: los ángulos con centros coincidentes difieren poco de los de d = 0,001, también con un radio nulo
+     * (el arranque de la X en (pi/4, pi/4) caía antes en un mínimo falso con radios muy distintos).
+     */
+    static void continuidadEnCero() {
+        double[][] radios = { { 2, 2 }, { 1, 3 }, { 3, 1 }, { 0.5, 3.5 }, { 3.5, 0.5 }, { 0, 4 }, { 4, 0 } };
+        for (double[] r : radios) {
+            Silueta s0 = Silueta.de(new Point2D.Double(0, 0), r[0], new Point2D.Double(0, 0), r[1]);
+            Silueta s1 = Silueta.de(new Point2D.Double(0, 0), r[0], new Point2D.Double(0.001, 0), r[1]);
+            double d1 = Math.abs(Math.toDegrees(s0.angulos().psi1() - s1.angulos().psi1()));
+            double d2 = Math.abs(Math.toDegrees(s0.angulos().psi2() - s1.angulos().psi2()));
+            comprueba(String.format("continuidad en d = 0 (r1=%.1f, r2=%.1f)", r[0], r[1]), d1 < 3 && d2 < 3, String.format("%.1f° y %.1f° de diferencia", d1, d2));
+        }
+    }
+
     static SiluetaCurva silueta(Gota.Vec[] v, double d, double r1, double r2) {
         double S = ESCALA, dd = d * S, ox = 120, oy = 250;
         Point2D h1 = v == null ? new Point2D.Double(ox + dd / 3, oy) : new Point2D.Double(ox + v[0].x() * S, oy - v[0].y() * S);
@@ -162,6 +177,7 @@ public class SuiteMatriz_02_Siluetas {
 
         radioNulo();
         anidados();
+        continuidadEnCero();
         System.out.printf("%n%d pruebas, %d fallos%n", pruebas, fallos);
         if (fallos > 0) System.exit(1);
     }
