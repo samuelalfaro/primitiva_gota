@@ -51,6 +51,8 @@ public final class Gota implements Geometria {
     private final Mascara mascara;
     /** La silueta rígida (cuatro arcos sobre la recta de los centros) si la gota es rígida; null si no. */
     private final Silueta silueta;
+    /** La silueta rígida de la gota, o null si su camino mide r1 + r2 o más (entonces la forma es la envolvente). */
+    Silueta silueta() { return silueta; }
     private volatile double[] largos;
     /** Coordenadas intrínsecas de esta gota, una por combinación de costura y tira: las gestiona {@link Coordenadas#de}. */
     private final java.util.concurrent.ConcurrentMap<Object, Coordenadas> coords = new java.util.concurrent.ConcurrentHashMap<>();
@@ -135,12 +137,15 @@ public final class Gota implements Geometria {
         if (!(this.r1 + this.r2 > 0)) { mascara = VACIA; silueta = null; }
         else if (rigida) {
             silueta = Silueta.de(new Point2D.Double(px[0], py[0]), this.r1, new Point2D.Double(px[3], py[3]), this.r2);
-            mascara = SiluetaCurva.de(new Point2D.Double(px[0], py[0]), new Point2D.Double(px[1], py[1]),
-                new Point2D.Double(px[2], py[2]), new Point2D.Double(px[3], py[3]), this.r1, this.r2);
+            mascara = silueta.mascara();
         }
         else { mascara = new Silueta.Envolvente(this, pxs, pys, controles); silueta = null; }
         double rmax = rc + 1;
         bounds = new Rectangle2D.Double(minX - rmax, minY - rmax, maxX - minX + 2 * rmax, maxY - minY + 2 * rmax);
+        if (silueta != null) {                                          // la silueta rígida sobresale de los círculos: sus límites mandan
+            Rectangle2D f = silueta.forma().getBounds2D();
+            bounds.add(new Rectangle2D.Double(f.getMinX() - 1, f.getMinY() - 1, f.getWidth() + 2, f.getHeight() + 2));
+        }
         muestras = (int) Math.max(32, Math.min(512, largo / 2 + 16));
     }
 
