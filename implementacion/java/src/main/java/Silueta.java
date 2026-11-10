@@ -138,12 +138,16 @@ final class Silueta {
         int n = 7;
         double[][] cand = new double[n * n + 2][3];
         int k = 0;
+        // el arranque de la X (psi = pi/4) solo tiene sentido con radios parecidos: con radios muy distintos y d casi 0 cae en un
+        // agujero de la energía (E -> 0 en (pi/4, pi/4) cuando r2 -> 0), un mínimo falso
+        boolean parecidos = Math.abs(r1 - r2) <= 0.5 * (r1 + r2);
         for (int i = 0; i < n; i++)
             for (int j = 0; j < n; j++) {
                 double a = lo + (hi - lo) * i / (n - 1), b = lo + (hi - lo) * j / (n - 1);
                 cand[k++] = new double[] { a, b, f(a, b, r1, r2, d, lam, rm, el) };
             }
-        cand[k++] = new double[] { Math.PI / 4, Math.PI / 4, f(Math.PI / 4, Math.PI / 4, r1, r2, d, lam, rm, el) };
+        cand[k++] = parecidos ? new double[] { Math.PI / 4, Math.PI / 4, f(Math.PI / 4, Math.PI / 4, r1, r2, d, lam, rm, el) }
+                              : new double[] { Math.PI / 2, Math.PI / 2, f(Math.PI / 2, Math.PI / 2, r1, r2, d, lam, rm, el) };
         double kk = (r1 - r2) / d;
         double th = Math.abs(kk) < 1 ? Math.acos(kk) : Math.PI / 4;
         cand[k++] = new double[] { Math.PI - th, th, f(Math.PI - th, th, r1, r2, d, lam, rm, el) };
