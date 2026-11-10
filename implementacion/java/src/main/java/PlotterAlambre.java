@@ -1,18 +1,6 @@
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.RenderingHints;
-import java.awt.Shape;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.Ellipse2D;
-import java.awt.geom.Line2D;
-import java.awt.font.FontRenderContext;
-import java.awt.geom.Path2D;
-import java.awt.geom.Rectangle2D;
-import java.util.ArrayList;
-import java.util.List;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -29,18 +17,25 @@ import java.util.Objects;
  * Comparte con {@link Plotter} solo el prefijo del nombre y el verbo {@code plot}: no la implementa, a propósito, hasta
  * que se vean las necesidades de todos los plotters (deuda técnica asumida). Los trazos los calcula {@link Trazos}.
  */
-public class PlotterAlambre {
+public final class PlotterAlambre {
 
+    /** Dónde se dibuja: un Graphics2D ajeno, o una imagen cuyo Graphics2D se crea y se libera en cada plot. */
     private final Graphics2D g;
+    private final BufferedImage dst;
     private final Trazos.Ajustes ajustes;
+
+    private PlotterAlambre(Graphics2D g, BufferedImage dst, Trazos.Ajustes ajustes) {
+        this.g = g;
+        this.dst = dst;
+        this.ajustes = Objects.requireNonNull(ajustes, "ajustes");
+    }
 
     public PlotterAlambre(Graphics2D g) {
         this(g, Trazos.Ajustes.POR_DEFECTO);
     }
 
     public PlotterAlambre(Graphics2D g, Trazos.Ajustes ajustes) {
-        this.g = Objects.requireNonNull(g, "g");
-        this.ajustes = Objects.requireNonNull(ajustes, "ajustes");
+        this(Objects.requireNonNull(g, "g"), null, ajustes);
     }
 
     /**
@@ -55,7 +50,7 @@ public class PlotterAlambre {
         Objects.requireNonNull(dst, "dst");
         if (dst.getType() != BufferedImage.TYPE_INT_ARGB)
             throw new IllegalArgumentException("Se requiere BufferedImage.TYPE_INT_ARGB");
-        return new SobreImagen(dst, ajustes);
+        return new PlotterAlambre(null, dst, ajustes);
     }
 
     /** Dibuja la gota con los ajustes de este plotter. */
@@ -67,7 +62,17 @@ public class PlotterAlambre {
     public void plot(Gota gota, Trazos.Ajustes aj) {
         Objects.requireNonNull(gota, "gota");
         Objects.requireNonNull(aj, "ajustes");
-        Trazos.render(g, Trazos.trazos(gota, aj));
+        List<Trazos.Trazo> trazos = Trazos.trazos(gota, aj);
+        if (dst == null) {
+            Trazos.render(g, trazos);
+            return;
+        }
+        Graphics2D gi = dst.createGraphics();
+        try {
+            Trazos.render(gi, trazos);
+        } finally {
+            gi.dispose();
+        }
     }
 
     /** Atajo estático: pinta en el Graphics2D dado. */
@@ -77,32 +82,5 @@ public class PlotterAlambre {
 
     public static void plot(Graphics2D g, Gota gota) {
         plot(g, gota, Trazos.Ajustes.POR_DEFECTO);
-    }
-
-    /** Variante que crea y dispone el Graphics2D de la imagen en cada plot. */
-    private static final class SobreImagen extends PlotterAlambre {
-        private final BufferedImage dst;
-
-        SobreImagen(BufferedImage dst, Trazos.Ajustes aj) {
-            super(dummyG(dst), aj);
-            this.dst = dst;
-        }
-
-        private static Graphics2D dummyG(BufferedImage dst) {
-            Graphics2D g = dst.createGraphics();
-            g.dispose();
-            return g;
-        }
-
-        @Override public void plot(Gota gota, Trazos.Ajustes ajustes) {
-            Objects.requireNonNull(gota, "gota");
-            Objects.requireNonNull(ajustes, "ajustes");
-            Graphics2D g = dst.createGraphics();
-            try {
-                Trazos.render(g, Trazos.trazos(gota, ajustes));
-            } finally {
-                g.dispose();
-            }
-        }
     }
 }

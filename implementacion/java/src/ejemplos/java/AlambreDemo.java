@@ -7,7 +7,7 @@ import java.util.List;
 import javax.imageio.ImageIO;
 import java.io.File;
 
-/** Modo alambre de varias gotas: un PNG con todas y un SVG por gota. Las gotas son las de los casos típicos y degenerados. */
+/** Modo alambre de varias gotas con PlotterAlambre y PlotterSvg: un PNG con todas y un SVG por gota. Las gotas son las de los casos típicos y degenerados. */
 public class AlambreDemo {
 
     private static Point2D p(double x, double y) { return new Point2D.Double(x, y); }
@@ -49,8 +49,9 @@ public class AlambreDemo {
             celda.drawString(c.nombre(), 8, 16);
             celda.dispose();
             if (svg) {
-                var trazos = Trazos.trazos(c.gota(), ajustes);
-                Svg.escribe(trazos, c.gota().bounds(), Path.of(nombre + "_" + c.nombre() + ".svg"));
+                try (PlotterSvg ps = PlotterSvg.a(Path.of(nombre + "_" + c.nombre() + ".svg"), ajustes)) {
+                    ps.plot(c.gota());
+                }
             }
         }
         g.dispose();
