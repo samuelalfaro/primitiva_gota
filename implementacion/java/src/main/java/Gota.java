@@ -44,8 +44,8 @@ public final class Gota implements Geometria {
     final Tramo[] tramos;         // 1 tramo (cuadrática) o 2 (partido en tm)
     private final Rectangle2D.Double bounds;
     final int muestras;
-    /** La pertenencia a la envolvente de la familia de círculos (base de Bernstein): vive en {@link Silueta}. */
-    private final Silueta.Envolvente envolvente;
+    /** La máscara de la gota: la silueta de dos tapas y conectores, doblada a lo largo del camino. Vive en {@link SiluetaCurva}. */
+    private final Mascara mascara;
     /** Coordenadas intrínsecas de esta gota, una por combinación de costura y tira: las gestiona {@link Coordenadas#de}. */
     private final java.util.concurrent.ConcurrentMap<Object, Coordenadas> coords = new java.util.concurrent.ConcurrentHashMap<>();
 
@@ -108,7 +108,10 @@ public final class Gota implements Geometria {
         }
         double[][] controles = new double[tramos.length][];
         for (int i = 0; i < tramos.length; i++) { rc = Math.max(rc, tramos[i].maxControl()); controles[i] = tramos[i].a; }
-        envolvente = new Silueta.Envolvente(this, pxs, pys, controles);
+        // sin los dos radios nulos no hay silueta: la gota queda vacía
+        mascara = this.r1 + this.r2 > 0
+            ? SiluetaCurva.de(c1, new Point2D.Double(px[1], py[1]), new Point2D.Double(px[2], py[2]), c2, this.r1, this.r2)
+            : VACIA;
         double rmax = rc + 1;
         bounds = new Rectangle2D.Double(minX - rmax, minY - rmax, maxX - minX + 2 * rmax, maxY - minY + 2 * rmax);
         muestras = (int) Math.max(32, Math.min(512, largo / 2 + 16));
@@ -134,7 +137,14 @@ public final class Gota implements Geometria {
     // ---------- La máscara y las coordenadas viven fuera (Silueta, Coordenadas); el pintado, en Plotter ----------
 
     /** La máscara de la gota: pertenencia, cobertura (antialiasing) y pasadas del camino. */
-    @Override public Mascara mascara() { return envolvente; }
+    @Override public Mascara mascara() { return mascara; }
+
+    /** La máscara de una gota sin radio. */
+    private static final Mascara VACIA = new Mascara() {
+        @Override public boolean contiene(double x, double y) { return false; }
+        @Override public double cobertura(double x, double y) { return 0; }
+        @Override public java.util.List<Geometria.Hebra> hebras(double x, double y) { return java.util.List.of(); }
+    };
 
     /** Caché de coordenadas de esta gota (la usa {@link Coordenadas#de}). */
     java.util.concurrent.ConcurrentMap<Object, Coordenadas> cacheCoordenadas() { return coords; }
