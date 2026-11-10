@@ -72,6 +72,34 @@ public class SuiteMatriz_01_Alambre {
                           c2, r2 * ESCALA, new Gota.Vec(v[1].x() * ESCALA, -v[1].y() * ESCALA), Perfil.recto());
     }
 
+    /** Ancho del viewBox de un SVG (tercer número del atributo). */
+    static double anchoVista(String svg) {
+        int i = svg.indexOf("viewBox=\"") + 9;
+        return Double.parseDouble(svg.substring(i, svg.indexOf('"', i)).split(" ")[2]);
+    }
+
+    /** PlotterSvg: documento completo, vista que crece con las gotas y ciclo de vida del plotter. */
+    static void svg() {
+        Gota a = gota("suave", 5, 2, 2, 90, 100), b = gota("S", 3, 1, 3, 400, 100);
+        java.io.StringWriter w1 = new java.io.StringWriter(), w2 = new java.io.StringWriter();
+        try (PlotterSvg ps = new PlotterSvg(w1, AJUSTES)) { ps.plot(a); }
+        try (PlotterSvg ps = new PlotterSvg(w2, AJUSTES)) { ps.plot(a); ps.plot(b); }
+        String s1 = w1.toString(), s2 = w2.toString();
+        comprueba("PlotterSvg: documento completo", s1.startsWith("<svg ") && s1.contains("class=\"contorno\"") && s1.trim().endsWith("</svg>"), s1.substring(0, Math.min(80, s1.length())));
+        comprueba("PlotterSvg: la vista abarca todas las gotas", anchoVista(s2) > anchoVista(s1), anchoVista(s1) + " frente a " + anchoVista(s2));
+        PlotterSvg vacio = new PlotterSvg(new java.io.StringWriter());
+        boolean lanza = false;
+        try { vacio.close(); } catch (IllegalStateException e) { lanza = true; }
+        comprueba("PlotterSvg: sin gotas no hay documento", lanza, "no lanza");
+        PlotterSvg cerrado = new PlotterSvg(new java.io.StringWriter());
+        cerrado.plot(a);
+        cerrado.close();
+        cerrado.close();
+        lanza = false;
+        try { cerrado.plot(b); } catch (IllegalStateException e) { lanza = true; }
+        comprueba("PlotterSvg: cerrar dos veces vale, dibujar cerrado no", lanza, "no lanza");
+    }
+
     public static void main(String[] args) throws Exception {
         int filas = SEPARACIONES.length * FORMAS.length, cols = RADIOS.length;
         int w = MARGEN_X + cols * CW, h = MARGEN_Y + filas * CH;
@@ -133,6 +161,8 @@ public class SuiteMatriz_01_Alambre {
         gg.dispose();
 
         ImageIO.write(img, "png", new File("suite_matriz_01_alambre.png"));
+
+        svg();
 
         System.out.printf("%n%d pruebas, %d fallos%n", pruebas, fallos);
         if (fallos > 0) System.exit(1);

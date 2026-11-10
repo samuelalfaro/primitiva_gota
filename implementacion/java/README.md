@@ -12,7 +12,9 @@ src/main/java      la biblioteca
   Silueta.java           silueta de dos tapas y conector (elíptico, biarco o recta); Silueta.Envolvente es la máscara actual de Gota
   SiluetaCurva.java      silueta doblada sobre una espina curva (clase de apoyo a las pruebas; pendiente de integrar en Gota)
   Plotter.java           pinta una gota con un relleno: Plotter.raster(imagen).plot(gota, relleno, opciones)
-  PlotterAlambre.java    dibuja la gota en modo alambre
+  PlotterAlambre.java    dibuja la gota en modo alambre (Graphics2D o imagen)
+  PlotterSvg.java        dibuja gotas en modo alambre como un documento SVG (se escribe al cerrar)
+  Trazos.java            los trazos del modo alambre (rol + Shape): la ayuda común de PlotterAlambre y PlotterSvg
   Relleno.java           interfaz de un relleno: de un Punto a un color ARGB (las fábricas están en Colores y Texturas)
   Punto.java             el píxel visto desde la gota: muestra() y uv() se calculan solo si el relleno las pide
   Coordenadas.java       coordenadas intrínsecas de un píxel de la gota (Muestra, Uv, semidisco de las tapas)

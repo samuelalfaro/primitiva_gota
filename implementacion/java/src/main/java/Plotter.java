@@ -9,6 +9,9 @@ import java.util.stream.IntStream;
  * {@link #raster(BufferedImage)} la rasteriza en una imagen con antialiasing y composición alfa; el modo alambre y la exportación
  * a SVG serían otros plotters. La gota solo guarda sus parámetros: la máscara está en {@link Silueta}, las coordenadas en
  * {@link Coordenadas} y el color en {@link Relleno}; el plotter los ensambla.
+ *
+ * <p>{@link PlotterAlambre} y {@link PlotterSvg} siguen la convención (prefijo {@code Plotter} y verbo {@code plot}) sin
+ * implementar esta interfaz: no usan relleno ni opciones de costura. Se generalizará cuando se vean las necesidades de todos.
  */
 public interface Plotter {
 
