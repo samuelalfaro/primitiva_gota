@@ -142,7 +142,7 @@ primitiva_gota/
 │                               └──> Texturas ──┘                      │
 │                                                                      │
 │   Plotter (raster) pinta una Gota con un Relleno                     │
-│   PlotterAlambre dibuja el modo alambre                              │
+│   PlotterAlambre y PlotterSvg dibujan el modo alambre (Trazos)       │
 │   ComposicionColor (combina 2 rellenos)                              │
 │   Composicion (une gotas y las pinta)                                │
 │                                                                      │
@@ -208,7 +208,7 @@ Las imágenes generadas se guardan en `target/imagenes/`.
 | `BalonDemo` | Balón de playa: dos círculos del mismo centro y radio (d = 0) |
 | `SiluetaDemo`, `SiluetaCurvaDemo` | La silueta de tapas y conector, recta y doblada |
 | `SiluetaComplejaDemo`, `SiluetaRelajoDemo`, `SiluetaTrazoDemo` | Caminos complejos que fuerzan el pliegue y su relajo |
-| `AlambreDemo` | Modo alambre |
+| `AlambreDemo` | Modo alambre con `PlotterAlambre` y `PlotterSvg` |
 | `GotaAdversos`, `CasosDegenerados` | Casos adversos y degenerados de la geometría |
 | `GaleriaTapas` | Galería de tapas |
 
