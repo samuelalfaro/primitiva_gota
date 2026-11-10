@@ -75,6 +75,8 @@ final class Zonas {
         double[] ox = new double[2], oy = new double[2];
         for (int l = 0; l < 2; l++) {
             int s = l == 1 ? 1 : -1;
+            double[] c = g.costilla(t, l);
+            if (c != null) { ox[l] = c[0]; oy[l] = c[1]; continue; }
             ox[l] = r * (-k * tx + s * sq * nx); oy[l] = r * (-k * ty + s * sq * ny);
         }
         return new Fr(g.cx(t), g.cy(t), tx, ty, nx, ny, r, ox, oy);
