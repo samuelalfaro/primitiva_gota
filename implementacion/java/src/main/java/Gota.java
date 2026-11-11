@@ -45,13 +45,14 @@ public final class Gota implements Geometria {
     private final Rectangle2D.Double bounds;
     final int muestras;
     /**
-     * La máscara de la gota. Con una longitud de camino d >= r1 + r2 es la unión de la familia de círculos ({@link Silueta.Envolvente});
-     * con d < r1 + r2 la silueta de dos tapas y dos conectores no admite deformación: se descarta la curva y se toma la recta de los centros.
+     * La máscara de la gota. Con una trayectoria (la longitud de la curva entre los centros) d mayor que r1 + r2 es la unión de la familia
+     * de círculos ({@link Silueta.Envolvente}), aunque los centros coincidan (lazos); con d <= r1 + r2 es la silueta de dos tapas y dos
+     * conectores, que no admite deformación: se descarta la curva y se toma la recta de los centros.
      */
     private final Mascara mascara;
     /** La silueta rígida (cuatro arcos sobre la recta de los centros) si la gota es rígida; null si no. */
     private final Silueta silueta;
-    /** La silueta rígida de la gota, o null si su camino mide r1 + r2 o más (entonces la forma es la envolvente). */
+    /** La silueta rígida de la gota, o null si su trayectoria mide más de r1 + r2 (entonces la forma es la envolvente). */
     Silueta silueta() { return silueta; }
     private volatile double[] largos;
     /** Coordenadas intrínsecas de esta gota, una por combinación de costura y tira: las gestiona {@link Coordenadas#de}. */
@@ -83,8 +84,8 @@ public final class Gota implements Geometria {
 
         double[] qx = { c1.getX(), c1.getX() + v1.x(), c2.getX() + v2.x(), c2.getX() };
         double[] qy = { c1.getY(), c1.getY() + v1.y(), c2.getY() + v2.y(), c2.getY() };
-        // Con un camino más corto que r1 + r2 la forma no admite deformación: se descarta la curva y el camino es la recta de los centros.
-        final boolean rigida = this.r1 + this.r2 > 0 && longitudCamino(qx, qy) < this.r1 + this.r2;
+        // Con una trayectoria d <= r1 + r2 la forma no admite deformación: se descarta la curva y el camino es la recta de los centros.
+        final boolean rigida = this.r1 + this.r2 > 0 && longitudCamino(qx, qy) <= (this.r1 + this.r2) * (1 + 1e-9);
         if (rigida) {
             double ex = qx[3] - qx[0], ey = qy[3] - qy[0];
             if (Math.hypot(ex, ey) <= 1e-9 * (this.r1 + this.r2)) {    // centros coincidentes: la tangente inicial del camino orienta la forma
