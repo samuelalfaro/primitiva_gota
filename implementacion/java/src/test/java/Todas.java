@@ -18,6 +18,7 @@ public class Todas {
             ,"SuiteMatriz_01_Alambre"
             ,"SuiteMatriz_02_Siluetas"
             ,"SuiteMatriz_03_Colores"
+            ,"SuiteMatriz_04_Limites"
     };
 
     public static void main(String[] args) throws Exception {
