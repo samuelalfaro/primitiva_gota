@@ -119,8 +119,8 @@ public final class Coordenadas {
 
     /** La muestra solo depende de la geometría, no de la costura. */
     static Muestra muestra(Geometria g, double x, double y, double t) {
-        double r = Math.max(g.rad(t), 1e-9);
         double dx = x - g.cx(t), dy = y - g.cy(t);
+        double r = Math.max(g.escala(t, dx, dy), 1e-9);
         double[] tg = g.tangente(t);
         return new Muestra(t, Math.hypot(dx, dy) / r,
                            (dx * tg[0] + dy * tg[1]) / r,

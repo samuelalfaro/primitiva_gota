@@ -21,6 +21,16 @@ public interface Geometria {
     /** Tangente unitaria del camino en t. */
     double[] tangente(double t);
 
+    /**
+     * Vector del centro c(t) al punto de contacto con el contorno del lado dado (0 = -N, 1 = +N), o null si es el de la
+     * envolvente de la familia de círculos (el que calcula {@link Zonas}). Una forma rígida (sin deformación) da aquí
+     * los radios que parten de los extremos P1..P4 de la silueta, repartidos linealmente en t.
+     */
+    default double[] costilla(double t, int lado) { return null; }
+
+    /** Distancia de c(t) al contorno en la dirección (dx, dy): la escala con la que se normaliza rho. Por defecto, el radio. */
+    default double escala(double t, double dx, double dy) { return rad(t); }
+
     /** Posición efectiva de rm sobre el camino: es también donde cae el corte central de la tira. */
     double tm();
 
