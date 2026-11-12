@@ -147,6 +147,28 @@ AUC de cada variable para separar plegado de legítimo (0.5 = no separa; 1 = el 
 - Límites: etiqueta aproximada, clases muy desiguales (suave 8, ჲ 414 píxeles plegados), píxeles vecinos correlacionados (el AUC
   cuenta píxeles, no casos independientes), d = 5 y 4 agrupadas y solo color.
 
+## Prueba híbrida: PLANO donde hay pliegue, TRAZO donde es legítimo (`EstudioHibrido`)
+
+A nivel de imagen: con la etiqueta de curvatura, el color de PLANO en los píxeles plegados y el de TRAZO en el resto, con corte
+duro o con una transición suave (smoothstep de 0.15 sobre `|κ|·v − 1`). Píxeles con salto de color > 100 entre vecinos (mismo
+indicador grueso de antes, que cuenta también los bordes legítimos de color), columnas (0, 4) y (0.5, 3.5):
+
+| forma, d | PLANO | TRAZO | híbrido duro | híbrido suave |
+|---|---|---|---|---|
+| S, 5 | 446 / 442 | 516 / 481 | 515 / 503 | 463 / 444 |
+| S, 4 | 416 / 404 | 440 / 469 | 546 / 462 | 491 / 423 |
+
+- En suave y ჲ el híbrido es prácticamente TRAZO (casi no hay píxeles plegados por este criterio): ჲ queda entre 548 y 789 igual
+  que TRAZO, con las cuñas de PLANO fuera.
+- En S los píxeles plegados son franjas finas junto al borde de la lente; el híbrido suave baja los saltos hacia el nivel de
+  PLANO, pero el corte duro puede empeorarlos (S, d = 4, (0, 4): 546 frente a 440 de TRAZO).
+- Las costuras grandes que se ven en TRAZO (el corte diagonal de ჲ, el escalón de S) son bordes de la capa superior en solape
+  legítimo: el híbrido no las toca, que es coherente con la idea de resolverlas con pistas de oclusión y no con otra regla.
+- Es una decisión píxel a píxel sobre imágenes ya compuestas: no sustituye a una regla dentro de `Solape`, solo mide si la etiqueta
+  hace algo útil. Límites: indicador grueso, solo color, sin juicio estético fuera de mi lectura de las imágenes.
+
+![híbrido](estudio/hibrido_curvatura_d4.jpg)
+
 ## Lo encontrado fuera
 
 Búsqueda corta (no cubre pintura vectorial de difusión, pintura digital ni editores comerciales). No apareció una regla
