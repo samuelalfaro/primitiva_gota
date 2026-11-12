@@ -221,3 +221,15 @@ candidatos y decidir al pintar (TRAZO, Schmidt) y mezclar con peso suave cerca d
 java -cp ... EstudioSolapes 5          # imagen estudio_solapes_d5.png y la tabla de saltos
 java -Dsolape.k=2 -cp ... EstudioSolapes 5
 ```
+
+## Barniz: promediar en uv (`Solape.PONDERADO_UV`)
+
+Experimento: en vez de mezclar colores, se promedian (t, u, v) de las pasadas con el peso de Quilez y se muestrea una sola vez con la uv media.
+
+- Con degradado el resultado es continuo: el color oculta los pliegues.
+- Con la textura guía los pliegues siguen ahí como banda de líneas comprimidas y onduladas (la media de dos uv no paralelas no es un punto real de la espina).
+- El corte recto de la costura no cambia: no viene del solape.
+
+Conclusión: es un barniz (como el antialiasing), no una solución. Se aplica al final, cuando ya esté decidido qué píxel manda; mientras se estudian los pliegues se mira sin barniz.
+
+Imágenes: `estudio/uv_textura_d4.jpg`, `estudio/uv_degradado_d4.jpg`. Reproducir: `EstudioUV` (d=4).
