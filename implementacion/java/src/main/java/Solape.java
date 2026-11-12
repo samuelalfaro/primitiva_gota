@@ -74,6 +74,42 @@ public enum Solape {
         }
 
         @Override Coordenadas.Costurado ganador(Coordenadas c, double x, double y) { return TRAZO.ganador(c, x, y); }
+    },
+
+    /**
+     * EXPERIMENTAL. Como PONDERADO en los pesos (mínima suave de Quilez entre las distancias con signo de las pasadas), pero se
+     * mezclan las coordenadas (t y uv) de las pasadas y se emite una sola capa con la cobertura máxima: un único punto
+     * para colorear o muestrear la textura, sin fundir dos colores.
+     */
+    PONDERADO_UV {
+        static final double K = Double.parseDouble(System.getProperty("solape.k", "6"));
+
+        @Override void capas(Geometria g, Coordenadas c, double x, double y, Consumer<Capa> out) {
+            List<Geometria.Hebra> hs = g.mascara().hebras(x, y);
+            Memo memo = new Memo(c, x, y);
+            double t = 0, u = 0, v = 0, cob = 0; boolean hay = false;
+            for (int h = 0; h < hs.size(); h++) {
+                Geometria.Hebra hb = hs.get(h);
+                double cb = hb.cobertura();
+                if (cb <= 0) continue;
+                final double limite = h == hs.size() - 1 ? Double.POSITIVE_INFINITY : 0.5 * (hb.t() + hs.get(h + 1).t());
+                Coordenadas.Costurado k = elige(memo.candidatos(), limite, c, x, y);
+                double w = 1;
+                if (hay && h > 0) {
+                    double a = hs.get(h - 1).distancia(), b = hb.distancia();
+                    double q = 1 - Math.min(Math.abs(a - b) / (4 * K), 1), m = 0.5 * q * q;
+                    w = a < b ? m : 1 - m;
+                }
+                if (!hay) { t = k.t(); u = k.uv().u(); v = k.uv().v(); hay = true; }
+                else { t += w * (k.t() - t); u += w * (k.uv().u() - u); v += w * (k.uv().v() - v); }
+                cob = Math.max(cob, cb);
+            }
+            if (!hay) return;
+            final Coordenadas.Costurado mezcla = new Coordenadas.Costurado(t, new Coordenadas.Uv(u, v));
+            out.accept(new Capa(cob, c.punto(x, y, () -> mezcla)));
+        }
+
+        @Override Coordenadas.Costurado ganador(Coordenadas c, double x, double y) { return TRAZO.ganador(c, x, y); }
     };
 
     /** El de mayor clave que no pase de limite; si ninguno, el de menor clave; si no hay candidatos, la solución única. */
