@@ -87,6 +87,30 @@ empate (≥ 0.9), medio (0.7 a 0.9) y solape profundo (< 0.7). Con d = 5:
   la elección de coordenadas dentro de una pasada (las tapas), no la composición entre pasadas.
 - Con d = 3 suave y S no discrepan (formas rígidas).
 
+## El producto escalar con la tangente (`EstudioProductoEscalar`, `MapaSigno`)
+
+Idea de Samuel: además de rho, usar la componente de `p − c(t)` a lo largo de la tangente `T(t)` de cada pasada, `u`, y la
+orientación relativa entre las tangentes de las dos pasadas. Se midió sobre todos los píxeles con dos o más hebras de las formas
+no rígidas (d = 5 y 4), con la fracción de píxeles discrepantes (PLANO frente a TRAZO, > 48 de 255) por clase. En esas zonas la
+discrepancia ronda el 49 % de forma general, así que lo que importa es cuánto se aparta cada clase de ese nivel.
+
+- **rho_min/rho_max y cos(T_a, T_b):** no separan (49 % en todas las clases, correlación con la magnitud entre −0.11 y 0.12).
+  El cociente de rho clasifica el tipo de solape pero no predice dónde discrepan las dos reglas.
+- **Signo de u (en las dos pasadas):**
+  - Suave: (+,+) 9 % frente a (−,−) 86.5 %, y se mantiene dentro de cada tramo de t (16 % frente a 86 % con t_a < 0.2; 2.4 %
+    frente a 87 % con t_a de 0.2 a 0.5), así que no se explica solo por t.
+  - S: (+,+) 12.6 % frente a (−,−) 79.3 % en conjunto, pero dentro de cada tramo de t el efecto casi desaparece (con t_a de 0.2
+    a 0.5 todo está entre 90 y 98 %): lo domina t, no el signo.
+  - ჲ: 43 % a 56 % en todas las clases; no informa. El mapa muestra ruido de signos en la lente de (2, 2) (empates entre hebras).
+- **Mapa:** los signos parten el solape en regiones cuyos bordes son las curvas u = 0 de cada pasada, es decir, la frontera
+  banda/tapa de las coordenadas. Parece que el borde de discrepancia se parece más a las fronteras de zona de las coordenadas
+  que a la de empate de rho (sin comprobar).
+- **Lo que no sé:** si el signo predice o solo coincide con la zona; con (2, 2) en S el mapa invierte el patrón de la tabla
+  (verde discrepante, rojo no); los cortes 0.5 de banda/tapa y 0 del signo son arbitrarios; solo se midió dónde discrepan las
+  dos reglas, no cuál tiene razón.
+
+![mapa del signo](estudio/producto_escalar_mapa_signo_d4.jpg)
+
 ## Lo encontrado fuera
 
 Búsqueda corta (no cubre pintura vectorial de difusión, pintura digital ni editores comerciales). No apareció una regla
