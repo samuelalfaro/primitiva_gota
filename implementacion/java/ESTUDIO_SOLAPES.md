@@ -253,3 +253,22 @@ Antes de decidir qué píxel manda, se delimitan las zonas de solape (píxeles c
 - Sin validar: las clases son geométricas (sin referencia independiente); κ por diferencias finitas, r′(t) ignorada. Siguiente paso: contrastar la compresión con la distorsión real de la textura guía.
 
 Imagen: `estudio/tres_clases_d5_d4.jpg` (verde legítimo, naranja compresión, rojo pliegue; oscuro = PLANO≠TRAZO). Reproducir: `EstudioTresClases`.
+
+## Comprobar las clases con la textura (J frente a la distorsión real)
+
+Imagen: `estudio/tres_clases_textura.jpg` (textura guía con TRAZO; segunda fila de cada caso con compresión en naranja y pliegue en rojo). Código: `EstudioTexturaClases`, `EstudioDensidadTexels`, `EstudioSaltosUv`.
+
+- **Densidad de texels** |det ∂(u,v)/∂(x,y)| respecto a la mediana de los píxeles de una hebra con el mismo t y rho (sin píxeles con salto): no separa las clases (legítimo Q≈2 en las tres formas; en S compresión 1,19 y pliegue 1,37 frente a 1,84 del legítimo). Con signo, ningún píxel sale invertido: la biblioteca no produce uv invertida, el pliegue se manifiesta como salto de uv. Al excluir los saltos del cálculo se deja fuera justo ese caso.
+- **Saltos de uv** (|Δt|>0,03 o |Δu|,|Δv|>0,2 a ±1–2 px), % de píxeles con 2+ hebras:
+
+| forma | legítimo | compresión | pliegue |
+|---|---|---|---|
+| ჲ | 4,1 | 34,1 | 47,6 |
+| suave | 53,4 | 75,1 | 75,0 (solo 8 px) |
+| S | 27,4 | 19,1 | 25,5 |
+
+- ჲ: J separa bien (el pliegue tiene ~12 veces más saltos que el legítimo). El tubo que se estrecha se explica por saltos de uv, no por compresión; la hipótesis de r′(t) no se sostiene (r′ solo añade cizalla, el determinante es |c′|(1−κy)·r); queda por comprobar la velocidad |c′(t)|.
+- suave: separa, pero el legítimo ya tiene >50 % de saltos y la muestra de pliegue es mínima.
+- S: no separa; legítimo y pliegue se mezclan, y puede haber corte de costura (no del solape) en la cuenta.
+
+Cautelas: las clases siguen siendo geométricas; el umbral 0,3 y el de salto son provisionales; la referencia de Q sigue sesgada. Siguiente paso posible: excluir el corte de costura en S y repetir el recuento de saltos.
