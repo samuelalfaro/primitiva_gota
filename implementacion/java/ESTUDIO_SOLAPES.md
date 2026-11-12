@@ -169,6 +169,22 @@ indicador grueso de antes, que cuenta también los bordes legítimos de color), 
 
 ![híbrido](estudio/hibrido_curvatura_d4.jpg)
 
+## Pistas de oclusión (`EstudioOclusion`)
+
+Donde el solape es legítimo el borde de la capa superior es una oclusión real: se probó leerlo como pliegue en vez de como corte.
+Sobre la imagen de TRAZO se oscurece suavemente (intensidad 0.45, 9 px) la pasada inferior junto al borde de la superior (píxeles
+con una sola hebra cuyo vecino solapado tiene una t mayor).
+
+![oclusión](estudio/oclusion_sombra_d4.jpg)
+![detalle: ჲ (3, 1) y S (1, 3), sin y con sombra](estudio/oclusion_sombra_zoom.png)
+
+- En ჲ la sombra hace que el trozo superior se lea como cinta que pasa por encima; en S marca el borde de la tapa sobre el brazo.
+- Se ven también los defectos que ya había: filas de píxeles sueltos de otro color a lo largo de algunos bordes de la capa superior
+  (en TRAZO, sin sombra); la sombra los acompaña.
+- Intensidad y ancho son valores míos sin explorar; solo color; la valoración estética es mía y es lo que más falta por decidir.
+- Es un efecto de imagen sobre el orden de pasadas de TRAZO: no es una regla de `Solape` y en una implementación real pediría una
+  pasada posterior sobre las capas ya compuestas (su coste no está medido).
+
 ## Lo encontrado fuera
 
 Búsqueda corta (no cubre pintura vectorial de difusión, pintura digital ni editores comerciales). No apareció una regla
