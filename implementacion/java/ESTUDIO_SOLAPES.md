@@ -1,0 +1,90 @@
+# Estudio del solapamiento: qué píxel manda en los pliegues
+
+Rama de estudio (`estudio_solapes`, sale de `silueta_en_gota`). No hay solución adoptada: este documento reúne el material
+medido y lo encontrado fuera, para decidir con datos.
+
+## El problema
+
+Cuando el camino de una gota se pliega o se cruza consigo mismo (filas S y ჲ de las matrices, sobre todo con radio final
+grande), varios tramos del camino cubren el mismo píxel y cada uno da coordenadas distintas. La silueta es la misma en
+todos los modos; lo que cambia es **qué coordenadas (y por tanto qué color o textura) se le asignan al píxel**:
+
+- `PLANO`: una sola capa por píxel, la solución única de la costura. Deja costuras duras donde dos tramos compiten.
+- `TRAZO`: una capa por pasada del camino; la de mayor t tapa a las anteriores. Deja el corte donde termina la pasada superior.
+
+## Cómo medirlo
+
+`SuiteMatriz_03_Colores` genera `suite_matriz_03_colores_discrepancias.png`: en rojo, los píxeles donde el color de PLANO y
+el de TRAZO difieren en más de `UMBRAL_DISCREPANCIA` (48 sobre 255, un criterio provisional) en algún canal, y el porcentaje
+por celda. Es un detector, no una medida de cuál es correcto. Resultados (d = 3, 4, 5):
+
+- Recta, y suave y S con d = 3: 0 % (formas rígidas, sin solape).
+- Suave: hasta 2.7 % (d = 4, r1 = 0). S: hasta 9 % (d = 4, r1 = 0), bajando al crecer r1.
+- ჲ: entre el 4 % y el 19 %, con el máximo con radios medios y d = 3.
+
+![discrepancias](estudio/discrepancias_plano_trazo.jpg)
+
+## Experimento: `Solape.PONDERADO`
+
+Primero, la media 50/50 de los colores de PLANO y TRAZO (fuera de la biblioteca): no resuelve nada (mitad de amplitud en cada
+escalón, el doble de escalones, aspecto de doble imagen en ჲ), pero marca bien dónde discrepan.
+
+Después, la mínima suave cuadrática de Quilez entre las dos pasadas: con `a` la distancia con signo de la pasada anterior y
+`b` la de la nueva, la opacidad de la nueva es el factor de mezcla (`m = 0.5·h²`, `h = 1 − min(|a−b|/4K, 1)`; peso `m` si
+`a < b`, `1 − m` si no). Domina la pasada en la que el píxel está más adentro, y la transición dura 4K píxeles (K = 6 por
+defecto, `-Dsolape.k=...`). Ver `Solape.PONDERADO`.
+
+Resultados con `EstudioSolapes 5` (píxeles con salto de color a más de 100 entre vecinos; no distingue los bordes legítimos de
+las zonas de color, así que es un indicador grueso):
+
+| forma | solape | (0, 4) | (2, 2) | (4, 0) |
+|---|---|---|---|---|
+| suave | TRAZO / PONDERADO | 433 / 427 | 411 / 411 | 330 / 322 |
+| S | TRAZO / PONDERADO | 517 / 453 | 377 / 371 | 347 / 349 |
+| ჲ | TRAZO / PONDERADO | 600 / 599 | 789 / 770 | 757 / 546 |
+
+![PLANO, TRAZO y PONDERADO](estudio/solapes_plano_trazo_ponderado_d5.jpg)
+
+- Las cuñas de ჲ y el escalón de S pasan a degradados continuos; en (4, 0) el pliegue de ჲ se disuelve.
+- El coste: donde los dos campos de color son distintos, el fundido tiene aspecto de semitransparencia.
+- La elección de coordenadas dentro de cada pasada sigue siendo la de TRAZO (con su corte duro), y las filas de un píxel sobre
+  el borde de la pasada superior, que ya tenía TRAZO, siguen.
+- K = 6 no está explorado; `Coordenadas.porRho` trata PONDERADO como PLANO (solo afecta a las composiciones).
+
+![zoom](estudio/solapes_zoom.png)
+
+## Lo encontrado fuera
+
+Búsqueda corta (no cubre pintura vectorial de difusión, pintura digital ni editores comerciales). No apareció una regla
+ampliamente adoptada para elegir qué píxel manda en el solape de un trazo de anchura variable con color.
+
+- Hsu y Lee, [Skeletal Strokes](https://dl.acm.org/doi/pdf/10.1145/192161.192186) (SIGGRAPH 1994), y
+  [Folding Avoidance in Skeletal Strokes](https://diglib.eg.org/handle/10.2312/SBM.SBM10.033-040) (2010): el pliegue de las
+  costillas en el interior de una curva cerrada. La solución de Adobe, según su [patente US8674995](https://patents.google.com/patent/US8674995)
+  (no pude abrir el paper), es geométrica: detecta el tramo retrógrado del borde interior y mueve el extremo interior de
+  cada costilla afectada al punto de autointersección. Cambia las proporciones en la zona y se describe para una sola región.
+- [Stroke Parameterization](https://www.dgp.toronto.edu/~rms/pubs/StrokeParamEG13.html) (Eurographics 2013, con el
+  [PDF de Autodesk](https://research.autodesk.com/app/uploads/2023/03/stroke-parameterization.pdf_recL8bfg0ZmZMXDgo.pdf)):
+  en las autointersecciones duplica la geometría y conserva todos los valores de parámetro, uno por pasada, dejando la
+  elección a la aplicación (por ejemplo, mezclando al pintar). Anchura constante; sus autores dicen que sería mejor crear
+  regiones de solape en los giros agudos y que su técnica no lo hace aún.
+- Quilez, [smooth minimum](https://iquilezles.org/articles/smin): el factor de mezcla de la mínima suave sirve para
+  mezclar materiales en la transición; el artículo no da receta para el color.
+
+Tres familias, y dónde cae cada una aquí: evitar el pliegue (como la forma rígida de d ≤ r1+r2, o Adobe), conservar todos los
+candidatos y decidir al pintar (TRAZO, Schmidt) y mezclar con peso suave cerca del cruce (PONDERADO, Quilez).
+
+## Preguntas abiertas
+
+- Qué pasada debe mandar: la última (TRAZO), la más adentro (la profundidad que usa PONDERADO), la de menor distancia a su
+  centro (PLANO)...
+- Si basta suavizar la composición entre pasadas o hay que mezclar también las coordenadas dentro de cada pasada.
+- Criterios y umbrales de las suites (48 de 255 en el detector, 100 en `EstudioSolapes`), para configurarlos y documentarlos.
+- Probar otros K y el resto de variantes de la mínima suave (cúbica, exponencial).
+
+## Reproducir
+
+```
+java -cp ... EstudioSolapes 5          # imagen estudio_solapes_d5.png y la tabla de saltos
+java -Dsolape.k=2 -cp ... EstudioSolapes 5
+```
