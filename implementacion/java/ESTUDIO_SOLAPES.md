@@ -233,3 +233,23 @@ Experimento: en vez de mezclar colores, se promedian (t, u, v) de las pasadas co
 Conclusión: es un barniz (como el antialiasing), no una solución. Se aplica al final, cuando ya esté decidido qué píxel manda; mientras se estudian los pliegues se mira sin barniz.
 
 Imágenes: `estudio/uv_textura_d4.jpg`, `estudio/uv_degradado_d4.jpg`. Reproducir: `EstudioUV` (d=4).
+
+## Delimitar: legítimo / compresión / pliegue (J = 1 + κ·y)
+
+Antes de decidir qué píxel manda, se delimitan las zonas de solape (píxeles con 2+ hebras, d = 5 y 4) con el factor de escala lateral de la malla uv, J = 1 − |κ|·y en el lado cóncavo (mínimo entre las pasadas):
+
+- **pliegue:** J ≤ 0 (inversión); **compresión:** 0 < J < 0,3 (umbral provisional); **legítimo:** el resto.
+
+| forma | legítimo | compresión | pliegue |
+|---|---|---|---|
+| ჲ (d=5, 4) | >98 % | <2 % | <1 % |
+| S d=4 | 3033 px | 4419 px | 5281 px |
+| S d=5 | 2670 px | 4527 px | 1883 px |
+| suave | casi todo | unos px | 0–8 px |
+
+- ჲ: el solape es la lente del lazo, legítimo; solo una franja de compresión en el borde del cierre.
+- S: pliegue y compresión en la cara interior del codo, sobre todo con r1=0 o r2=0.
+- El detector PLANO≠TRAZO discrepa ~50 % en las tres clases: mide que hay solape, no que haya pliegue, así que no valida la clasificación.
+- Sin validar: las clases son geométricas (sin referencia independiente); κ por diferencias finitas, r′(t) ignorada. Siguiente paso: contrastar la compresión con la distorsión real de la textura guía.
+
+Imagen: `estudio/tres_clases_d5_d4.jpg` (verde legítimo, naranja compresión, rojo pliegue; oscuro = PLANO≠TRAZO). Reproducir: `EstudioTresClases`.
