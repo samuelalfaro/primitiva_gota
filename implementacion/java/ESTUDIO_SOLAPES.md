@@ -111,6 +111,42 @@ discrepancia ronda el 49 % de forma general, así que lo que importa es cuánto 
 
 ![mapa del signo](estudio/producto_escalar_mapa_signo_d4.jpg)
 
+## Separar solape legítimo de pliegue de codo cerrado (`EstudioEtiquetaCurvatura`)
+
+Para saber si alguna variable separa los dos fenómenos hace falta una etiqueta independiente. Criterio geométrico (el de
+los pliegues de Skeletal Strokes): un píxel es **plegado** si en alguna de sus pasadas está en el lado cóncavo de la espina más
+allá del centro de curvatura (distancia normal > 1/|κ|); si no, **legítimo**. Es aproximado (κ por diferencias finitas, sin r'(t)).
+Con d = 5 y 4, píxeles con dos o más hebras de las formas no rígidas:
+
+| forma | plegado | legítimo | discrepa PLANO≠TRAZO (plegado / legítimo) |
+|---|---|---|---|
+| suave | 8 | 3092 | 37.5 % / 47.8 % |
+| S | 7161 | 14644 | 50.1 % / 45.4 % |
+| ჲ | 414 | 84422 | 50.0 % / 49.5 % |
+
+- **Qué casos son pliegues:** por este criterio, casi todo el solape de suave y de ჲ es legítimo (cruce de partes del
+  camino); un tercio del de S es plegado.
+- **La etiqueta no predice la discrepancia** PLANO/TRAZO (≈ 50 % en las dos clases).
+
+AUC de cada variable para separar plegado de legítimo (0.5 = no separa; 1 = el plegado tiene siempre valores mayores):
+
+| variable | suave (8 px) | S | ჲ (414 px) |
+|---|---|---|---|
+| cos(T_a, T_b) con signo | 0.73 | 0.78 | 0.57 |
+| \|cos(T_a, T_b)\| | 0.70 | 0.67 | 0.56 |
+| rho_min/rho_max | 0.58 | 0.46 | 0.78 |
+| Δt | 0.30 | 0.83 | 0.00 |
+| u/r (pasada baja, alta) | 0.49, 0.51 | 0.49, 0.52 | 0.52, 0.48 |
+| signo (−,−) de u | 0.50 | 0.53 | 0.51 |
+
+- El **signo de u** y u/r no separan (≈ 0.5).
+- El **coseno con signo entre las tangentes de las dos pasadas** es el único que apunta en el mismo sentido en las tres formas
+  (los píxeles plegados tienen tangentes más paralelas), con 0.78 en S y 0.57 en ჲ; en suave solo hay 8 píxeles plegados.
+- **Δt** separa, pero en sentido contrario en S (0.83) y en ჲ (0.00): no sirve como regla única.
+- **rho_min/rho_max** también cambia de signo entre formas (0.46 en S, 0.78 en ჲ).
+- Límites: etiqueta aproximada, clases muy desiguales (suave 8, ჲ 414 píxeles plegados), píxeles vecinos correlacionados (el AUC
+  cuenta píxeles, no casos independientes), d = 5 y 4 agrupadas y solo color.
+
 ## Lo encontrado fuera
 
 Búsqueda corta (no cubre pintura vectorial de difusión, pintura digital ni editores comerciales). No apareció una regla
