@@ -44,18 +44,48 @@ public enum Solape {
             for (Zonas.Candidato k : c.candidatos(x, y)) if (mejor == null || k.clave() > mejor.clave()) mejor = k;
             return mejor != null ? mejor.c() : c.costurado(x, y);
         }
+    },
 
-        /** El de mayor clave que no pase de limite; si ninguno, el de menor clave; si no hay candidatos, la solución única. */
-        private static Coordenadas.Costurado elige(List<Zonas.Candidato> cs, double limite, Coordenadas c, double x, double y) {
-            double kb = Double.NEGATIVE_INFINITY, kmin = Double.POSITIVE_INFINITY;
-            Coordenadas.Costurado best = null, primero = null;
-            for (Zonas.Candidato k : cs) {
-                if (k.clave() <= limite && k.clave() > kb) { best = k.c(); kb = k.clave(); }
-                if (k.clave() < kmin) { primero = k.c(); kmin = k.clave(); }
+    /**
+     * EXPERIMENTAL (rama de estudio, ver ESTUDIO_SOLAPES.md; no está en las suites de matriz). Como TRAZO, pero la capa
+     * superior no tapa a la inferior de golpe: su opacidad es el factor de mezcla de la mínima suave cuadrática de Quilez
+     * entre las distancias con signo de las dos pasadas (a = la anterior, b = la nueva). Domina la pasada en la que el píxel
+     * está más adentro y la transición dura 4K píxeles (K = 6 por defecto, -Dsolape.k=...).
+     */
+    PONDERADO {
+        static final double K = Double.parseDouble(System.getProperty("solape.k", "6"));
+
+        @Override void capas(Geometria g, Coordenadas c, double x, double y, Consumer<Capa> out) {
+            List<Geometria.Hebra> hs = g.mascara().hebras(x, y);
+            Memo memo = new Memo(c, x, y);
+            for (int h = 0; h < hs.size(); h++) {
+                Geometria.Hebra hb = hs.get(h);
+                double cob = hb.cobertura();
+                if (cob <= 0) continue;
+                double w = 1;
+                if (h > 0) {
+                    double a = hs.get(h - 1).distancia(), b = hb.distancia();
+                    double q = 1 - Math.min(Math.abs(a - b) / (4 * K), 1), m = 0.5 * q * q;
+                    w = a < b ? m : 1 - m;                       // peso de la pasada nueva
+                }
+                final double limite = h == hs.size() - 1 ? Double.POSITIVE_INFINITY : 0.5 * (hb.t() + hs.get(h + 1).t());
+                out.accept(new Capa(cob * w, c.punto(x, y, () -> elige(memo.candidatos(), limite, c, x, y))));
             }
-            return best != null ? best : primero != null ? primero : c.costurado(x, y);
         }
+
+        @Override Coordenadas.Costurado ganador(Coordenadas c, double x, double y) { return TRAZO.ganador(c, x, y); }
     };
+
+    /** El de mayor clave que no pase de limite; si ninguno, el de menor clave; si no hay candidatos, la solución única. */
+    static Coordenadas.Costurado elige(List<Zonas.Candidato> cs, double limite, Coordenadas c, double x, double y) {
+        double kb = Double.NEGATIVE_INFINITY, kmin = Double.POSITIVE_INFINITY;
+        Coordenadas.Costurado best = null, primero = null;
+        for (Zonas.Candidato k : cs) {
+            if (k.clave() <= limite && k.clave() > kb) { best = k.c(); kb = k.clave(); }
+            if (k.clave() < kmin) { primero = k.c(); kmin = k.clave(); }
+        }
+        return best != null ? best : primero != null ? primero : c.costurado(x, y);
+    }
 
     /** Una capa del píxel: la fracción que cubre (antialiasing) y el punto con el que se colorea. */
     public record Capa(double cobertura, Punto punto) {}
