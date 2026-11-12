@@ -81,7 +81,7 @@ empate (≥ 0.9), medio (0.7 a 0.9) y solape profundo (< 0.7). Con d = 5:
 
 - La zona discrepante es una lente: en el interior (rojo) el solape es profundo y la proximidad y el orden de las pasadas se
   contradicen; en el borde (azul y ámbar) las dos pasadas casi empatan.
-- En suave el cociente medio es de 0.9 a 1.0 salvo con r1 = 0: casi todo es empate y la discrepancia es una banda fina. En ჲ
+- En suave la mediana del cociente es ≥ 0.9 con r1 ≥ 1.5 (con r1 de 0 a 1 baja a 0.56–0.88): casi todo es empate y la discrepancia es una banda fina. En ჲ
   la mediana está en torno a 0.5 (0.26 a 0.65).
 - Con una sola hebra hay discrepancias, sobre todo en ჲ con (0, 4) y (4, 0) (d = 3: 1050 de 1211 y 2006 de 2733): ahí decide
   la elección de coordenadas dentro de una pasada (las tapas), no la composición entre pasadas.
