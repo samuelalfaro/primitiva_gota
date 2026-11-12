@@ -53,6 +53,40 @@ las zonas de color, así que es un indicador grueso):
 
 ![zoom](estudio/solapes_zoom.png)
 
+## Clasificación de las discrepancias (`ClasificaDiscrepancias`)
+
+Hipótesis inicial: los pliegues locales (cara interior de una curva cerrada) tendrían hebras cercanas en t y los lazos
+legítimos hebras lejanas, y cada caso pediría su regla. **No se confirma**: en suave, S y ჲ (d = 5 y 4) casi todos los píxeles
+discrepantes tienen dos o más hebras con Δt entre 0.2 y 0.6 o más; con Δt < 0.1 solo hay 75 de 693 píxeles (suave, d = 4,
+r1 = 0) y 122 de 2252 (S, d = 4, r1 = 0). Δt no separa los dos fenómenos. En suave y S la discrepancia es el extremo grueso
+solapando al brazo, igual que en ჲ pero más pequeña.
+
+![clasificación por Δt](estudio/clasificacion_dt_d5.jpg)
+
+Lo que sí separa es el cociente rho_min / rho_max de las hebras del píxel, con rho = |p − c(t)| / r(t) (distancia a la espina
+normalizada por el radio de su t; adimensional). Con tres clases provisionales (los cortes 0.9 y 0.7 son un criterio a decidir):
+empate (≥ 0.9), medio (0.7 a 0.9) y solape profundo (< 0.7). Con d = 5:
+
+| celda | discrepantes | empate | medio | profundo |
+|---|---|---|---|---|
+| suave (0, 4) | 164 | 16 | 49 | 81 |
+| suave (2, 2) | 6 | 5 | 0 | 0 |
+| S (0, 4) | 1561 | 229 | 295 | 1005 |
+| S (2, 2) | 248 | 88 | 145 | 3 |
+| ჲ (2, 2) | 3318 | 332 | 684 | 2201 |
+
+(en cada fila falta el resto hasta el total: píxeles con una sola hebra.)
+
+![clasificación por rho](estudio/clasificacion_rho_d5.jpg)
+
+- La zona discrepante es una lente: en el interior (rojo) el solape es profundo y la proximidad y el orden de las pasadas se
+  contradicen; en el borde (azul y ámbar) las dos pasadas casi empatan.
+- En suave el cociente medio es de 0.9 a 1.0 salvo con r1 = 0: casi todo es empate y la discrepancia es una banda fina. En ჲ
+  la mediana está en torno a 0.5 (0.26 a 0.65).
+- Con una sola hebra hay discrepancias, sobre todo en ჲ con (0, 4) y (4, 0) (d = 3: 1050 de 1211 y 2006 de 2733): ahí decide
+  la elección de coordenadas dentro de una pasada (las tapas), no la composición entre pasadas.
+- Con d = 3 suave y S no discrepan (formas rígidas).
+
 ## Lo encontrado fuera
 
 Búsqueda corta (no cubre pintura vectorial de difusión, pintura digital ni editores comerciales). No apareció una regla
@@ -76,6 +110,7 @@ candidatos y decidir al pintar (TRAZO, Schmidt) y mezclar con peso suave cerca d
 
 ## Preguntas abiertas
 
+- Qué clase de solape es cada píxel (cortes 0.9 y 0.7 del cociente de rho, provisionales) y qué regla corresponde a cada una.
 - Qué pasada debe mandar: la última (TRAZO), la más adentro (la profundidad que usa PONDERADO), la de menor distancia a su
   centro (PLANO)...
 - Si basta suavizar la composición entre pasadas o hay que mezclar también las coordenadas dentro de cada pasada.
