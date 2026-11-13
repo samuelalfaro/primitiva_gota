@@ -284,3 +284,22 @@ Idea (Samuel): un píxel con 2+ hebras es solape legítimo si las zonas de t que
 - `EstudioComparaConexion` / `estudio/conexion_frente_a_J_d4.jpg`: textura TRAZO con las clases de J y las de conexión superpuestas.
 
 Abierto: ver si en una silueta tipo caracol conviven solape legítimo y pliegue en la misma zona (hipótesis); habría que clasificar por pares de hebras adyacentes, no solo baja/alta; la elección de los cortes (0,6; y uno posible entre compresión y pliegue) es una decisión de diseño, no de los datos.
+
+## ¿Qué indica f? (contraste con la textura)
+
+Hipótesis: f (fracción de r a la que las hojas conectan) representa la compresión del pliegue. Contraste (`EstudioIndicadorF`, píxeles solapados de suave, S y ჲ con d = 5 y 4), por tramos de f y con Spearman en f ≤ 0,6:
+
+| tramo de f | S: salto de pasada | ჲ: salto de pasada |
+|---|---|---|
+| 0,1–0,2 | 96 % | 78 % |
+| 0,2–0,3 | 62 % | 29 % |
+| 0,3–0,4 | 32 % | 8 % |
+| 0,4–0,5 | 19 % | 5 % |
+| 0,5–0,6 | 12,5 % | 3 % |
+| > 0,6 | 11 % | 4 % |
+
+- **Correlación con la discontinuidad de pasada:** Spearman f–salto −0,39 (suave), −0,27 (S), −0,20 (ჲ). Cuanto menor es f, más a menudo cambia la pasada ganadora.
+- **Sin correlación con la densidad de texels:** f–Q −0,03 (suave), −0,07 (S), +0,19 (ჲ, signo contrario). Cautela: Q solo se calcula en píxeles sin saltos, y los de f < 0,3 tienen entre 60 y 100 % de saltos, así que quedan casi fuera (sesgo de supervivencia); la referencia de Q sigue sesgada.
+- **Confusión con la forma:** cerca de la punta del abanico la zona es más estrecha, y eso también eleva el salto; no se ha separado.
+
+Lectura: f es un indicador de proximidad al pliegue y de discontinuidad de pasada. No hace falta que sea causal para servir de indicador. «Indicador de compresión de la textura» queda pendiente de comprobar con una medida por pasada (la biblioteca no expone hoy la uv de una pasada concreta).
