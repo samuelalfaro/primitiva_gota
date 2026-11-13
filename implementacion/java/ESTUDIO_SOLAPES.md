@@ -272,3 +272,15 @@ Imagen: `estudio/tres_clases_textura.jpg` (textura guía con TRAZO; segunda fila
 - S: no separa; legítimo y pliegue se mezclan, y puede haber corte de costura (no del solape) en la cuenta.
 
 Cautelas: las clases siguen siendo geométricas; el umbral 0,3 y el de salto son provisionales; la referencia de Q sigue sesgada. Siguiente paso posible: excluir el corte de costura en S y repetir el recuento de saltos.
+
+## Clasificar por conexión en t y corte por f
+
+Idea (Samuel): un píxel con 2+ hebras es solape legítimo si las zonas de t que dan sus hebras no conectan entre sí, y pliegue si son una única zona continua en t.
+
+- Implementación (`EstudioConexion`): nodos (píxel, hebra); dos nodos vecinos se unen si |Δt| < 0,03 (p99 del paso entre píxeles vecinos de una hebra: 0,008–0,02). Para que sea local se busca el camino solo dentro de una ventana de ±f·r(t) alrededor del píxel. Un anillo común a todo el solape no sirve: la búsqueda recorre el cuerpo del trazo y conecta hojas lejanas.
+- Con ventana pequeña (f ≤ 0,12) casi todo sale legítimo; entre f=0,25 y 1 el porcentaje de pliegue crece de forma continua (S d=4: 3 % → 22 % → 57 %; ჲ d=4: 1,6 % → 13 % → 50 %). No hay meseta, y no coincide con J (en ჲ las clases de J y las de conexión no se corresponden; en S señalan la misma cuña pero dan signos distintos).
+- Mapa de calor (`EstudioMapaCorte`, `estudio/mapa_f_d4.jpg`): la f mínima a la que las hojas conectan es una distancia radial a un punto de unión de las hojas (con distancia euclídea los contornos son arcos concéntricos; con Chebyshev salían ángulos rectos, artefacto de la métrica). El corte f ≈ 0,5 equivale a un disco de radio 0,5·r alrededor del punto de unión.
+- Corte duro configurable (`-Destudio.fcorte`, por defecto 0,6; Samuel propone ≈ 0,6): lo que supera el corte o no conecta es solape legítimo (verde oscuro); la zona por debajo mantiene el valor de f, que puede servir para distinguir compresión de pliegue. Imágenes: `estudio/mapa_corte_d4.jpg`, `estudio/mapa_corte_d5.jpg`.
+- `EstudioComparaConexion` / `estudio/conexion_frente_a_J_d4.jpg`: textura TRAZO con las clases de J y las de conexión superpuestas.
+
+Abierto: ver si en una silueta tipo caracol conviven solape legítimo y pliegue en la misma zona (hipótesis); habría que clasificar por pares de hebras adyacentes, no solo baja/alta; la elección de los cortes (0,6; y uno posible entre compresión y pliegue) es una decisión de diseño, no de los datos.
