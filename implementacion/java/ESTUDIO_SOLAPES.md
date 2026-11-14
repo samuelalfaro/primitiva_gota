@@ -313,3 +313,14 @@ Con la superficie S(t, u) = (x(t, u), y(t, u), t): cada hebra de un píxel es un
 - Pendiente de medir: en S con r1 = 0 o r2 = 0 el sector J ≤ 0 queda en el mismo lado que el corte recto de la costura (coincidencia visual).
 
 Imagen con el esquema (`PlotterEsquema`: centros, P1..P4, radios, camino discontinuo y arcos de las tapas) superpuesto: `estudio/mapa_alambre_d4.jpg` (`EstudioMapaAlambre`); catálogo del plotter: `estudio/esquema_catalogo.jpg`. `PlotterEsquema` está en la PR #30 hacia `Radios_Superpuestos`.
+
+## Caso límite: cúspide del camino (fuera de los casos básicos)
+
+Con la α abierta (controles ±k·1,0 / k·0,9) y k = 2,0, el camino tiene una cúspide en t = 0,5 (c′(0,5) = 0). Con la textura guía sale un semidisco rojo sólido arriba y una cuña roja junto a la tapa 1 (`estudio/caso_limite_cuspide.jpg`, k = 1,6 / 2,0 / 2,4).
+
+- No es un error de solape. Los píxeles rojos son de una sola hebra, con t = 0,500 y v = 0,500 constantes; solo varía u. El punto más cercano del camino a todo el abanico de píxeles es la propia cúspide, y la línea transversal de la guía en v = 0,5 es roja.
+- Con velocidad pequeña pero no nula pasa lo mismo, de forma atenuada. Píxeles con v ≡ 0,5 y una sola hebra para k = 1,6 / 1,9 / 2,0 / 2,1 / 2,4: 74 / 318 / 1710 / 354 / 110 (ORTOGONAL y SUAVIZADO; en ESPIGA 2919 para k = 2,0).
+- Las tapas no lo sufren porque usan coordenadas polares. Un punto con velocidad casi nula del camino necesitaría el mismo tratamiento; hoy no lo tiene.
+- La cuña junto a la tapa 1 no está explicada (11 píxeles rojos de dos hebras con u ≈ 0,01, junto al borde de la textura).
+
+Decisión: es un caso límite, se documenta y se deja fuera de la suite de casos básicos (que debe ayudar a entender y a implementar, no a cubrir los casos extremos). Salidas posibles para más adelante: zona polar en torno a puntos de velocidad casi nula, o regularizar el camino. Los casos básicos con camino regular (α abierta con k ≠ 2, ω sin cruce, u cerrada) no pasan por ninguna cúspide.
