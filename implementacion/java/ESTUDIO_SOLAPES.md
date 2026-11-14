@@ -303,3 +303,13 @@ Hipótesis: f (fracción de r a la que las hojas conectan) representa la compres
 - **Confusión con la forma:** cerca de la punta del abanico la zona es más estrecha, y eso también eleva el salto; no se ha separado.
 
 Lectura: f es un indicador de proximidad al pliegue y de discontinuidad de pasada. No hace falta que sea causal para servir de indicador. «Indicador de compresión de la textura» queda pendiente de comprobar con una medida por pasada (la biblioteca no expone hoy la uv de una pasada concreta).
+
+## Signo de J por hebra y esquema superpuesto
+
+Con la superficie S(t, u) = (x(t, u), y(t, u), t): cada hebra de un píxel es un punto de su preimagen. El signo de J = 1 − κ·y por hebra distingue las preimágenes de la misma orientación (J > 0 en todas: solape legítimo) de las de orientación opuesta (alguna con J ≤ 0: pliegue de la proyección). Medido en `EstudioSignoJ`:
+
+- ჲ y suave: ≥ 98,6 % de los píxeles solapados tienen J > 0 en todas sus hebras, cerca o lejos de la línea de unión; la lente de ჲ es un cruce de la proyección, no un pliegue.
+- S: los signos opuestos (pliegue de la proyección) están donde las hebras **no** conectan (61 %) y con f entre 0,6 y 1 (26 %); donde f es pequeña casi no hay (4–6 %). La línea de unión que marca f no coincide con la curva J = 0: f indica proximidad al borde de la lente / unión de hojas, y el signo de J por hebra indica el pliegue. Se complementan.
+- Pendiente de medir: en S con r1 = 0 o r2 = 0 el sector J ≤ 0 queda en el mismo lado que el corte recto de la costura (coincidencia visual).
+
+Imagen con el esquema (`PlotterEsquema`: centros, P1..P4, radios, camino discontinuo y arcos de las tapas) superpuesto: `estudio/mapa_alambre_d4.jpg` (`EstudioMapaAlambre`); catálogo del plotter: `estudio/esquema_catalogo.jpg`. `PlotterEsquema` está en la PR #30 hacia `Radios_Superpuestos`.
