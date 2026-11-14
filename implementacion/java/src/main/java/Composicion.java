@@ -244,6 +244,32 @@ public final class Composicion {
         pinta(dst, rs, op);
     }
 
+    /**
+     * Pinta la composición combinando en una sola pasada el color lateral de cada gota (Cf) con la textura (Ct), al estilo de
+     * glTexEnv ({@link ComposicionColor.Modo}). La gota que manda en cada píxel es la misma que con el color solo, y la cobertura del
+     * borde se aplica una vez (dos pasadas, color y luego textura con alfa, equivalen como mucho a DECAL y la cobertura se aplica dos veces).
+     * Con REPLACE da lo mismo que {@link #render(BufferedImage, Texturas.Textura, Opciones)}.
+     */
+    public void render(BufferedImage dst, Texturas.Textura tex, ComposicionColor.Modo modo) {
+        render(dst, tex, modo, Opciones.POR_DEFECTO);
+    }
+
+    /** Igual, con las opciones de pintado dadas. */
+    public void render(BufferedImage dst, Texturas.Textura tex, ComposicionColor.Modo modo, Opciones op) {
+        render(dst, tex, modo, 0xFF000000, op);
+    }
+
+    /** Igual, con el color de entorno Ce de BLEND (su alfa se ignora). */
+    public void render(BufferedImage dst, Texturas.Textura tex, ComposicionColor.Modo modo, int entorno, Opciones op) {
+        Objects.requireNonNull(tex, "textura");
+        Objects.requireNonNull(modo, "modo");
+        Objects.requireNonNull(op, "opciones");
+        construye();
+        List<Relleno> rs = new ArrayList<>();
+        for (int i = 0; i < gotas.size(); i++) rs.add(ComposicionColor.combinar(rellenos.get(i), Texturas.tira(tex), modo, entorno));
+        pinta(dst, rs, op);
+    }
+
     private void pinta(BufferedImage dst, List<Relleno> rellenos, Opciones op) {
         final Plotter.Raster raster = new Plotter.Raster(dst);
         final double marg = 2 + suaviza;
