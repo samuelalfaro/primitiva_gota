@@ -324,3 +324,18 @@ Con la α abierta (controles ±k·1,0 / k·0,9) y k = 2,0, el camino tiene una c
 - La cuña junto a la tapa 1 no está explicada (11 píxeles rojos de dos hebras con u ≈ 0,01, junto al borde de la textura).
 
 Decisión: es un caso límite, se documenta y se deja fuera de la suite de casos básicos (que debe ayudar a entender y a implementar, no a cubrir los casos extremos). Salidas posibles para más adelante: zona polar en torno a puntos de velocidad casi nula, o regularizar el camino. Los casos básicos con camino regular (α abierta con k ≠ 2, ω sin cruce, u cerrada) no pasan por ninguna cúspide.
+
+## Suite de casos básicos (`EstudioCasosBasicos`)
+
+Casos simples y de camino regular (sin cúspide) para entender el solape antes de atacar S, ჲ y suave, que se dejan para el final. Por familia, tres filas: textura guía, signo de J por hebra (verde: J > 0 en todas; rojo: alguna hebra con J ≤ 0) y mapa de f (corte 0,6). Imagen: `estudio/casos_basicos.jpg`. Uso: `EstudioCasosBasicos [alfa|u|omega|codo|todas]`.
+
+| Familia | Parámetros | Qué enseña | % J ≤ 0 en el solape |
+|---|---|---|---|
+| α abierta | k = 1,2 / 1,6 / 2,4 / 2,8 (no 2,0: cúspide) | solape legítimo con cruce del camino | 0 |
+| u cerrada | w = 2,4 / 1,6 / 1,0 / 0,6, radios iguales | solape legítimo de los dos brazos y el abanico de la curva cerrada; no da pliegue | 0 |
+| ω sin cruce | φ = 50 / 35 / 25 / 15° | solape sin cruce del camino | 0 |
+| codo | a = 3,5; radios 1,6 / 1,6, 2 / 2, 1,6 / 0,4, 2 / 0,8 | compresión en la esquina interior (el mapa de f se calienta junto a la esquina); con radios distintos aparece J ≤ 0 | 0, 0, 4,1, 4,3 |
+
+- Con radios iguales no sale ningún píxel con J ≤ 0 en ninguna familia; el pliegue con J ≤ 0 pide radios distintos y un codo cerrado, y son pocos píxeles.
+- En el codo hay además una cuña roja de la textura en la esquina exterior que no tiene J ≤ 0 y no está explicada.
+- Pendiente: porcentaje de «sin conexión» (legítimo por f) en la tabla del programa; la suite no entra en `Todas` y no compara contra una referencia.
