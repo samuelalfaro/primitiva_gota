@@ -39,6 +39,18 @@ public class PlotterEsquemaPruebas {
         return false;
     }
 
+    /** El arco de cada tapa sale del centro hacia fuera según la tangente: contra ella en la inicial, a favor en la final. */
+    static void arcosHaciaFuera(String nombre, Geometria g) {
+        for (int e = 0; e < 2; e++) {
+            double[] m = PlotterEsquema.mitadArco(g, e);
+            double tx = g.dcx(e), ty = g.dcy(e), n = Math.hypot(tx, ty);
+            if (m == null || n < 1e-9) continue;
+            double s = e == 0 ? -1 : 1;
+            double dot = ((m[0] - g.cx(e)) * tx + (m[1] - g.cy(e)) * ty) * s / n;
+            comprueba(nombre + ": arco de la tapa " + (e + 1) + " hacia fuera según la tangente", dot > 0, "producto " + dot);
+        }
+    }
+
     public static void main(String[] args) throws Exception {
         BufferedImage cat = lienzo(70 + RADIOS.length * CW, 30 + FORMAS.length * CH);
         for (int f = 0; f < FORMAS.length; f++) {
@@ -75,6 +87,7 @@ public class PlotterEsquemaPruebas {
                         for (int x = 0; x < CW; x++)
                             if (otra.getRGB(x, y) != celda.getRGB(x, y)) { igual = false; break; }
                     comprueba(nombre + ": Graphics2D y sobre(imagen) coinciden", igual, "difieren");
+                    arcosHaciaFuera(nombre, g);
                 } catch (RuntimeException e) {
                     comprueba(nombre + ": se dibuja", false, e.toString());
                 }
@@ -92,6 +105,21 @@ public class PlotterEsquemaPruebas {
                 }
                 gg.dispose();
             }
+        }
+        // caminos con lazo (α) y C casi cerrada (Ω): el otro centro no queda "detrás" de la tapa
+        double E = 34, ox = 150, oy = 140;
+        for (double k : new double[] { 1.2, 2.0, 2.8 }) {
+            Gota g = Gota.curva(new java.awt.geom.Point2D.Double(ox - E, oy), E, new Gota.Vec(k * E, -0.9 * k * E),
+                                new java.awt.geom.Point2D.Double(ox + E, oy), E, new Gota.Vec(-k * E, -0.9 * k * E), Perfil.recto());
+            arcosHaciaFuera("lazo k=" + k, g);
+        }
+        for (double fi : new double[] { 50, 25, 5 }) {
+            double R = 2.4 * E, p = Math.toRadians(fi), L = 1.9 * R * 0.55;
+            Gota g = Gota.curva(new java.awt.geom.Point2D.Double(ox + R * Math.cos(p), oy - R * Math.sin(p)), E,
+                                new Gota.Vec(-L * Math.sin(p), -L * Math.cos(p)),
+                                new java.awt.geom.Point2D.Double(ox + R * Math.cos(p), oy + R * Math.sin(p)), E,
+                                new Gota.Vec(-L * Math.sin(p), L * Math.cos(p)), Perfil.recto());
+            arcosHaciaFuera("C cerrada φ=" + fi, g);
         }
         boolean lanza = false;
         try {

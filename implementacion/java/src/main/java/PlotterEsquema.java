@@ -16,7 +16,8 @@ import java.util.Objects;
  *   <li>los dos centros, destacados;</li>
  *   <li>los cuatro puntos de contacto P1..P4, en ámbar discreto, y los radios del centro a ellos, en un tono sutil;</li>
  *   <li>el camino de los centros, a trazos y sin tiradores de la Bézier;</li>
- *   <li>los dos arcos de las tapas, entre los dos P de cada centro, por el lado alejado del otro centro.</li>
+ *   <li>los dos arcos de las tapas, entre los dos P de cada centro, saliendo del centro hacia fuera en la dirección de la
+ *       tangente del camino (contra ella en la tapa inicial, a favor en la final).</li>
  * </ul>
  * Cada trazo lleva un halo claro semitransparente para que se lea sobre cualquier fondo. No usa {@link Relleno} ni
  * {@link Costura}: solo {@link Geometria}. Los P y los radios son los de las zonas {@link Costura#ORTOGONAL} (los
@@ -96,7 +97,7 @@ public final class PlotterEsquema {
         g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
         try {
             camino(g, geo);
-            for (int e = 0; e < 2; e++) arcoTapa(g, c[e], c[1 - e], r[e], p[2 * e], p[2 * e + 1]);
+            for (int e = 0; e < 2; e++) arcoTapa(g, c[e], c[1 - e], r[e], p[2 * e], p[2 * e + 1], haciaFuera(geo, e));
             for (int e = 0; e < 2; e++)
                 for (int l = 0; l < 2; l++) {
                     Line2D radio = new Line2D.Double(c[e][0], c[e][1], p[2 * e + l][0], p[2 * e + l][1]);
@@ -127,18 +128,52 @@ public final class PlotterEsquema {
         g.draw(camino);
     }
 
-    /** El arco de la tapa de centro {@code c} entre sus dos contactos, por el lado alejado del otro centro {@code otro}. */
-    private static void arcoTapa(Graphics2D g, double[] c, double[] otro, double r, double[] pa, double[] pb) {
-        if (!(r > 1e-9)) return;
+    /** Tangente del camino en el extremo e (0: inicio, 1: final), o null si el camino está parado. */
+    private static double[] tangente(Geometria geo, int e) {
+        double x = geo.dcx(e), y = geo.dcy(e), n = Math.hypot(x, y);
+        return n > 1e-9 ? new double[] { x / n, y / n } : null;
+    }
+
+    /** Dirección en la que sale la tapa e: contra la tangente del camino en la inicial, a favor en la final; null si está parado. */
+    private static double[] haciaFuera(Geometria geo, int e) {
+        double[] t = tangente(geo, e);
+        return t == null ? null : new double[] { (e == 0 ? -1 : 1) * t[0], (e == 0 ? -1 : 1) * t[1] };
+    }
+
+    /**
+     * {ángulo inicial, barrido} del arco de la tapa de centro {@code c} entre sus contactos {@code pa} y {@code pb}: el
+     * que sale del centro hacia fuera, en la dirección de la tangente del camino ({@code dir}: contra la tangente en la
+     * tapa inicial, a favor en la final). Sin tangente (camino parado) se toma el lado alejado del otro centro.
+     */
+    private static double[] barrido(double[] c, double[] otro, double r, double[] pa, double[] pb, double[] dir) {
         double a = Math.atan2(pa[1] - c[1], pa[0] - c[0]), b = Math.atan2(pb[1] - c[1], pb[0] - c[0]);
         double positivo = ((b - a) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
-        double mx = c[0] + r * Math.cos(a + positivo / 2), my = c[1] + r * Math.sin(a + positivo / 2);
-        boolean porPositivo = Math.hypot(mx - otro[0], my - otro[1])
-            >= Math.hypot(2 * c[0] - mx - otro[0], 2 * c[1] - my - otro[1]);
-        double barrido = porPositivo ? positivo : -(2 * Math.PI - positivo);
+        double mx = Math.cos(a + positivo / 2), my = Math.sin(a + positivo / 2);   // dirección del punto medio por el barrido positivo
+        boolean porPositivo = dir != null
+            ? mx * dir[0] + my * dir[1] >= -mx * dir[0] - my * dir[1]
+            : Math.hypot(r * mx + c[0] - otro[0], r * my + c[1] - otro[1])
+                >= Math.hypot(c[0] - r * mx - otro[0], c[1] - r * my - otro[1]);
+        return new double[] { a, porPositivo ? positivo : -(2 * Math.PI - positivo) };
+    }
+
+    /** El punto medio del arco de la tapa e (0 o 1) tal como lo dibuja el esquema; null si el radio es 0. Para las pruebas. */
+    static double[] mitadArco(Geometria geo, int e) {
+        Zonas zonas = new Zonas(geo, Costura.ORTOGONAL, Tira.POR_DEFECTO.cortes(geo));
+        Zonas.Fr f = zonas.marco(e), o = zonas.marco(1 - e);
+        if (!(f.r() > 1e-9)) return null;
+        double[] c = { f.cx(), f.cy() }, otro = { o.cx(), o.cy() };
+        double[] pa = { f.cx() + f.ox()[0], f.cy() + f.oy()[0] }, pb = { f.cx() + f.ox()[1], f.cy() + f.oy()[1] };
+        double[] bs = barrido(c, otro, f.r(), pa, pb, haciaFuera(geo, e));
+        return new double[] { c[0] + f.r() * Math.cos(bs[0] + bs[1] / 2), c[1] + f.r() * Math.sin(bs[0] + bs[1] / 2) };
+    }
+
+    /** El arco de la tapa de centro {@code c} entre sus dos contactos, saliendo del centro hacia fuera según la tangente. */
+    private static void arcoTapa(Graphics2D g, double[] c, double[] otro, double r, double[] pa, double[] pb, double[] dir) {
+        if (!(r > 1e-9)) return;
+        double[] bs = barrido(c, otro, r, pa, pb, dir);
         Path2D arco = new Path2D.Double();
         for (int i = 0; i <= MUESTRAS_ARCO; i++) {
-            double th = a + barrido * i / MUESTRAS_ARCO;
+            double th = bs[0] + bs[1] * i / MUESTRAS_ARCO;
             double x = c[0] + r * Math.cos(th), y = c[1] + r * Math.sin(th);
             if (i == 0) arco.moveTo(x, y); else arco.lineTo(x, y);
         }
