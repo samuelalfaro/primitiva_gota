@@ -15,6 +15,7 @@ public class Todas {
             ,"ComposicionPruebas"
             //FIXME ,"SiluetaPruebas"
             //FIXME ,"SiluetaCurvaPruebas"
+            ,"PlotterEsquemaPruebas"
             ,"SuiteMatriz_01_Alambre"
             ,"SuiteMatriz_02_Siluetas"
             ,"SuiteMatriz_03_Colores"
