@@ -14,7 +14,7 @@ import java.util.Objects;
  * diagnóstico, siluetas) y poder leer la estructura de un vistazo, con el aspecto {@code ( ~ )}:
  * <ul>
  *   <li>los dos centros, destacados;</li>
- *   <li>los cuatro puntos de contacto P1..P4 y los radios del centro a ellos, en un tono sutil;</li>
+ *   <li>los cuatro puntos de contacto P1..P4, en ámbar discreto, y los radios del centro a ellos, en un tono sutil;</li>
  *   <li>el camino de los centros, a trazos y sin tiradores de la Bézier;</li>
  *   <li>los dos arcos de las tapas, entre los dos P de cada centro, por el lado alejado del otro centro.</li>
  * </ul>
@@ -33,6 +33,8 @@ public final class PlotterEsquema {
 
     private static final Color TINTA = new Color(0x12, 0x23, 0x4A);
     private static final Color SUTIL = new Color(0x5A, 0x6B, 0x8C);
+    /** Los puntos P1..P4: ámbar discreto, color yema. */
+    private static final Color AMBAR = new Color(0xDC, 0xA0, 0x28);
     private static final int MUESTRAS_CAMINO = 120, MUESTRAS_ARCO = 90;
 
     private final Graphics2D g;
@@ -100,7 +102,7 @@ public final class PlotterEsquema {
                     Line2D radio = new Line2D.Double(c[e][0], c[e][1], p[2 * e + l][0], p[2 * e + l][1]);
                     linea(g, radio, SUTIL, 0.9f, 2.4f);
                 }
-            for (double[] q : p) punto(g, q, 3.2, 2.2, SUTIL);
+            for (double[] q : p) punto(g, q, 3.6, 2.6, AMBAR);
             for (double[] q : c) punto(g, q, 5.5, 4.0, TINTA);
         } finally {
             g.setColor(color);
