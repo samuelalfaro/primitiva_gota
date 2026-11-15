@@ -83,7 +83,7 @@ public class EstudioCasosBasicos {
             System.out.printf("  %-28s %6d | %5.1f %% | %5.1f %% | %5.1f %%%n", cs[i].etiqueta(), n, n == 0 ? 0 : 100.0 * nj / n, n == 0 ? 0 : 100.0 * nf / n, n == 0 ? 0 : 100.0 * nn / n);
             BufferedImage[] v = {tex, sg, mf};
             for (int r = 0; r < 3; r++) {
-                Graphics2D gc = v[r].createGraphics(); PlotterEsquema.plot(gc, gt); gc.dispose();
+                Graphics2D gc = v[r].createGraphics(); PlotterAlambre.plot(gc, gt, Trazos.Ajustes.ESQUEMA); gc.dispose();
                 g2.drawImage(v[r], i * CW, r * CH, null); g2.setColor(new Color(0xCCCCCC)); g2.drawRect(i * CW, r * CH, CW - 1, CH - 1);
             }
             g2.setColor(Color.DARK_GRAY); g2.drawString(cs[i].etiqueta(), i * CW + 8, 16);
