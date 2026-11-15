@@ -206,6 +206,13 @@ public final class Gota implements Geometria {
         return 0.5 * (lo + hi);
     }
 
+    @Override public java.util.List<Geometria.Arco> arcos() {
+        if (silueta == null) return null;
+        java.util.List<java.awt.geom.Path2D.Double> t = silueta.tramos();
+        return java.util.List.of(new Geometria.Arco(false, t.get(0)), new Geometria.Arco(true, t.get(1)),
+                                 new Geometria.Arco(false, t.get(2)), new Geometria.Arco(true, t.get(3)));
+    }
+
     /** Longitud de la costilla en NL + 1 valores de t (la silueta es simétrica: sirve para los dos lados). */
     private double[] largos() {
         double[] l = largos;

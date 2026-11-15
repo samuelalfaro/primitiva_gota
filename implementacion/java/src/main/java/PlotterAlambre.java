@@ -12,6 +12,7 @@ import java.util.Objects;
  * PlotterAlambre pa = new PlotterAlambre(g2d);
  * pa.plot(gota);
  * pa.plot(gota, Trazos.Ajustes.POR_DEFECTO.conContactos(true).conOcultas(true));
+ * PlotterAlambre.sobre(img, Trazos.Ajustes.ESQUEMA).plot(gota);   // esquema estructural superpuesto a otro dibujo
  * }</pre>
  *
  * Comparte con {@link Plotter} solo el prefijo del nombre y el verbo {@code plot}: no la implementa, a propósito, hasta

@@ -72,6 +72,42 @@ public class SuiteMatriz_01_Alambre {
                           c2, r2 * ESCALA, new Gota.Vec(v[1].x() * ESCALA, -v[1].y() * ESCALA), Perfil.recto());
     }
 
+    /**
+     * En una forma rígida el contorno del alambre es su silueta: un único trazo cerrado (un moveTo y un close), y los puntos
+     * muestreados sobre él son el borde de la máscara (algo hacia un lado está dentro y hacia el otro, fuera).
+     */
+    static void contornoRigido(String nombre, Gota g) {
+        var contornos = Trazos.trazos(g, AJUSTES).stream().filter(t -> t.rol() == Trazos.Rol.CONTORNO).toList();
+        comprueba(nombre + ": un solo contorno", contornos.size() == 1, contornos.size() + " contornos");
+        if (contornos.size() != 1) return;
+        double[] c = new double[6];
+        int moves = 0, closes = 0;
+        for (var it = contornos.get(0).forma().getPathIterator(null); !it.isDone(); it.next()) {
+            int seg = it.currentSegment(c);
+            if (seg == java.awt.geom.PathIterator.SEG_MOVETO) moves++;
+            if (seg == java.awt.geom.PathIterator.SEG_CLOSE) closes++;
+        }
+        comprueba(nombre + ": contorno cerrado", moves == 1 && closes == 1, moves + " moveTo, " + closes + " close");
+        java.util.List<double[]> pts = new java.util.ArrayList<>();
+        double[] ant = null;
+        for (var it = new java.awt.geom.FlatteningPathIterator(contornos.get(0).forma().getPathIterator(null), 0.2); !it.isDone(); it.next()) {
+            if (it.currentSegment(c) == java.awt.geom.PathIterator.SEG_CLOSE) break;
+            double[] q = { c[0], c[1] };
+            if (ant != null) pts.add(new double[] { (q[0] + ant[0]) / 2, (q[1] + ant[1]) / 2, q[0] - ant[0], q[1] - ant[1] });
+            ant = q;
+        }
+        int malos = 0, n = 0;
+        for (double[] p : pts) {
+            double l = Math.hypot(p[2], p[3]);
+            if (l < 1e-6) continue;
+            double nx = -p[3] / l, ny = p[2] / l;
+            boolean a = g.mascara().contiene(p[0] + 0.8 * nx, p[1] + 0.8 * ny), b = g.mascara().contiene(p[0] - 0.8 * nx, p[1] - 0.8 * ny);
+            n++;
+            if (a == b) malos++;
+        }
+        comprueba(nombre + ": el contorno es el borde de la máscara", n > 0 && malos <= Math.max(2, n / 100), malos + " de " + n + " puntos no son borde");
+    }
+
     /** Ancho del viewBox de un SVG (tercer número del atributo). */
     static double anchoVista(String svg) {
         int i = svg.indexOf("viewBox=\"") + 9;
@@ -132,6 +168,7 @@ public class SuiteMatriz_01_Alambre {
                                         && (celda.getRGB(x, y) & 0xFFFFFF) != (FONDO.getRGB() & 0xFFFFFF))
                                     opacos++;
                         comprueba(nombre + ": deja huella", opacos > 0, "sin trazos");
+                        if (g.arcos() != null) contornoRigido(nombre, g);
                     } catch (RuntimeException e) {
                         comprueba(nombre + ": se construye y se traza", false, e.toString());
                     }

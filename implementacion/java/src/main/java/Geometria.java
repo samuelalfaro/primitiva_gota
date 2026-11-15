@@ -1,3 +1,6 @@
+import java.awt.Shape;
+import java.util.List;
+
 /**
  * Consulta de solo lectura de la geometría de una gota: el camino (una Bézier cúbica de centros), los radios
  * a lo largo del parámetro t en [0, 1] y su máscara ({@link Mascara}).
@@ -27,6 +30,16 @@ public interface Geometria {
      * los radios que parten de los extremos P1..P4 de la silueta, repartidos linealmente en t.
      */
     default double[] costilla(double t, int lado) { return null; }
+
+    /** Un arco de la silueta rígida: una tapa (arco de círculo en torno a un extremo del camino) o un conector entre las dos tapas. */
+    record Arco(boolean tapa, Shape forma) {}
+
+    /**
+     * Los cuatro arcos de la silueta de una forma rígida, en orden: conector superior P1 → P3, tapa 2, conector inferior P4 → P2 y
+     * tapa 1, cada uno con su trazo abierto, en el espacio de la imagen; o null si la forma es la envolvente de la familia de
+     * círculos. Es la única fuente del contorno: lo que dibuja el alambre es lo que decide la máscara.
+     */
+    default List<Arco> arcos() { return null; }
 
     /** Distancia de c(t) al contorno en la dirección (dx, dy): la escala con la que se normaliza rho. Por defecto, el radio. */
     default double escala(double t, double dx, double dy) { return rad(t); }
