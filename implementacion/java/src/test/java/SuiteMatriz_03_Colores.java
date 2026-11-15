@@ -132,7 +132,8 @@ public class SuiteMatriz_03_Colores {
         gd.setColor(Color.WHITE);
         gd.fillRect(0, 0, w, h + pie);
         gd.dispose();
-        List<String> discrepantes = new ArrayList<>();
+        record Discrepancia(String nombre, double f) {}
+        List<Discrepancia> discrepantes = new ArrayList<>();
 
         int fila = 0;
         for (String forma : FORMAS) {
@@ -175,7 +176,7 @@ public class SuiteMatriz_03_Colores {
                     gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
                     gg.drawString(String.format("%.1f %%", 100 * f), x0 + 8, y0 + 14);
                     gg.dispose();
-                    discrepantes.add(String.format("%s: %.1f %%", nombre, 100 * f));
+                    discrepantes.add(new Discrepancia(nombre, f));
                 }
                 Graphics2D gg = img.createGraphics();
                 gg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
@@ -217,7 +218,7 @@ public class SuiteMatriz_03_Colores {
         gg.dispose();
         ImageIO.write(dis, "png", new File("suite_matriz_03_colores_discrepancias.png"));
         System.out.println("Discrepancias PLANO/TRAZO (resalte, no cuentan como fallo), solo celdas con más del 1 %:");
-        for (String s : discrepantes) if (!s.endsWith(" 0.0 %") && Double.parseDouble(s.substring(s.lastIndexOf(": ") + 2, s.length() - 2)) > 1) System.out.println("  " + s);
+        for (Discrepancia d : discrepantes) if (100 * d.f() > 1) System.out.printf(java.util.Locale.ROOT, "  %s: %.1f %%%n", d.nombre(), 100 * d.f());
 
         System.out.printf("%n%d pruebas, %d fallos%n", pruebas, fallos);
         if (fallos > 0) System.exit(1);
