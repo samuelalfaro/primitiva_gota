@@ -1,5 +1,7 @@
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Path2D;
+import java.util.ArrayList;
+import java.util.List;
 import java.awt.geom.Point2D;
 
 /**
@@ -465,34 +467,54 @@ final class Silueta {
 
     /** La silueta en el marco local (c1 en el origen, T = (1, 0), N hacia +y matemático). */
     Path2D.Double formaLocal() {
+        List<Path2D.Double> t = tramosLocal();
+        Path2D.Double p = new Path2D.Double();
+        p.moveTo(-r1 * Math.cos(angulos.psi1()), r1 * Math.sin(angulos.psi1()));
+        for (Path2D.Double q : t) anade(p, q);
+        p.closePath();
+        return p;
+    }
+
+    /** Los cuatro tramos de la silueta, cada uno como trazo abierto, en el sentido de {@link #forma()}: conector superior P1 → P3, tapa 2, conector inferior P4 → P2, tapa 1. En el mundo. */
+    List<Path2D.Double> tramos() {
+        AffineTransform at = aMundo();
+        List<Path2D.Double> out = tramosLocal();
+        for (Path2D.Double q : out) q.transform(at);
+        return out;
+    }
+
+    /** Los cuatro tramos en el marco local (ver {@link #tramos()}); cada uno empieza donde acaba el anterior. */
+    private List<Path2D.Double> tramosLocal() {
         double p1 = angulos.psi1(), p2 = angulos.psi2();
         double c1c = Math.cos(p1), c1s = Math.sin(p1), c2c = Math.cos(p2), c2s = Math.sin(p2);
         double ax = -r1 * c1c, ay = r1 * c1s, bx = d + r2 * c2c, by = r2 * c2s;
         double[] el = angulos.conector() == Conector.ELIPSE ? elipse(ax, ay, c1s, c1c, bx, by, c2s, -c2c) : null;
-        Path2D.Double p = new Path2D.Double();
-        p.moveTo(ax, ay);
+        Path2D.Double sup = new Path2D.Double(), tapa2 = new Path2D.Double(), inf = new Path2D.Double(), tapa1 = new Path2D.Double();
         if (el != null) {
-            anade(p, ramaElipse(ax, ay, bx, by, el, false));          // superior, P1 → P3
-            bezier(p, d, 0, r2, p2, -2 * p2);                                // tapa 2, por +T
-            anade(p, ramaElipse(ax, ay, bx, by, el, true));            // inferior: la espejada, de P4 a P2
+            sup = ramaElipse(ax, ay, bx, by, el, false);                    // superior, P1 → P3
+            inf = ramaElipse(ax, ay, bx, by, el, true);                     // inferior: la espejada, de P4 a P2
         } else if (angulos.conector() == Conector.RECTA) {
-            p.lineTo(bx, by);
-            bezier(p, d, 0, r2, p2, -2 * p2);
-            p.lineTo(-r1 * c1c, -r1 * c1s);
+            sup.moveTo(ax, ay);
+            sup.lineTo(bx, by);
+            inf.moveTo(bx, -by);
+            inf.lineTo(ax, -ay);
         } else {
             double[] b = biarco(ax, ay, c1s, c1c, bx, by, c2s, -c2c);
             if (b == null) throw new IllegalStateException("biarco no admisible");
             double ka = b[2], la = b[3], kb = -b[4], lb = b[5];            // recorridos de P1 a P3
-            double[] s = traza(p, ax, ay, c1s, c1c, ka, la);
-            traza(p, s[0], s[1], s[2], s[3], kb, lb);                      // termina en P3
-            bezier(p, d, 0, r2, p2, -2 * p2);                              // tapa 2, por +T
+            sup.moveTo(ax, ay);
+            double[] s = traza(sup, ax, ay, c1s, c1c, ka, la);
+            traza(sup, s[0], s[1], s[2], s[3], kb, lb);                    // termina en P3
             double lx = d + r2 * c2c, ly = -r2 * c2s;                      // P4
-            s = traza(p, lx, ly, -c2s, -c2c, kb, lb);                      // el biarco inferior es el espejo del superior, al revés
-            traza(p, s[0], s[1], s[2], s[3], ka, la);
+            inf.moveTo(lx, ly);
+            s = traza(inf, lx, ly, -c2s, -c2c, kb, lb);                    // el biarco inferior es el espejo del superior, al revés
+            traza(inf, s[0], s[1], s[2], s[3], ka, la);
         }
-        bezier(p, 0, 0, r1, Math.PI + p1, -2 * p1);                // tapa 1, por -T
-        p.closePath();
-        return p;
+        tapa2.moveTo(bx, by);
+        bezier(tapa2, d, 0, r2, p2, -2 * p2);                              // tapa 2, por +T
+        tapa1.moveTo(ax, -ay);
+        bezier(tapa1, 0, 0, r1, Math.PI + p1, -2 * p1);                    // tapa 1, por -T
+        return new ArrayList<>(List.of(sup, tapa2, inf, tapa1));
     }
 
     /** Añade a dst los segmentos de src sin su moveTo inicial (src empieza donde dst acaba; evita aristas de longitud cero). */

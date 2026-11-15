@@ -407,9 +407,18 @@ final class Trazos {
 
     /**
      * Reparte la envolvente en tramos de borde ({@link Rol#CONTORNO}) y ocultos ({@link Rol#OCULTA}). Los cambios se
-     * localizan por bisección sobre el parámetro del tramo.
+     * localizan por bisección sobre el parámetro del tramo. Si la geometría tiene silueta rígida ({@link Geometria#arcos}), el
+     * contorno son sus cuatro arcos y no hay envolvente oculta que mostrar.
      */
     private static void silueta(Geometria geo, Zonas zonas, Ajustes aj, List<Trazo> out) {
+        List<Geometria.Arco> arcos = geo.arcos();
+        if (arcos != null) {                      // forma rígida: el contorno es la silueta que la Geometria da, no la envolvente
+            Path2D contorno = new Path2D.Double();
+            for (Geometria.Arco a : arcos) contorno.append(a.forma(), contorno.getCurrentPoint() != null);
+            contorno.closePath();
+            out.add(new Trazo(Rol.CONTORNO, contorno));
+            return;
+        }
         List<List<Punto>> corridas = new ArrayList<>();
         List<Boolean> visibles = new ArrayList<>();
         List<Punto> actual = null;
