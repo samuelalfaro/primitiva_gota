@@ -5,11 +5,11 @@ import java.io.File;
 import javax.imageio.ImageIO;
 
 /**
- * Pruebas de {@link PlotterEsquema}: el esquema se dibuja sobre una imagen (deja huella, pinta los dos centros y
+ * Pruebas del esquema estructural ({@link Trazos.Ajustes#ESQUEMA} con {@link PlotterAlambre}): se dibuja sobre una imagen (deja huella, pinta los dos centros y
  * respeta el contrato de los plotters) en la batería de formas y radios de las suites de matriz, incluidos los
- * radios 0 y los lazos. Deja la imagen {@code plotter_esquema.png} como catálogo.
+ * radios 0 y los lazos. Deja la imagen {@code esquema.png} como catálogo.
  */
-public class PlotterEsquemaPruebas {
+public class EsquemaPruebas {
     static int pruebas = 0, fallos = 0;
 
     static void comprueba(String n, boolean ok, String d) {
@@ -42,13 +42,65 @@ public class PlotterEsquemaPruebas {
     /** El arco de cada tapa sale del centro hacia fuera según la tangente: contra ella en la inicial, a favor en la final. */
     static void arcosHaciaFuera(String nombre, Geometria g) {
         for (int e = 0; e < 2; e++) {
-            double[] m = PlotterEsquema.mitadArco(g, e);
+            double[] m = Trazos.mitadTapa(g, e);
             double tx = g.dcx(e), ty = g.dcy(e), n = Math.hypot(tx, ty);
             if (m == null || n < 1e-9) continue;
             double s = e == 0 ? -1 : 1;
             double dot = ((m[0] - g.cx(e)) * tx + (m[1] - g.cy(e)) * ty) * s / n;
             comprueba(nombre + ": arco de la tapa " + (e + 1) + " hacia fuera según la tangente", dot > 0, "producto " + dot);
         }
+    }
+
+    static long cuenta(java.util.List<Trazos.Trazo> ts, Trazos.Rol r) { return ts.stream().filter(t -> t.rol() == r).count(); }
+
+    /** Qué roles salen en cada caso: el esquema, el camino recto o ignorado (flechas) y el camino curvo (tiradores y semiejes). */
+    static void estructura() {
+        Gota rigida = SuiteMatriz_01_Alambre.gota("suave", 3, 2, 2, 90, 150);      // trayectoria <= r1 + r2: el camino se ignora
+        Gota recta = SuiteMatriz_01_Alambre.gota("recta", 5, 1, 1, 90, 150);       // recta con trayectoria > r1 + r2
+        Gota curva = SuiteMatriz_01_Alambre.gota("suave", 5, 1, 1, 90, 150);       // curva con trayectoria > r1 + r2
+        Trazos.Ajustes aj = Trazos.Ajustes.POR_DEFECTO.conRadios(true);
+        comprueba("rigida: se ignora el camino", Trazos.rectoOIgnorado(rigida), "");
+        comprueba("recta: sin curva", Trazos.rectoOIgnorado(recta), "");
+        comprueba("curva: hay curva", !Trazos.rectoOIgnorado(curva), "");
+        for (var c : new Object[][] { { "rígida", rigida }, { "recta", recta } }) {
+            var ts = Trazos.trazos((Gota) c[1], aj);
+            comprueba(c[0] + ": sin tiradores", cuenta(ts, Trazos.Rol.TIRADOR) == 0 && cuenta(ts, Trazos.Rol.PUNTO) == 0, "");
+            comprueba(c[0] + ": sin semiejes", cuenta(ts, Trazos.Rol.SEMIEJE) == 0, "");
+            comprueba(c[0] + ": una flecha por centro", cuenta(ts, Trazos.Rol.FLECHA) == 2, cuenta(ts, Trazos.Rol.FLECHA) + " flechas");
+        }
+        var tc = Trazos.trazos(curva, aj);
+        comprueba("curva: tiradores y semiejes, sin flechas",
+                  cuenta(tc, Trazos.Rol.TIRADOR) == 2 && cuenta(tc, Trazos.Rol.SEMIEJE) == 2 && cuenta(tc, Trazos.Rol.FLECHA) == 0, "");
+        var te = Trazos.trazos(curva, Trazos.Ajustes.ESQUEMA);
+        comprueba("esquema: sin contorno, extremos, tiradores ni semiejes",
+                  cuenta(te, Trazos.Rol.CONTORNO) + cuenta(te, Trazos.Rol.EXTREMO) + cuenta(te, Trazos.Rol.TIRADOR) + cuenta(te, Trazos.Rol.SEMIEJE) == 0, "");
+        comprueba("esquema: dos tapas, cuatro radios, cuatro P y dos centros",
+                  cuenta(te, Trazos.Rol.TAPA) == 2 && cuenta(te, Trazos.Rol.RADIO) == 4 && cuenta(te, Trazos.Rol.CONTACTO) == 4 && cuenta(te, Trazos.Rol.CENTRO) == 2, "");
+        comprueba("esquema: cada trazo lleva su halo debajo", cuenta(te, Trazos.Rol.HALO_TAPA) == 2 && cuenta(te, Trazos.Rol.HALO_RADIO) == 4
+                  && cuenta(te, Trazos.Rol.HALO_CONTACTO) == 4 && cuenta(te, Trazos.Rol.HALO_CENTRO) == 2 && cuenta(te, Trazos.Rol.HALO_CAMINO) == 1, "");
+        for (int i = 0; i < te.size(); i++)
+            if (te.get(i).rol().halo() != null)
+                comprueba("halo justo debajo de " + te.get(i).rol(), i > 0 && te.get(i - 1).rol() == te.get(i).rol().halo(), "");
+        java.io.StringWriter w = new java.io.StringWriter();
+        try (PlotterSvg svg = new PlotterSvg(w, Trazos.Ajustes.ESQUEMA)) { svg.plot(curva); }
+        String sv = w.toString();
+        comprueba("SVG del esquema: clases y opacidad de los halos", sv.contains("class=\"tapa\"") && sv.contains("class=\"halo-tapa\"")
+                  && sv.contains(".halo-tapa { stroke: #ffffff; stroke-width: 4.2; stroke-opacity: 0.82") && !sv.contains("class=\"contorno\""), "");
+        comprueba("flecha: tamaño fijo, no depende del radio",
+                  Math.abs(longitud(Trazos.trazos(SuiteMatriz_01_Alambre.gota("recta", 5, 1, 1, 90, 150), aj))
+                         - longitud(Trazos.trazos(SuiteMatriz_01_Alambre.gota("recta", 5, 3, 0.5, 90, 150), aj))) < 1e-9, "");
+    }
+
+    /** Distancia entre el primer y el último punto del primer trazo FLECHA (el largo del eje). */
+    static double longitud(java.util.List<Trazos.Trazo> ts) {
+        for (var t : ts)
+            if (t.rol() == Trazos.Rol.FLECHA) {
+                double[] c = new double[6];
+                var it = t.forma().getPathIterator(null);
+                it.currentSegment(c); double ax = c[0], ay = c[1]; it.next(); it.currentSegment(c);
+                return Math.hypot(c[0] - ax, c[1] - ay);
+            }
+        return -1;
     }
 
     public static void main(String[] args) throws Exception {
@@ -65,7 +117,7 @@ public class PlotterEsquemaPruebas {
                     Graphics2D gb = base.createGraphics();
                     gb.drawImage(celda, 0, 0, null);
                     gb.dispose();
-                    PlotterEsquema.sobre(celda).plot(g);
+                    PlotterAlambre.sobre(celda, Trazos.Ajustes.ESQUEMA).plot(g);
                     boolean cambia = false;
                     for (int y = 0; y < CH && !cambia; y++)
                         for (int x = 0; x < CW; x++)
@@ -80,7 +132,7 @@ public class PlotterEsquemaPruebas {
                     BufferedImage otra = lienzo(CW, CH);
                     Plotter.raster(otra).plot(g, Relleno.solido(0xFFE3E0D6));
                     Graphics2D go = otra.createGraphics();
-                    PlotterEsquema.plot(go, g);
+                    PlotterAlambre.plot(go, g, Trazos.Ajustes.ESQUEMA);
                     go.dispose();
                     boolean igual = true;
                     for (int y = 0; y < CH && igual; y++)
@@ -121,12 +173,13 @@ public class PlotterEsquemaPruebas {
                                 new Gota.Vec(-L * Math.sin(p), L * Math.cos(p)), Perfil.recto());
             arcosHaciaFuera("C cerrada φ=" + fi, g);
         }
+        estructura();
         boolean lanza = false;
         try {
-            PlotterEsquema.sobre(new BufferedImage(10, 10, BufferedImage.TYPE_INT_RGB));
+            PlotterAlambre.sobre(new BufferedImage(10, 10, BufferedImage.TYPE_INT_RGB), Trazos.Ajustes.ESQUEMA);
         } catch (IllegalArgumentException e) { lanza = true; }
         comprueba("sobre(imagen): exige TYPE_INT_ARGB", lanza, "no lanza");
-        ImageIO.write(cat, "png", new File("plotter_esquema.png"));
+        ImageIO.write(cat, "png", new File("esquema.png"));
         System.out.printf("%n%d pruebas, %d fallos%n", pruebas, fallos);
         if (fallos > 0) System.exit(1);
     }

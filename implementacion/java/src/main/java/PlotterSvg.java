@@ -95,10 +95,13 @@ public final class PlotterSvg implements AutoCloseable {
         out.write("<style>\n");
         out.write("  path { fill: none; stroke-linecap: round; stroke-linejoin: round; }\n");
         for (Trazos.Rol r : Trazos.Rol.values()) {
-            out.write(String.format(Locale.ROOT, "  .%s { stroke: %s; stroke-width: %s;%s%s }%n", r.clase, rgb(r),
+            String op = r.color.getAlpha() == 255 ? "" : " stroke-opacity: " + num(r.color.getAlpha() / 255.0) + ";";
+            String fop = r.color.getAlpha() == 255 ? "" : " fill-opacity: " + num(r.color.getAlpha() / 255.0) + ";";
+            out.write(String.format(Locale.ROOT, "  .%s { stroke: %s; stroke-width: %s;%s%s%s }%n", r.clase, rgb(r),
                 num(r.ancho),
                 r.guiones == null ? "" : " stroke-dasharray: " + num(r.guiones[0]) + " " + num(r.guiones[1]) + ";",
-                r.relleno ? " fill: " + rgb(r) + ";" : ""));
+                op,
+                r.relleno ? " fill: " + rgb(r) + ";" + fop : ""));
         }
         out.write("</style>\n");
         for (Trazos.Trazo t : trazos) {
