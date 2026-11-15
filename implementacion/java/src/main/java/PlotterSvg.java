@@ -113,12 +113,20 @@ public final class PlotterSvg implements AutoCloseable {
         double[] c = new double[6];
         for (PathIterator it = s.getPathIterator(null); !it.isDone(); it.next()) {
             switch (it.currentSegment(c)) {
-                case PathIterator.SEG_MOVETO -> sb.append('M').append(num(c[0])).append(' ').append(num(c[1]));
-                case PathIterator.SEG_LINETO -> sb.append('L').append(num(c[0])).append(' ').append(num(c[1]));
-                case PathIterator.SEG_QUADTO -> sb.append('Q').append(num(c[0])).append(' ').append(num(c[1])).append(' ')
-                    .append(num(c[2])).append(' ').append(num(c[3]));
-                case PathIterator.SEG_CUBICTO -> sb.append('C').append(num(c[0])).append(' ').append(num(c[1])).append(' ')
-                    .append(num(c[2])).append(' ').append(num(c[3])).append(' ').append(num(c[4])).append(' ').append(num(c[5]));
+                case PathIterator.SEG_MOVETO -> sb.append('M')
+                        .append(num(c[0])).append(' ').append(num(c[1]));
+                case PathIterator.SEG_LINETO -> sb.append('L')
+                        .append(num(c[0])).append(' ').append(num(c[1]));
+                case PathIterator.SEG_QUADTO -> sb.append('Q')
+                        .append(num(c[0])).append(' ').append(num(c[1]))
+                        .append(' ')
+                        .append(num(c[2])).append(' ').append(num(c[3]));
+                case PathIterator.SEG_CUBICTO -> sb.append('C')
+                        .append(num(c[0])).append(' ').append(num(c[1]))
+                        .append(' ')
+                        .append(num(c[2])).append(' ').append(num(c[3]))
+                        .append(' ')
+                        .append(num(c[4])).append(' ').append(num(c[5]));
                 default -> sb.append('Z');
             }
         }
