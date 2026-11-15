@@ -312,7 +312,7 @@ Con la superficie S(t, u) = (x(t, u), y(t, u), t): cada hebra de un píxel es un
 - S: los signos opuestos (pliegue de la proyección) están donde las hebras **no** conectan (61 %) y con f entre 0,6 y 1 (26 %); donde f es pequeña casi no hay (4–6 %). La línea de unión que marca f no coincide con la curva J = 0: f indica proximidad al borde de la lente / unión de hojas, y el signo de J por hebra indica el pliegue. Se complementan.
 - Pendiente de medir: en S con r1 = 0 o r2 = 0 el sector J ≤ 0 queda en el mismo lado que el corte recto de la costura (coincidencia visual).
 
-Imagen con el esquema (`PlotterEsquema`: centros, P1..P4, radios, camino discontinuo y arcos de las tapas) superpuesto: `estudio/mapa_alambre_d4.jpg` (`EstudioMapaAlambre`); catálogo del plotter: `estudio/esquema_catalogo.jpg`. `PlotterEsquema` está en la PR #30 hacia `Radios_Superpuestos`.
+Imagen con el esquema (`PlotterAlambre` con `Trazos.Ajustes.ESQUEMA`: centros, P1..P4, radios, camino discontinuo y arcos de las tapas) superpuesto: `estudio/mapa_alambre_d4.jpg` (`EstudioMapaAlambre`); catálogo del plotter: `estudio/esquema_catalogo.jpg`. El esquema (antes `PlotterEsquema`, PR #30) es ahora un ajuste de `PlotterAlambre` (PR #34).
 
 ## Caso límite: cúspide del camino (fuera de los casos básicos)
 
