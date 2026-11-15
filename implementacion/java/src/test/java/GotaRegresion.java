@@ -34,6 +34,7 @@ public class GotaRegresion {
         contornoCurvo();
         coberturaSoloEnBorde();
         aleatorias();
+        siluetaRigida();
         alfaYParalelo();
         System.out.printf("%d pruebas, %d fallos%n", pruebas, fallos);
         if (fallos > 0) System.exit(1);
@@ -180,6 +181,7 @@ public class GotaRegresion {
         String det = "";
         for (int gi = 0; gi < 120; gi++) {
             Gota g = aleatoria(rnd);
+            if (g.silueta() != null) continue;                        // la silueta rígida se comprueba en siluetaRigida()
             var b = g.bounds();
             for (int k = 0; k < 4; k++) {
                 double t0 = rnd.nextDouble(), ang = rnd.nextDouble() * 2 * Math.PI;
@@ -200,7 +202,7 @@ public class GotaRegresion {
                 if (s > peor) { peor = s; det = String.format("geometría %d, frontera (%.4f, %.4f)", gi, qx, qy); }
             }
         }
-        comprueba("contorno curvo: frontera de contiene() == sdf() = 0", n > 100 && peor < 1e-4,
+        comprueba("contorno curvo (envolvente): frontera de contiene() == sdf() = 0", n > 100 && peor < 1e-4,
                   String.format("%d puntos de frontera; peor |sdf| = %.2e (%s)", n, peor, det));
     }
 
@@ -246,6 +248,7 @@ public class GotaRegresion {
         String primero = "";
         for (int gi = 0; gi < geoms; gi++) {
             Gota g = aleatoria(rnd);
+            if (g.silueta() != null) continue;                        // la silueta rígida se comprueba en siluetaRigida()
             double[] cx = new double[N + 1], cy = new double[N + 1], rr = new double[N + 1];
             for (int i = 0; i <= N; i++) {
                 double t = i / (double) N;
@@ -280,7 +283,56 @@ public class GotaRegresion {
         }
         String det = String.format("%d puntos (%d dentro); discrepancias a menos de 0.01 px del borde: %d; mayores: %d; signo sdf distinto: %d %s",
                 total, dentro, cerca, duros, signoMal, primero);
-        comprueba("pertenencia aleatoria (150 geometrías con lazos) vs fuerza bruta", duros == 0 && signoMal == 0, det);
+        comprueba("pertenencia aleatoria (envolvente, 150 geometrías con lazos) vs fuerza bruta", duros == 0 && signoMal == 0, det);
+    }
+
+    // ---------- 4b. La forma rígida (camino más corto que r1 + r2): pertenencia, cobertura y límites contra la silueta ----------
+
+    /** Gota con el camino más corto que r1 + r2 (recta o curva suave), a veces con un radio nulo o con los centros coincidentes. */
+    static Gota rigidaAleatoria(Random rnd) {
+        double r1 = rnd.nextInt(8) == 0 ? 0 : 5 + rnd.nextDouble() * 35, r2 = rnd.nextInt(8) == 0 ? 0 : 5 + rnd.nextDouble() * 35;
+        if (r1 + r2 == 0) r1 = 10;
+        double d = rnd.nextInt(6) == 0 ? 0 : rnd.nextDouble() * 0.9 * (r1 + r2), ang = rnd.nextDouble() * 2 * Math.PI;
+        Point2D c1 = p(100, 100), c2 = p(100 + d * Math.cos(ang), 100 + d * Math.sin(ang));
+        Perfil pf = rnd.nextBoolean() ? Perfil.central(0.5 + rnd.nextDouble() * 2.5) : Perfil.recto();
+        if (rnd.nextBoolean()) return Gota.lineal(c1, r1, c2, r2, pf);
+        double h = 0.15 * d;                                     // tiradores cortos: el camino sigue más corto que r1 + r2
+        return Gota.curva(c1, r1, new Gota.Vec((rnd.nextDouble() - 0.5) * h, (rnd.nextDouble() - 0.5) * h),
+                          c2, r2, new Gota.Vec((rnd.nextDouble() - 0.5) * h, (rnd.nextDouble() - 0.5) * h), pf);
+    }
+
+    static void siluetaRigida() {
+        Random rnd = new Random(20261110L);
+        long total = 0, dist = 0, cobMal = 0, fueraBounds = 0;
+        int formas = 0;
+        String primero = "";
+        for (int gi = 0; gi < 150; gi++) {
+            Gota g = rigidaAleatoria(rnd);
+            Silueta s = g.silueta();
+            if (s == null) continue;
+            formas++;
+            var b = g.bounds();
+            for (int k = 0; k < 300; k++) {
+                // la muestra sale del rectángulo ampliado: las que caen fuera de los límites deben quedar fuera de la forma
+                double x = b.getMinX() - 6 + rnd.nextDouble() * (b.getWidth() + 12), y = b.getMinY() - 6 + rnd.nextDouble() * (b.getHeight() + 12);
+                double sd = s.distancia(x, y);
+                boolean a = g.mascara().contiene(x, y);
+                total++;
+                if (Math.abs(sd) > 1e-6 && (sd >= 0) != a) {
+                    dist++;
+                    if (primero.isEmpty()) primero = String.format("forma %d, punto (%.3f, %.3f): contiene=%b, distancia de la silueta=%.4f", gi, x, y, a, sd);
+                }
+                if (a && !b.contains(x, y)) { fueraBounds++; if (primero.isEmpty()) primero = String.format("forma %d, punto (%.3f, %.3f) dentro pero fuera de bounds", gi, x, y); }
+                double cob = g.mascara().cobertura(x, y);
+                if ((sd > 1 && cob != 1) || (sd < -1 && cob != 0)) {
+                    cobMal++;
+                    if (primero.isEmpty()) primero = String.format("forma %d, punto (%.3f, %.3f): cobertura %.3f con distancia %.3f", gi, x, y, cob, sd);
+                }
+            }
+        }
+        comprueba("silueta rígida: contiene == silueta, cobertura 1/0 a más de 1 px del borde, y la forma cabe en bounds",
+                  formas > 100 && dist == 0 && cobMal == 0 && fueraBounds == 0,
+                  String.format("%d formas, %d puntos; pertenencia distinta: %d; cobertura mal: %d; fuera de bounds: %d %s", formas, total, dist, cobMal, fueraBounds, primero));
     }
 
     // ---------- 5. Alfa y paralelismo ----------

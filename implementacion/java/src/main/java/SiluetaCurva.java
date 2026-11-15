@@ -1,6 +1,8 @@
 import java.awt.geom.Path2D;
 import java.awt.geom.PathIterator;
 import java.awt.geom.Point2D;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Silueta de una gota cuyo camino entre centros es una Bézier cúbica: se resuelve la silueta RECTA ({@link Silueta}) con la
@@ -19,7 +21,7 @@ import java.awt.geom.Point2D;
  * (ψ mayor de 90°): el doblado los desplaza algo. Con d >= r1 + r2 la silueta recta es la envolvente convexa, que doblada es
  * solo una aproximación de la envolvente de la gota. La unicidad y las demás propiedades de los ángulos son las de {@code Silueta}.
  */
-final class SiluetaCurva {
+final class SiluetaCurva implements Mascara {
     private static final int N_MUESTRAS = 2048;
 
     /**
@@ -154,7 +156,7 @@ final class SiluetaCurva {
      * de orientación invertida y la regla es la unión (el relleno con winding no cero deja huecos donde las capas se cancelan).
      * Coste lineal en la tabla del camino.
      */
-    boolean contiene(double px, double py) {
+    @Override public boolean contiene(double px, double py) {
         return pies(px, py, null) > 0;
     }
 
@@ -224,6 +226,60 @@ final class SiluetaCurva {
             gPrev = gNext;
         }
         return mejor;
+    }
+
+    // ---------- Mascara ----------
+
+    /** Anchura del antialiasing a cada lado del borde, en píxeles (la de {@link Geometria.Hebra#cobertura()}). */
+    private static final double BANDA = 0.5;
+
+    /**
+     * Fracción del píxel centrado en (px, py) que cubre la silueta: 1 a más de media unidad dentro del borde, 0 a más de media fuera. Con el
+     * conector BIARCO no hay distancia y la cobertura es 0 o 1.
+     */
+    @Override public double cobertura(double px, double py) {
+        if (recta.conector() == Silueta.Conector.BIARCO) return contiene(px, py) ? 1 : 0;
+        return Math.max(0, Math.min(1, BANDA + distancia(px, py)));
+    }
+
+    /**
+     * Las pasadas del camino que cubren, aunque sea en parte, el píxel (px, py), en orden de t creciente: cada pie de la perpendicular sobre el
+     * camino es una pasada, con su t (la tabla del camino se muestrea en t uniforme) y la distancia con signo de su capa al borde (positiva fuera,
+     * como en {@link Geometria.Hebra}); y las prolongaciones rectas de las tapas, en t = 0 y t = 1. Solo se devuelven las que quedan a menos de
+     * media unidad de cubrir el píxel.
+     */
+    @Override public List<Geometria.Hebra> hebras(double px, double py) {
+        List<Geometria.Hebra> out = new ArrayList<>(2);
+        int n = s.length;
+        double dx = px - cx[0], dy = py - cy[0], nn = Math.hypot(tx[0], ty[0]), ux = tx[0] / nn, uy = ty[0] / nn;
+        double x0 = dx * ux + dy * uy;
+        if (x0 < 0) anade(out, 0, x0, dx * uy - dy * ux, 1);
+        double gPrev = (px - cx[0]) * tx[0] + (py - cy[0]) * ty[0];
+        for (int i = 0; i + 1 < n; i++) {
+            double gNext = (px - cx[i + 1]) * tx[i + 1] + (py - cy[i + 1]) * ty[i + 1];
+            if ((gPrev <= 0 && gNext > 0) || (gPrev >= 0 && gNext < 0)) {
+                double f = gPrev / (gPrev - gNext), x = s[i] + f * (s[i + 1] - s[i]);
+                double ccx = cx[i] + f * (cx[i + 1] - cx[i]), ccy = cy[i] + f * (cy[i + 1] - cy[i]);
+                double Tx = tx[i] + f * (tx[i + 1] - tx[i]), Ty = ty[i] + f * (ty[i + 1] - ty[i]), m = Math.hypot(Tx, Ty);
+                Tx /= m; Ty /= m;
+                double y = (px - ccx) * Ty - (py - ccy) * Tx;
+                anade(out, (i + f) / (n - 1), x, y, Math.abs(1 + curvatura(x) * y));
+            }
+            gPrev = gNext;
+        }
+        dx = px - cx[n - 1]; dy = py - cy[n - 1];
+        nn = Math.hypot(tx[n - 1], ty[n - 1]); ux = tx[n - 1] / nn; uy = ty[n - 1] / nn;
+        double xe = dx * ux + dy * uy;
+        if (xe >= 0) anade(out, 1, largo + xe, dx * uy - dy * ux, 1);
+        return out;
+    }
+
+    /** Añade la pasada de t y de punto local (x, y) si cubre algo del píxel. */
+    private void anade(List<Geometria.Hebra> out, double t, double x, double y, double j) {
+        double d;
+        if (recta.conector() == Silueta.Conector.BIARCO) d = recta.contieneLocal(x, y) ? -1 : 1;     // sin distancia: solo el signo
+        else d = -capa(x, y, j);
+        if (d < BANDA) out.add(new Geometria.Hebra(t, d));
     }
 
     /** Distancia con signo al borde de una capa: la recta en (x, y) corregida por el factor {@code j} = |1 + k·y| del doblado en la dirección del camino. */

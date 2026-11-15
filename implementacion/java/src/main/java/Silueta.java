@@ -406,6 +406,30 @@ final class Silueta {
         return new double[] { ny / D, dy / dx };
     }
 
+    // ---------- la máscara ----------
+
+    /** La silueta como máscara de una gota: pertenencia exacta, cobertura por la distancia al contorno y un solo paso del camino (el recto). */
+    Mascara mascara() { return new Rigida(); }
+
+    private final class Rigida implements Mascara {
+        @Override public boolean contiene(double x, double y) { return Silueta.this.contiene(x, y); }
+
+        /** Fracción del píxel que cubre la silueta: la banda de medio píxel a cada lado del borde (con el respaldo BIARCO no hay distancia: 0 o 1). */
+        @Override public double cobertura(double x, double y) {
+            if (angulos.conector() == Conector.BIARCO) return Silueta.this.contiene(x, y) ? 1 : 0;
+            return Math.max(0, Math.min(1, Envolvente.BANDA + distancia(x, y)));
+        }
+
+        /** El camino es recto: un solo paso, en el pie de la perpendicular (con los centros coincidentes, la mitad). */
+        @Override public java.util.List<Geometria.Hebra> hebras(double x, double y) {
+            double sd = angulos.conector() == Conector.BIARCO ? (Silueta.this.contiene(x, y) ? -1 : 1) : -distancia(x, y);
+            if (!(sd < Envolvente.BANDA)) return java.util.List.of();
+            double ex = x - c1.x, ey = y - c1.y;
+            double t = d > 1e-12 * (r1 + r2) ? Math.max(0, Math.min(1, (ex * tx + ey * ty) / d)) : 0.5;
+            return java.util.List.of(new Geometria.Hebra(t, sd));
+        }
+    }
+
     // ---------- la forma ----------
 
     /** Los extremos de los arcos en el plano: P1 y P2 son los de la tapa 1 (lados +N y -N), P3 y P4 los de la tapa 2; las ramas son P1→P3 y P2→P4. */

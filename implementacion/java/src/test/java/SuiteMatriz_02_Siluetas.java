@@ -1,3 +1,4 @@
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
@@ -5,6 +6,8 @@ import java.awt.RenderingHints;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import javax.imageio.ImageIO;
 
 /**
@@ -123,6 +126,54 @@ public class SuiteMatriz_02_Siluetas {
         return SiluetaCurva.de(new Point2D.Double(ox, oy), h1, h2, new Point2D.Double(ox + dd, oy), r1, r2);
     }
 
+
+    // ---------- Resalte: dónde la envolvente está casi degenerada ----------
+
+    /** Máximo de |r'(t)| / |c'(t)| a lo largo del camino: con 1 o más, un círculo cae dentro de sus vecinos y la envolvente se degenera. */
+    static double ratioMax(Gota g) {
+        double m = 0;
+        for (int i = 0; i <= 1000; i++) {
+            double t = i / 1000.0, c = Math.hypot(g.dcx(t), g.dcy(t)), r = Math.abs(g.drad(t));
+            m = Math.max(m, c < 1e-12 ? (r > 0 ? 1e9 : 0) : r / c);
+        }
+        return m;
+    }
+
+    /** Color del borde según el ratio local: gris por debajo de 0.5, de amarillo (0.5) a rojo (1 o más). */
+    static int colorRatio(double q) {
+        if (q < 0.5) return 0xFF9AA0A6;
+        double f = Math.min(1, (q - 0.5) / 0.5);
+        return 0xFF000000 | 255 << 16 | (int) Math.round(214 * (1 - f)) << 8;
+    }
+
+    /**
+     * La celda del resalte: la silueta en gris oscuro y un borde de 3 px coloreado con el ratio local del círculo que lo forma
+     * (verde si la gota es rígida). Devuelve el máximo ratio de la gota, o -1 si es rígida.
+     */
+    static double resalte(Gota g, BufferedImage celda) {
+        boolean[][] dentro = new boolean[CH][CW];
+        for (int y = 0; y < CH; y++) for (int x = 0; x < CW; x++) dentro[y][x] = g.mascara().contiene(x + .5, y + .5);
+        boolean rigida = g.silueta() != null;
+        for (int y = 0; y < CH; y++) for (int x = 0; x < CW; x++) {
+            if (!dentro[y][x]) continue;
+            boolean borde = false;
+            for (int dy = -2; dy <= 2 && !borde; dy++) for (int dx = -2; dx <= 2; dx++) {
+                int yy = y + dy, xx = x + dx;
+                if (yy < 0 || xx < 0 || yy >= CH || xx >= CW || !dentro[yy][xx]) { borde = true; break; }
+            }
+            int col = 0xFF2B2B2B;
+            if (borde) {
+                if (rigida) col = 0xFF2E7D32;
+                else {
+                    double t = g.minimizar(x + .5, y + .5, false)[0], c = Math.hypot(g.dcx(t), g.dcy(t));
+                    col = colorRatio(c < 1e-12 ? 9 : Math.abs(g.drad(t)) / c);
+                }
+            }
+            celda.setRGB(x, y, col);
+        }
+        return rigida ? -1 : ratioMax(g);
+    }
+
     public static void main(String[] args) throws Exception {
         int filas = SEPARACIONES.length * FORMAS.length, cols = RADIOS.length;
         int w = MARGEN_X + cols * CW, h = MARGEN_Y + filas * CH;
@@ -131,6 +182,14 @@ public class SuiteMatriz_02_Siluetas {
         g2.setColor(Color.WHITE);
         g2.fillRect(0, 0, w, h);
         g2.dispose();
+
+        int pie = 56;                                           // leyenda del resalte
+        BufferedImage res = new BufferedImage(w, h + pie, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D gr = res.createGraphics();
+        gr.setColor(Color.WHITE);
+        gr.fillRect(0, 0, w, h + pie);
+        gr.dispose();
+        List<String> marcados = new ArrayList<>();
 
         int negro = 0xFF000000;
         int fila = 0;
@@ -155,8 +214,30 @@ public class SuiteMatriz_02_Siluetas {
                     gg.setColor(new Color(0xCCCCCC));
                     gg.drawRect(x0, y0, CW - 1, CH - 1);
                     gg.dispose();
+
+                    BufferedImage celdaRes = new BufferedImage(CW, CH, BufferedImage.TYPE_INT_ARGB);
+                    java.util.Arrays.fill(((java.awt.image.DataBufferInt) celdaRes.getRaster().getDataBuffer()).getData(), 0xFFFFFFFF);
+                    double q = resalte(gota(forma, d, r1, r2, 90, CH * 0.62), celdaRes);
+                    gg = res.createGraphics();
+                    gg.drawImage(celdaRes, x0, y0, null);
+                    gg.setColor(new Color(0xCCCCCC));
+                    gg.drawRect(x0, y0, CW - 1, CH - 1);
+                    if (q >= 0.99 && !forma.equals("recta")) {      // envolvente casi degenerada sobre una espina curva
+                        gg.setColor(new Color(0xD32F2F));
+                        gg.setStroke(new BasicStroke(3));
+                        gg.drawRect(x0 + 2, y0 + 2, CW - 5, CH - 5);
+                        marcados.add(nombre + String.format(" (ratio %.2f)", q));
+                    }
+                    gg.dispose();
                 }
                 Graphics2D gg = img.createGraphics();
+                gg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                gg.setColor(Color.DARK_GRAY);
+                gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+                gg.drawString(forma, 6, MARGEN_Y + fila * CH + 16);
+                gg.drawString("d = " + (int) d, 6, MARGEN_Y + fila * CH + 32);
+                gg.dispose();
+                gg = res.createGraphics();
                 gg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
                 gg.setColor(Color.DARK_GRAY);
                 gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
@@ -174,6 +255,36 @@ public class SuiteMatriz_02_Siluetas {
             gg.drawString(String.format("r1 = %.1f   r2 = %.1f", RADIOS[c][0], RADIOS[c][1]), MARGEN_X + c * CW + 8, 18);
         gg.dispose();
         ImageIO.write(img, "png", new File("suite_matriz_02_siluetas.png"));
+
+        gg = res.createGraphics();
+        gg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        gg.setColor(Color.DARK_GRAY);
+        gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+        for (int c = 0; c < cols; c++)
+            gg.drawString(String.format("r1 = %.1f   r2 = %.1f", RADIOS[c][0], RADIOS[c][1]), MARGEN_X + c * CW + 8, 18);
+        int ly = h + 22;
+        gg.drawString("Borde = |r'|/|c'| del círculo que lo forma:", MARGEN_X, ly);
+        for (int i = 0; i <= 40; i++) {
+            gg.setColor(new Color(colorRatio(i / 40.0 * 1.1)));
+            gg.fillRect(MARGEN_X + 280 + i * 6, ly - 11, 6, 14);
+        }
+        gg.setColor(Color.DARK_GRAY);
+        gg.drawString("0", MARGEN_X + 280, ly + 16);
+        gg.drawString("0.5", MARGEN_X + 280 + 21 * 6 - 8, ly + 16);
+        gg.drawString("1 o más", MARGEN_X + 280 + 36 * 6, ly + 16);
+        gg.setColor(new Color(0xFF2E7D32));
+        gg.fillRect(MARGEN_X + 620, ly - 11, 14, 14);
+        gg.setColor(Color.DARK_GRAY);
+        gg.drawString("forma rígida (d <= r1 + r2)", MARGEN_X + 640, ly);
+        gg.setColor(new Color(0xD32F2F));
+        gg.setStroke(new BasicStroke(3));
+        gg.drawRect(MARGEN_X + 880, ly - 11, 14, 14);
+        gg.setColor(Color.DARK_GRAY);
+        gg.drawString("marco: espina curva con ratio máximo >= 0.99 (envolvente casi degenerada)", MARGEN_X + 900, ly);
+        gg.dispose();
+        ImageIO.write(res, "png", new File("suite_matriz_02_siluetas_resalte.png"));
+        System.out.printf("Resalte: %d celdas con ratio >= 0.99 sobre espina curva%n", marcados.size());
+        for (String m : marcados) System.out.println("  " + m);
 
         radioNulo();
         anidados();
