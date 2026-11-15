@@ -4,9 +4,11 @@
 
 ## 📌 Descripción General
 
-La **primitiva Gota** es una forma vectorial 2D que define las áreas de influencia limitadas por el centro dirigido más
-cercano. Los centros recorren una curva Bézier cúbica y su radio varía según una función de perfil. Esta primitiva permite
-crear formas orgánicas y suaves gracias a la flexibilidad de las curvas paramétricas.
+La **primitiva Gota** es una forma vectorial 2D que define las areas de
+influencia limitadas por el centro dirigido más cercano. Los centros
+recorren una curva cuyo radio varía según una función de perfil. Esta
+primitiva permite crear formas orgánicas y suaves gracias a la
+flexibilidad de las curvas paramétricas.
 
 ![](./.README_files/figura-1a.svg)
 ![](./.README_files/figura-1b.svg)
