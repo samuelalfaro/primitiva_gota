@@ -20,6 +20,7 @@ public class Todas {
             ,"SuiteMatriz_02_Siluetas"
             ,"SuiteMatriz_03_Colores"
             ,"SuiteMatriz_04_Limites"
+            ,"SuiteMatriz_05_Acercamiento"
     };
 
     /** Líneas de la salida de una suite que se muestran si falla. */
