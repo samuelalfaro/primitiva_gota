@@ -22,6 +22,8 @@ final class Zonas {
     private static final int NW = 128;           // muestras del contorno al eje de la curva de un extremo
     private static final double HM = 0.72;       // tangente del Hermite, en radios (ajustada sobre la figura de referencia)
     private static final int M = 512;            // tabla de semianchuras (ORTOGONAL)
+    /** EXPERIMENTAL (-Dgota.primeraSalida=true): la semianchura de la tira ORTOGONAL es la primera salida de la normal de la máscara. */
+    private static final boolean PRIMERA_SALIDA = Boolean.getBoolean("gota.primeraSalida");
 
     /**
      * Marco de la figura de la familia en t: centro, ejes (T, N = (Ty, -Tx)), radio r, y el
@@ -296,6 +298,13 @@ final class Zonas {
                 Fr f = marco(i / (double) M);
                 for (int s = 0; s < 2; s++) {
                     double sg = s == 1 ? 1 : -1, lo = 0, hi = 4 * f.r + 50;
+                    if (PRIMERA_SALIDA) {          // EXPERIMENTAL: la primera salida de la normal, no la que encuentre la bisección
+                        double paso = Math.max(f.r, 1) / 32;
+                        for (double d = paso; d <= hi; d += paso) {
+                            if (!g.mascara().contiene(f.cx + sg * d * f.nx, f.cy + sg * d * f.ny)) { hi = d; break; }
+                            lo = d;
+                        }
+                    }
                     for (int it = 0; it < 45; it++) {
                         double mid = (lo + hi) / 2;
                         if (g.mascara().contiene(f.cx + sg * mid * f.nx, f.cy + sg * mid * f.ny)) lo = mid; else hi = mid;

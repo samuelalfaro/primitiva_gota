@@ -360,6 +360,20 @@ a polares con centro en X. Es opt-in (`Solape.PLIEGUE`); con SUAVIZADO, o sin cr
   bordes de la cuña no se ha medido.
 - **Pendiente**: solo un cruce por gota (S, espirales); costuras ESPIGA y SUAVIZADO; radios muy distintos con la envolvente inclinada.
 
+### ORTOGONAL: continuidad en los bordes de la cuña (`EstudioPliegueBordes`)
+
+Se mide el salto de (u, v) a través de las dos normales que acotan la cuña: dentro (PLIEGUE) frente al candidato de banda más cercano por fuera.
+
+- **ESPIGA**: salto de u ≤ 0,002 en los cinco codos y de v ≈ 0,004–0,008 (efecto del paso de 0,6 px de la medida). Las costillas casan exactamente.
+- **ORTOGONAL**: salto de u de 0,02–0,08 de media y hasta 0,31, solo en la mitad interior (entre X y la espina), nulo en la exterior y creciente hacia X.
+  Causa: la semianchura de la tira sale de una bisección sobre la máscara, y cerca del pliegue la normal vuelve a entrar en la gota por la otra pierna del
+  codo, de modo que da ≈ 1,9·r en vez de r (primera salida).
+- **`-Dgota.primeraSalida=true`** (experimental, apagado por defecto): la semianchura es la primera salida de la normal. Con radios iguales el salto de u
+  pasa a 0,000; con radios distintos queda 0,07 de media (hasta 0,27) en el extremo de radio menor, porque ahí X sale de c ± r·N y no del contorno real
+  (la envolvente se inclina). Las suites de `Todas` pasan con el valor apagado y con el encendido.
+- **Probado y descartado**: buscar el cruce con las semianchuras de primera salida en lugar de c ± r·N reduce el salto con radios distintos (0,012 de media)
+  pero da cruces falsos en los codos más suaves (a = 2,5: ta = 0,013 y 0,001).
+
 ### ESPIGA (la costura por defecto)
 
 - **Cruce**: el de la envolvente exacta, c + costilla de cada lado (`Zonas.marco`), sin aproximar. Solo se pliega la mitad interior; la exterior
