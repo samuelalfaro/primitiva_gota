@@ -344,7 +344,7 @@ Casos simples y de camino regular (sin cúspide) para entender el solape antes d
 
 Experimento de la rama `estudio_pliegues_polar` (issue #29): con la costura ORTOGONAL, cuando el contorno interior del codo (recorrido por las
 normales de la tira) se corta a sí mismo en un punto X, X corresponde a dos valores del camino, ta y tb, y el tramo [ta, tb] pasa de la tira (t, u)
-a polares con centro en X. Es opt-in (`Solape.PLIEGUE`); con otra costura, o sin cruce, se comporta como TRAZO.
+a polares con centro en X. Es opt-in (`Solape.PLIEGUE`); con SUAVIZADO, o sin cruce, se comporta como TRAZO.
 
 - **Cuña**: acotada por las normales de ta y tb (de X al contorno exterior), la espina entre ellas y el contorno exterior. Las dos normales miden
   lo mismo que en la tira (hw interior + hw exterior), así que las coordenadas casan en los bordes.
@@ -353,9 +353,20 @@ a polares con centro en X. Es opt-in (`Solape.PLIEGUE`); con otra costura, o sin
 - **Cruce**: se busca en el contorno de la familia c(t) ± r(t)·N, no en el de la máscara. La primera versión usaba la semianchura de la máscara y
   colocaba mal X: en el pliegue la normal vuelve a entrar en la gota por la otra pierna del codo y la máscara da una distancia que no es el contorno.
   La semianchura solo se usa para el contorno exterior de la cuña. Las formas rígidas (`arcos() != null`) no se tratan.
-- **Medido** (`EstudioPliegue`, imagen `estudio/pliegue_polar.png`, arriba TRAZO y abajo PLIEGUE): en los cinco codos probados el pliegue desaparece y la
+- **Medido** (`EstudioPliegue`, imagen `estudio/pliegue_polar_ortogonal.png`, arriba TRAZO y abajo PLIEGUE): en los cinco codos probados el pliegue desaparece y la
   zona interior queda cubierta una sola vez; cambia entre el 10 % y el 24 % de los píxeles de la gota. ta y tb coinciden con los de una prueba
   aparte en Python (a = 3,5 y r = 1,6: 0,090 / 0,910; a = 2,5 y r = 1,6: 0,145 / 0,855). Las suites de `Todas` pasan (11 suites, 0 fallos).
 - **Observado, no probado**: el contorno usa c ± r·N, sin la inclinación de la envolvente exacta cuando los radios cambian; la continuidad de la derivada en los
   bordes de la cuña no se ha medido.
 - **Pendiente**: solo un cruce por gota (S, espirales); costuras ESPIGA y SUAVIZADO; radios muy distintos con la envolvente inclinada.
+
+### ESPIGA (la costura por defecto)
+
+- **Cruce**: el de la envolvente exacta, c + costilla de cada lado (`Zonas.marco`), sin aproximar. Solo se pliega la mitad interior; la exterior
+  conserva sus coordenadas.
+- **Zona**: el abanico entre X, las dos costillas interiores (las rectas de X a c(ta) y a c(tb), de longitud r) y la espina. El ángulo del rayo
+  desde X da t y w = 1 − ρ/d (1 en X, 0 en la espina). En las dos costillas coincide exactamente con la tira de ESPIGA, así que no hace falta
+  la aproximación de la normal que sí hay en ORTOGONAL.
+- **Medido** (`EstudioPliegue espiga`, imagen `estudio/pliegue_polar_espiga.png`): en los cinco codos el pliegue desaparece; cambia entre el 3 % y el 7 % de los
+  píxeles de la gota (menos que en ORTOGONAL porque solo se sustituye la mitad interior). Las suites de `Todas` pasan.
+- **Pendiente**: SUAVIZADO (el Hermite no tiene costilla recta); un solo cruce por gota; continuidad de la derivada en los bordes del abanico.

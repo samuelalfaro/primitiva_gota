@@ -87,7 +87,7 @@ public final class Coordenadas {
     /** EXPERIMENTAL: coordenadas polares de la zona de pliegue (solape PLIEGUE), o null si el píxel no cae en ella. */
     Costurado pliegue(double x, double y) { return zonas().pliegue(x, y); }
 
-    /** La zona de pliegue de la gota con esta costura (solo ORTOGONAL), o null. */
+    /** La zona de pliegue de la gota con esta costura (ORTOGONAL o ESPIGA), o null. */
     Pliegue zonaPliegue() { return zonas().zonaPliegue(); }
 
     /** Todas las soluciones del píxel, con su clave de orden (solape TRAZO). */

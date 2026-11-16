@@ -1,7 +1,7 @@
 /**
- * Caso de estudio (rama estudio_pliegues_polar, issue #29; no está en Todas): el codo con la costura ORTOGONAL con el solape TRAZO
+ * Caso de estudio (rama estudio_pliegues_polar, issue #29; no está en Todas): el codo (costura ESPIGA por defecto o ORTOGONAL, argumento) con el solape TRAZO
  * (arriba, con el pliegue) y con Solape.PLIEGUE (abajo: la zona de pliegue en polares con centro en el cruce del contorno interior).
- * Escribe estudio_pliegue_polar.png y, por caso, el cruce (ta, tb, X) y las diferencias de color entre los dos solapes.
+ * Escribe estudio_pliegue_polar_<costura>.png y, por caso, el cruce (ta, tb, X) y las diferencias de color entre los dos solapes.
  */
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -14,7 +14,8 @@ public class EstudioPliegue {
     public static void main(String[] args) throws Exception {
         double[][] p = {{3.5, 1.6, 1.6}, {3.5, 1.6, 1.0}, {3.5, 1.0, 1.6}, {2.5, 1.6, 1.6}, {2.5, 1.6, 1.0}};
         Relleno rel = Texturas.tira(new EstudioUV.Guia());
-        Opciones base = Opciones.POR_DEFECTO.conCostura(Costura.ORTOGONAL);
+        String cos = args.length > 0 ? args[0].toUpperCase() : "ESPIGA";
+        Opciones base = Opciones.POR_DEFECTO.conCostura(Costura.valueOf(cos));
         BufferedImage img = new BufferedImage(p.length * CW, 2 * CH, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2 = img.createGraphics(); g2.setColor(Color.WHITE); g2.fillRect(0, 0, img.getWidth(), img.getHeight());
         System.out.println("caso | zona de pliegue | px cambiados | % de la gota");
@@ -42,6 +43,6 @@ public class EstudioPliegue {
             g2.setColor(Color.DARK_GRAY); g2.drawString(et + (z == null ? "" : String.format("  [ta %.2f, tb %.2f]", z.ta, z.tb)), i * CW + 8, 16);
         }
         g2.drawString("TRAZO", 8, CH - 6); g2.drawString("PLIEGUE", 8, 2 * CH - 6);
-        g2.dispose(); ImageIO.write(img, "png", new java.io.File("estudio_pliegue_polar.png"));
+        g2.dispose(); ImageIO.write(img, "png", new java.io.File("estudio_pliegue_polar_" + cos.toLowerCase() + ".png"));
     }
 }
