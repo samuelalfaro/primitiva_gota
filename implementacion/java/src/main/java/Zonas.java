@@ -314,6 +314,20 @@ final class Zonas {
             }
         }
 
+        /** Primera salida de la normal del marco f por el lado sg (+1: +N), con el paso y la bisección de la tabla. */
+        private double salida(Fr f, double sg) {
+            double lo = 0, hi = 4 * f.r + 50, paso = Math.max(f.r, 1) / 32;
+            for (double d = paso; d <= hi; d += paso) {
+                if (!g.mascara().contiene(f.cx + sg * d * f.nx, f.cy + sg * d * f.ny)) { hi = d; break; }
+                lo = d;
+            }
+            for (int it = 0; it < 45; it++) {
+                double mid = (lo + hi) / 2;
+                if (g.mascara().contiene(f.cx + sg * mid * f.nx, f.cy + sg * mid * f.ny)) lo = mid; else hi = mid;
+            }
+            return Math.max(lo, 1e-6);
+        }
+
         private double d2(double x, double y, double t) {
             double dx = x - g.cx(t), dy = y - g.cy(t);
             return dx * dx + dy * dy;
@@ -378,7 +392,9 @@ final class Zonas {
             }
             double fi = t * M;
             int i0 = Math.min(M - 1, (int) fi), side = S >= 0 ? 1 : 0;
-            double fr = fi - i0, h = hw[side][i0] * (1 - fr) + hw[side][i0 + 1] * fr;
+            double fr = fi - i0, h0 = hw[side][i0], h1 = hw[side][i0 + 1], h = h0 * (1 - fr) + h1 * fr;
+            if (PRIMERA_SALIDA && Math.max(h0, h1) > 1.3 * Math.min(h0, h1))
+                h = salida(f, side == 1 ? 1 : -1);      // celda a caballo de un pliegue: la interpolación mezclaría una salida disparada con una normal
             if (estricto && Math.abs(Sp) > h * 1.02) return null;
             double q = Utils.acota(Sp / h, -1, 1);
             double v = vCuerpo(t);
