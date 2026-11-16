@@ -79,10 +79,12 @@ final class Pliegue {
     }
 
     /**
-     * Busca el cruce del contorno interior recorrido por las normales de la tabla de semianchuras (hw[lado][i], i / m = t).
+     * Busca el cruce del contorno de la familia (c(t) ± r(t)·N) recorrido por las normales del camino. La tabla de semianchuras (hw[lado][i], i / m = t)
+ * solo se usa para el contorno exterior de la cuña.
      * Devuelve la zona, o null si ningún lado se cruza a sí mismo.
      */
     static Pliegue de(Geometria g, double[][] hw, int m) {
+        if (g.arcos() != null) return null;          // forma rígida: la silueta de cuatro arcos no se pliega
         Pliegue mejor = null;
         double mejorDt = 0;
         for (int l = 0; l < 2; l++) {
@@ -90,8 +92,9 @@ final class Pliegue {
             double[][] q = new double[m + 1][2];
             for (int i = 0; i <= m; i++) {
                 double[] tg = g.tangente(i / (double) m);
-                q[i][0] = g.cx(i / (double) m) + sg * hw[l][i] * tg[1];
-                q[i][1] = g.cy(i / (double) m) - sg * hw[l][i] * tg[0];
+                double h = g.rad(i / (double) m);      // contorno de la familia a lo largo de la normal: no el de la máscara, que en el pliegue
+                q[i][0] = g.cx(i / (double) m) + sg * h * tg[1];     // sale por la otra pierna del codo (la normal vuelve a entrar en la gota)
+                q[i][1] = g.cy(i / (double) m) - sg * h * tg[0];
             }
             int bi = -1, bj = -1; double bs = 0, bu = 0;
             for (int i = 0; i < m; i++) for (int j = i + HUECO; j < m; j++) {
