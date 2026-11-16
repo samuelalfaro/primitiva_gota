@@ -257,12 +257,15 @@ final class Zonas {
 
     /**
      * EXPERIMENTAL (Solape.PLIEGUE): coordenadas del píxel si cae en la zona polar del pliegue de la costura ORTOGONAL, o null
-     * (otra costura, sin pliegue, o fuera de la cuña). Ver {@link Pliegue}.
+     * (costura SUAVIZADO, sin pliegue, o fuera de la zona). Ver {@link Pliegue}.
      */
     Coordenadas.Costurado pliegue(double x, double y) {
-        if (modo != Costura.ORTOGONAL) return null;
+        if (modo == Costura.SUAVIZADO) return null;      // pendiente: el Hermite no tiene costilla recta
         if (!pliegueCalculado) synchronized (this) {
-            if (!pliegueCalculado) { pliegue = Pliegue.de(g, ortogonal().hw, M); pliegueCalculado = true; }
+            if (!pliegueCalculado) {
+                pliegue = modo == Costura.ORTOGONAL ? Pliegue.de(g, ortogonal().hw, M) : Pliegue.espiga(g, this, 512);
+                pliegueCalculado = true;
+            }
         }
         Pliegue p = pliegue;
         double[] tq = p == null ? null : p.localiza(x, y);
