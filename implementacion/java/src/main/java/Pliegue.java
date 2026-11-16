@@ -90,8 +90,24 @@ final class Pliegue {
  * La tabla de semianchuras (hw[lado][i], i / m = t) se usa para el contorno exterior de la cuña.
      * Devuelve la zona, o null si ningún lado se cruza a sí mismo.
      */
+    /** EXPERIMENTAL: "esquina" (por defecto), "envolvente" (ta y tb del cruce exacto, centro en el corte de las normales) o "envolventeX" (también el centro). */
+    private static final String DETECCION = System.getProperty("gota.pliegue", "esquina");
+
     static Pliegue de(Geometria g, Zonas z, double[][] hw, int m) {
         if (g.arcos() != null) return null;          // forma rígida: la silueta de cuatro arcos no se pliega
+        if (!DETECCION.equals("esquina")) {
+            Pliegue e = espiga(g, z, m);             // cruce de la envolvente exacta: ta, tb, lado y X
+            if (e == null) return null;
+            if (DETECCION.equals("envolventeX")) return new Pliegue(e.ta, e.tb, e.xx, e.xy, e.lado, g, hw, m, false);
+            double sg = e.lado == 1 ? 1 : -1;
+            double[] na = g.tangente(e.ta), nb = g.tangente(e.tb);
+            double ax = g.cx(e.ta), ay = g.cy(e.ta), bx = g.cx(e.tb), by = g.cy(e.tb);
+            double nax = sg * na[1], nay = -sg * na[0], nbx = sg * nb[1], nby = -sg * nb[0], den = nax * nby - nay * nbx;
+            if (Math.abs(den) < 1e-9) return null;
+            double lam = ((bx - ax) * nby - (by - ay) * nbx) / den, mu = ((bx - ax) * nay - (by - ay) * nax) / den;
+            if (lam <= 0 || mu <= 0) return null;
+            return new Pliegue(e.ta, e.tb, ax + lam * nax, ay + lam * nay, e.lado, g, hw, m, false);
+        }
         // El pliegue es el intervalo de t donde la primera salida de la normal se dispara (la normal atraviesa otra parte de la gota): el contorno
         // interior real de la gota termina en ta y vuelve en tb. No se usa el cruce de la envolvente: con radios distintos el punto interior de
         // la envolvente puede quedar tapado por los discos del otro tramo antes del cruce, y la esquina real no coincide con él.
