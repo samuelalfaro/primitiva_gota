@@ -22,8 +22,8 @@ final class Zonas {
     private static final int NW = 128;           // muestras del contorno al eje de la curva de un extremo
     private static final double HM = 0.72;       // tangente del Hermite, en radios (ajustada sobre la figura de referencia)
     private static final int M = 512;            // tabla de semianchuras (ORTOGONAL)
-    /** EXPERIMENTAL (-Dgota.primeraSalida=true): la semianchura de la tira ORTOGONAL es la primera salida de la normal de la máscara. */
-    private static final boolean PRIMERA_SALIDA = Boolean.getBoolean("gota.primeraSalida");
+    /** EXPERIMENTAL (por defecto activo; -Dgota.primeraSalida=false restablece la bisección): la semianchura de la tira ORTOGONAL es la primera salida de la normal de la máscara. */
+    private static final boolean PRIMERA_SALIDA = !"false".equals(System.getProperty("gota.primeraSalida"));
 
     /**
      * Marco de la figura de la familia en t: centro, ejes (T, N = (Ty, -Tx)), radio r, y el
@@ -270,7 +270,7 @@ final class Zonas {
         if (modo == Costura.SUAVIZADO) return null;      // pendiente: el Hermite no tiene costilla recta
         if (!pliegueCalculado) synchronized (this) {
             if (!pliegueCalculado) {
-                pliegue = modo == Costura.ORTOGONAL ? Pliegue.de(g, ortogonal().hw, M) : Pliegue.espiga(g, this, 512);
+                pliegue = modo == Costura.ORTOGONAL ? Pliegue.de(g, this, ortogonal().hw, M) : Pliegue.espiga(g, this, 512);
                 pliegueCalculado = true;
             }
         }

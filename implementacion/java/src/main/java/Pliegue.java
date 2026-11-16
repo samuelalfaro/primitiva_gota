@@ -81,23 +81,61 @@ final class Pliegue {
     }
 
     /**
-     * Busca el cruce del contorno de la familia (c(t) ± r(t)·N) recorrido por las normales del camino. La tabla de semianchuras (hw[lado][i], i / m = t)
- * solo se usa para el contorno exterior de la cuña.
+     * Busca el intervalo [ta, tb] donde la primera salida de la normal se dispara y coloca el centro de las polares en el corte de las normales de ta y tb.
+ * La tabla de semianchuras (hw[lado][i], i / m = t) se usa para el contorno exterior de la cuña.
      * Devuelve la zona, o null si ningún lado se cruza a sí mismo.
      */
-    static Pliegue de(Geometria g, double[][] hw, int m) {
+    static Pliegue de(Geometria g, Zonas z, double[][] hw, int m) {
         if (g.arcos() != null) return null;          // forma rígida: la silueta de cuatro arcos no se pliega
-        double[][][] q = new double[2][m + 1][2];
+        // El pliegue es el intervalo de t donde la primera salida de la normal se dispara (la normal atraviesa otra parte de la gota): el contorno
+        // interior real de la gota termina en ta y vuelve en tb. No se usa el cruce de la envolvente: con radios distintos el punto interior de
+        // la envolvente puede quedar tapado por los discos del otro tramo antes del cruce, y la esquina real no coincide con él.
+        Pliegue mejor = null; double mejorDt = 0;
         for (int l = 0; l < 2; l++) {
             double sg = l == 1 ? 1 : -1;
+            // runs de "disparado" que distan menos de HUECO_RUN muestras se funden: en un codo suave la primera salida baja en el medio del pliegue
+            int i0 = -1, i1 = -1, a0 = -1, b0 = -1, hueco = (int) (HUECO_RUN * m);
             for (int i = 0; i <= m; i++) {
-                double[] tg = g.tangente(i / (double) m);
-                double h = g.rad(i / (double) m);      // contorno de la familia a lo largo de la normal: no el de la máscara, que en el pliegue
-                q[l][i][0] = g.cx(i / (double) m) + sg * h * tg[1];     // sale por la otra pierna del codo (la normal vuelve a entrar en la gota)
-                q[l][i][1] = g.cy(i / (double) m) - sg * h * tg[0];
+                if (hw[l][i] > FACTOR * g.rad(i / (double) m)) { if (a0 < 0) a0 = i; b0 = i; }
+                if (a0 >= 0 && (i - b0 > hueco || i == m)) { if (b0 - a0 > i1 - i0) { i0 = a0; i1 = b0; } a0 = -1; }
             }
+            if (i0 <= 0 || i1 >= m || i1 - i0 < 1) continue;     // sin salto, o el salto llega a un extremo (no hay esquina)
+            double ta = refina(g, (i0 - 1) / (double) m, i0 / (double) m, sg, false), tb = refina(g, (i1 + 1) / (double) m, i1 / (double) m, sg, false);
+            if (!(tb - ta > mejorDt)) continue;
+            // El centro es el corte de las normales de ta y de tb por el lado interior: los bordes de la cuña quedan sobre las líneas de t constante.
+            double[] na = g.tangente(ta), nb = g.tangente(tb);
+            double ax = g.cx(ta), ay = g.cy(ta), bx = g.cx(tb), by = g.cy(tb);
+            double nax = sg * na[1], nay = -sg * na[0], nbx = sg * nb[1], nby = -sg * nb[0];
+            double den = nax * nby - nay * nbx;
+            if (Math.abs(den) < 1e-9) continue;
+            double lam = ((bx - ax) * nby - (by - ay) * nbx) / den, mu = ((bx - ax) * nay - (by - ay) * nax) / den;
+            if (lam <= 0 || mu <= 0) continue;
+            mejorDt = tb - ta;
+            mejor = new Pliegue(ta, tb, ax + lam * nax, ay + lam * nay, l, g, hw, m, false);
         }
-        return mejor(g, hw, m, q, false);
+        return mejor;
+    }
+
+    private static final double HUECO_RUN = 0.2;    // fracción de t: separación máxima para fundir dos tramos disparados
+    private static final double FACTOR = 1.35;   // la primera salida de la normal es "disparada" si pasa de FACTOR veces el radio
+
+    /** Primera salida de la normal de t por el lado sg de la máscara. */
+    private static double salida(Geometria g, double t, double sg) {
+        double r = Math.max(g.rad(t), 1), tx = g.tangente(t)[0], ty = g.tangente(t)[1], nx = sg * ty, ny = -sg * tx, cx = g.cx(t), cy = g.cy(t), paso = r / 32, lo = 0, hi = 4 * r + 50;
+        for (double d = paso; d <= hi; d += paso) {
+            if (!g.mascara().contiene(cx + d * nx, cy + d * ny)) { hi = d; break; }
+            lo = d;
+        }
+        return hi;     // aproximación al paso; basta para comparar con FACTOR·r
+    }
+
+    /** Bisección en t entre t0 (fuera del intervalo disparado) y t1 (dentro): el t donde la salida pasa de FACTOR·r. */
+    private static double refina(Geometria g, double t0, double t1, double sg, boolean u) {
+        for (int it = 0; it < 30; it++) {
+            double tm = (t0 + t1) / 2;
+            if (salida(g, tm, sg) > FACTOR * g.rad(tm)) t1 = tm; else t0 = tm;
+        }
+        return t0;
     }
 
     /**
