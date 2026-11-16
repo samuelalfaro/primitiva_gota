@@ -39,6 +39,8 @@ final class Zonas {
     private final Fr[] tabla = new Fr[NS + 1];
     private final double[][][] dist = new double[2][2][NW + 1], fase = new double[2][2][NW + 1];   // curva de cada extremo y lado
     private volatile Ortogonal ort;
+    private volatile Pliegue pliegue;
+    private volatile boolean pliegueCalculado;
 
     Zonas(Geometria g, Costura modo, Cortes cortes) {
         this.g = g;
@@ -257,6 +259,22 @@ final class Zonas {
         double v = e == 0 ? cortes.c1() * (1 - p) : cortes.c3() + (1 - cortes.c3()) * p;
         return new Candidato(e == 0 ? -rho : 1 + rho, new Coordenadas.Costurado(e, new Coordenadas.Uv((l + 1) / 2, v)));
     }
+
+    /**
+     * EXPERIMENTAL (Solape.PLIEGUE): coordenadas del píxel si cae en la zona polar del pliegue de la costura ORTOGONAL, o null
+     * (otra costura, sin pliegue, o fuera de la cuña). Ver {@link Pliegue}.
+     */
+    Coordenadas.Costurado pliegue(double x, double y) {
+        if (modo != Costura.ORTOGONAL) return null;
+        if (!pliegueCalculado) synchronized (this) {
+            if (!pliegueCalculado) { pliegue = Pliegue.de(g, ortogonal().hw, M); pliegueCalculado = true; }
+        }
+        Pliegue p = pliegue;
+        double[] tq = p == null ? null : p.localiza(x, y);
+        return tq == null ? null : enBanda(tq[0], Math.abs(tq[1]), tq[1] < 0 ? -1 : 1);
+    }
+
+    Pliegue zonaPliegue() { pliegue(0, 0); return pliegue; }
 
     private Ortogonal ortogonal() {
         Ortogonal o = ort;

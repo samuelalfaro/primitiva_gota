@@ -339,3 +339,20 @@ Casos simples y de camino regular (sin cúspide) para entender el solape antes d
 - Con radios iguales no sale ningún píxel con J ≤ 0 en ninguna familia; el pliegue con J ≤ 0 pide radios distintos y un codo cerrado, y son pocos píxeles.
 - En el codo hay además una cuña roja de la textura en la esquina exterior que no tiene J ≤ 0 y no está explicada.
 - Pendiente: porcentaje de «sin conexión» (legítimo por f) en la tabla del programa; la suite no entra en `Todas` y no compara contra una referencia.
+
+## Zona polar del pliegue (`Pliegue`, `Solape.PLIEGUE`, `EstudioPliegue`)
+
+Experimento de la rama `estudio_pliegues_polar` (issue #29): con la costura ORTOGONAL, cuando el contorno interior del codo (recorrido por las
+normales de la tira) se corta a sí mismo en un punto X, X corresponde a dos valores del camino, ta y tb, y el tramo [ta, tb] pasa de la tira (t, u)
+a polares con centro en X. Es opt-in (`Solape.PLIEGUE`); con otra costura, o sin cruce, se comporta como TRAZO.
+
+- **Cuña**: acotada por las normales de ta y tb (de X al contorno exterior), la espina entre ellas y el contorno exterior. Las dos normales miden
+  lo mismo que en la tira (hw interior + hw exterior), así que las coordenadas casan en los bordes.
+- **Dentro**: el ángulo del rayo desde X da t (el de la espina en el punto donde el rayo la corta); a lo largo del rayo, q (el u con signo) es lineal
+  por tramos: 1 en X, 0 en la espina, −1 en el contorno exterior.
+- **Medido** (`EstudioPliegue`, imagen `estudio/pliegue_polar.png`, arriba TRAZO y abajo PLIEGUE): en los cinco codos probados el pliegue desaparece y la
+  zona interior queda cubierta una sola vez; cambia entre el 16 % y el 32 % de los píxeles de la gota. Las suites de `Todas` pasan (11 suites, 0 fallos).
+- **Observado, no probado**: la zona sale de la tabla de semianchuras de la máscara, así que X no coincide exactamente con el de la envolvente
+  analítica (con a = 3,5 y r = 1,6, ta = 0,048 y no 0,09); no hay comparación con la envolvente exacta ni con la costura ESPIGA.
+- **Pendiente**: solo un cruce por gota (S, espirales); radios muy distintos con la envolvente inclinada; continuidad de la derivada en los bordes
+  de la cuña; el codo con r1 = 1,0 y r2 = 1,6 da una cuña que ocupa casi todo el camino (tb = 0,98) y queda irregular.

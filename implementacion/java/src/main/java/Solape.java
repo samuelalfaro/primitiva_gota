@@ -110,6 +110,25 @@ public enum Solape {
         }
 
         @Override Coordenadas.Costurado ganador(Coordenadas c, double x, double y) { return TRAZO.ganador(c, x, y); }
+    },
+
+    /**
+     * EXPERIMENTAL (issue #29, rama de estudio). Como TRAZO, pero con la costura ORTOGONAL el tramo de t donde el contorno
+     * interior se cruza a sí mismo (codo con radios mayores que el radio de curvatura) usa polares con centro en el punto de
+     * cruce (ver {@link Pliegue}) y una sola capa; fuera de esa zona, y con cualquier otra costura, se comporta como TRAZO.
+     */
+    PLIEGUE {
+        @Override void capas(Geometria g, Coordenadas c, double x, double y, Consumer<Capa> out) {
+            Coordenadas.Costurado p = c.pliegue(x, y);
+            double cob = p == null ? 0 : g.mascara().cobertura(x, y);
+            if (p != null && cob > 0) { out.accept(new Capa(cob, c.punto(x, y, () -> p))); return; }
+            TRAZO.capas(g, c, x, y, out);
+        }
+
+        @Override Coordenadas.Costurado ganador(Coordenadas c, double x, double y) {
+            Coordenadas.Costurado p = c.pliegue(x, y);
+            return p != null ? p : TRAZO.ganador(c, x, y);
+        }
     };
 
     /** El de mayor clave que no pase de limite; si ninguno, el de menor clave; si no hay candidatos, la solución única. */
