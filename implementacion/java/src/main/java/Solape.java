@@ -28,15 +28,7 @@ public enum Solape {
      */
     TRAZO {
         @Override void capas(Geometria g, Coordenadas c, double x, double y, Consumer<Capa> out) {
-            List<Geometria.Hebra> hs = g.mascara().hebras(x, y);
-            Memo memo = new Memo(c, x, y);
-            for (int h = 0; h < hs.size(); h++) {            // t creciente: la posterior tapa a la anterior
-                Geometria.Hebra hb = hs.get(h);
-                double cob = hb.cobertura();
-                if (cob <= 0) continue;
-                final double limite = h == hs.size() - 1 ? Double.POSITIVE_INFINITY : 0.5 * (hb.t() + hs.get(h + 1).t());
-                out.accept(new Capa(cob, c.punto(x, y, () -> elige(memo.candidatos(), limite, c, x, y))));
-            }
+            capasTrazo(g, c, x, y, null, out);
         }
 
         @Override Coordenadas.Costurado ganador(Coordenadas c, double x, double y) {
@@ -122,12 +114,17 @@ public enum Solape {
             Coordenadas.Costurado p = c.pliegue(x, y);
             double cob = p == null ? 0 : g.mascara().cobertura(x, y);
             if (p != null && cob > 0) { out.accept(new Capa(cob, c.punto(x, y, () -> p))); return; }
-            TRAZO.capas(g, c, x, y, out);
+            capasTrazo(g, c, x, y, c.zonaPliegue(), out);
         }
 
         @Override Coordenadas.Costurado ganador(Coordenadas c, double x, double y) {
             Coordenadas.Costurado p = c.pliegue(x, y);
-            return p != null ? p : TRAZO.ganador(c, x, y);
+            if (p != null) return p;
+            Pliegue z = c.zonaPliegue();
+            Zonas.Candidato mejor = null;
+            for (Zonas.Candidato k : c.candidatos(x, y))
+                if ((z == null || !z.sustituye(k)) && (mejor == null || k.clave() > mejor.clave())) mejor = k;
+            return mejor != null ? mejor.c() : c.costurado(x, y);
         }
     };
 
@@ -148,6 +145,19 @@ public enum Solape {
     /** Entrega, de abajo a arriba, las capas que se pintan en el píxel (x, y). */
     abstract void capas(Geometria g, Coordenadas c, double x, double y, Consumer<Capa> out);
 
+    /** TRAZO; con zona de pliegue, los candidatos de la mitad interior con t dentro de [ta, tb] no cuentan (los sustituye la polar). */
+    private static void capasTrazo(Geometria g, Coordenadas c, double x, double y, Pliegue zona, Consumer<Capa> out) {
+        List<Geometria.Hebra> hs = g.mascara().hebras(x, y);
+        Memo memo = new Memo(c, x, y, zona);
+        for (int h = 0; h < hs.size(); h++) {            // t creciente: la posterior tapa a la anterior
+            Geometria.Hebra hb = hs.get(h);
+            double cob = hb.cobertura();
+            if (cob <= 0) continue;
+            final double limite = h == hs.size() - 1 ? Double.POSITIVE_INFINITY : 0.5 * (hb.t() + hs.get(h + 1).t());
+            out.accept(new Capa(cob, c.punto(x, y, () -> elige(memo.candidatos(), limite, c, x, y))));
+        }
+    }
+
     /** Las coordenadas con las que se ve el píxel como un todo: la solución única en PLANO, la más tardía del trazo en TRAZO. */
     abstract Coordenadas.Costurado ganador(Coordenadas c, double x, double y);
 
@@ -157,10 +167,21 @@ public enum Solape {
         private final double x, y;
         private List<Zonas.Candidato> cs;
 
-        Memo(Coordenadas c, double x, double y) { this.c = c; this.x = x; this.y = y; }
+        private final Pliegue zona;
+
+        Memo(Coordenadas c, double x, double y) { this(c, x, y, null); }
+
+        Memo(Coordenadas c, double x, double y, Pliegue zona) { this.c = c; this.x = x; this.y = y; this.zona = zona; }
 
         List<Zonas.Candidato> candidatos() {
-            if (cs == null) cs = c.candidatos(x, y);
+            if (cs == null) {
+                cs = c.candidatos(x, y);
+                if (zona != null) {
+                    List<Zonas.Candidato> f = new java.util.ArrayList<>();
+                    for (Zonas.Candidato k : cs) if (!zona.sustituye(k)) f.add(k);
+                    if (!f.isEmpty()) cs = f;
+                }
+            }
             return cs;
         }
     }
