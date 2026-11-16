@@ -90,11 +90,21 @@ final class Pliegue {
  * La tabla de semianchuras (hw[lado][i], i / m = t) se usa para el contorno exterior de la cuña.
      * Devuelve la zona, o null si ningún lado se cruza a sí mismo.
      */
-    /** EXPERIMENTAL: "esquina" (por defecto), "envolvente" (ta y tb del cruce exacto, centro en el corte de las normales) o "envolventeX" (también el centro). */
-    private static final String DETECCION = System.getProperty("gota.pliegue", "esquina");
+    /** EXPERIMENTAL: "exacto" (por defecto: X es el cruce de la envolvente exacta y ta, tb los pies de X sobre la espina), "esquina" (intervalo de primera salida disparada), "envolvente" (ta y tb del cruce exacto, centro en el corte de las normales) o "envolventeX" (también el centro). */
+    private static final String DETECCION = System.getProperty("gota.pliegue", "exacto");
 
     static Pliegue de(Geometria g, Zonas z, double[][] hw, int m) {
         if (g.arcos() != null) return null;          // forma rígida: la silueta de cuatro arcos no se pliega
+        if (DETECCION.equals("exacto")) {
+            // X es el cruce de la envolvente exacta, que es esquina de la silueta (ningún otro disco de la familia lo cubre: |X - c(s)| >= r(s)).
+            // En ORTOGONAL las líneas de t constante son las normales, así que ta y tb son los pies de X sobre la espina: los mínimos locales de |X - c(t)|
+            // más cercanos a los t del cruce. Con radios iguales coinciden con los del cruce; con radios distintos difieren (la envolvente se inclina).
+            Pliegue e = espiga(g, z, m);
+            if (e == null) return null;
+            double ta = pie(g, e.xx, e.xy, e.ta, m), tb = pie(g, e.xx, e.xy, e.tb, m);
+            if (!(tb - ta > 1e-3)) return null;
+            return new Pliegue(ta, tb, e.xx, e.xy, e.lado, g, hw, m, false);
+        }
         if (!DETECCION.equals("esquina")) {
             Pliegue e = espiga(g, z, m);             // cruce de la envolvente exacta: ta, tb, lado y X
             if (e == null) return null;
@@ -135,6 +145,30 @@ final class Pliegue {
             mejor = new Pliegue(ta, tb, ax + lam * nax, ay + lam * nay, l, g, hw, m, false);
         }
         return mejor;
+    }
+
+    /** El pie de (x, y) sobre el camino más cercano a t0: el mínimo local de |(x, y) - c(t)| cuyo t está más cerca de t0. */
+    private static double pie(Geometria g, double x, double y, double t0, int m) {
+        double mejor = t0, dmejor = Double.MAX_VALUE;
+        for (int i = 0; i <= m; i++) {
+            double t = i / (double) m, d = dist2(g, x, y, t);
+            boolean min = (i == 0 || d <= dist2(g, x, y, (i - 1) / (double) m)) && (i == m || d < dist2(g, x, y, (i + 1) / (double) m));
+            if (!min || i == 0 || i == m) continue;
+            double lo = (i - 1) / (double) m, hi = (i + 1) / (double) m, gr = 0.6180339887498949;
+            double c = hi - gr * (hi - lo), e = lo + gr * (hi - lo), fc = dist2(g, x, y, c), fe = dist2(g, x, y, e);
+            for (int it = 0; it < 40; it++) {
+                if (fc < fe) { hi = e; e = c; fe = fc; c = hi - gr * (hi - lo); fc = dist2(g, x, y, c); }
+                else { lo = c; c = e; fc = fe; e = lo + gr * (hi - lo); fe = dist2(g, x, y, e); }
+            }
+            double tm = (lo + hi) / 2;
+            if (Math.abs(tm - t0) < Math.abs(mejor - t0) || dmejor == Double.MAX_VALUE) { mejor = tm; dmejor = 0; }
+        }
+        return mejor;
+    }
+
+    private static double dist2(Geometria g, double x, double y, double t) {
+        double dx = x - g.cx(t), dy = y - g.cy(t);
+        return dx * dx + dy * dy;
     }
 
     private static final double HUECO_RUN = 0.2;    // fracción de t: separación máxima para fundir dos tramos disparados

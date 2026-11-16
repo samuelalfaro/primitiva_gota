@@ -368,7 +368,7 @@ Se mide con `EstudioPliegueBordes` el salto de (u, v) a través de las dos norma
   hacia X. Dos causas. La semianchura de la tira salía de una bisección sobre la máscara, que junto al pliegue da ≈ 1,9·r porque la normal vuelve a entrar en
   la gota por la otra pierna del codo; y con radios distintos el cruce de la envolvente no es la esquina de la gota, porque el punto interior de la envolvente
   queda tapado por los discos del otro tramo antes del cruce (en el codo a = 3,5 con r1 = 1,6 y r2 = 1,0 la normal de t = 0,891 sale a 3·r).
-- **Ahora**: la semianchura es la primera salida de la normal (`-Dgota.primeraSalida=false` restablece la bisección; **cambia el valor por defecto de la tira
+- **Segunda versión (`esquina`)**: la semianchura es la primera salida de la normal (`-Dgota.primeraSalida=false` restablece la bisección; **cambia el valor por defecto de la tira
   ORTOGONAL**, las suites de `Todas` pasan pero no se ha comparado la imagen en otras formas) y el pliegue es el intervalo [ta, tb] donde esa salida pasa de 1,35·r
   (se funden tramos separados por menos de 0,2 de t, porque en un codo suave baja en medio). El centro es el corte de las normales de ta y tb por el lado
   interior, de modo que los bordes de la cuña están sobre las líneas de t constante.
@@ -383,9 +383,20 @@ Se mide con `EstudioPliegueBordes` el salto de (u, v) a través de las dos norma
   salto máximo de u 0,30 con a = 3,5 (frente a 0,001 con `esquina`) y 0,27 / 0,25 con a = 2,5 (frente a 0,14). En ese extremo el punto interior de la envolvente queda tapado por
   los discos del otro tramo antes del cruce, y entre tb(envolvente) y tb(esquina) la semianchura de la tira sigue disparada. En el único caso donde mejora es en ta del codo
   a = 2,5 con r1 = 1,6 y r2 = 1,0 (0,217 frente a 0,506: salto de v 0,005 frente a 0,058), pero allí empeora tb.
-- **No resuelto**: a = 2,5 con r1 = 1,6 y r2 = 1,0 (ta = 0,51, tb = 0,83): salto de u de 0,01–0,05 y de v de hasta 0,21 en un borde. Aquí el lazo de la envolvente
-  queda casi todo dentro de la gota (la salida crece poco a poco, de 1,09·r a 2,8·r, sin esquina clara), así que no hay una ta bien definida con este criterio.
-- **Pendiente**: un solo intervalo por gota (S, espirales); el umbral 1,35 y la fusión de 0,2 están elegidos con estos cinco codos.
+- **Exacto** (`-Dgota.pliegue=exacto`, por defecto; `esquina`, `envolvente` y `envolventeX` siguen como interruptores):
+  - *Justificación*: con la envolvente exacta P(t) = c + r·(−(r'/|c'|)·T ± √(1 − (r'/|c'|)²)·N) el cruce X = P(ta) = P(tb) es esquina de la silueta si ningún otro disco
+    de la familia lo cubre, |X − c(s)| ≥ r(s) para todo s. Se comprobó numéricamente en los cinco codos: el mínimo de |X − c(s)| − r(s) es 0, solo en las tangencias, y la
+    rama interior queda oculta exactamente en [ta, tb]. Con radios distintos la envolvente se inclina, así que las normales de la tira (las líneas de t constante de ORTOGONAL)
+    que pasan por X no salen de c(ta) y c(tb), sino de los pies de X sobre la espina.
+  - *Definición*: el centro de las polares es X (cruce exacto de la envolvente), y ta y tb son los pies de X sobre la espina (mínimos locales de |X − c(t)| más cercanos a los t
+    del cruce). Los bordes de la cuña son exactamente las normales por X, de longitud |X − c(pie)| ≈ r(pie). Sin umbrales ni fusiones.
+  - *Por qué `esquina` no era exacto*: sus ta y tb coincidían con los pies cuando el lazo es claro (a = 3,5), pero en el codo suave con radios distintos daban ta = 0,51 y los pies
+    dan 0,300; el umbral 1,35·r y la fusión de 0,2 de t no tienen justificación geométrica.
+  - *Tabla de semianchuras*: el pie cae dentro de una celda de 1/512 con un lado disparado y otro normal, y la interpolación los mezclaba (salto de u de 0,17 en a = 3,5 con r1 = 1,6 y
+    r2 = 1,0). Ahora, si los dos extremos de la celda difieren en más de 1,3 veces, se recalcula la primera salida exacta de esa normal.
+  - *Medido*: salto de u ≤ 0,002 en los dos bordes de los cinco codos (a = 3,5 y 2,5; radios iguales y distintos); el salto de v de 0,003–0,007 es el de la propia medida (0,6 px
+    a cada lado). Las 11 suites de `Todas` pasan.
+- **Pendiente**: un solo cruce por gota (S, espirales); costuras SUAVIZADO (legacy, se sustituirá por APOLONIO) y ESPIGA con otros radios; la derivada en los bordes de la cuña.
 
 ### ESPIGA (la costura por defecto)
 
