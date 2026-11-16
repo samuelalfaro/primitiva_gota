@@ -378,6 +378,11 @@ Se mide con `EstudioPliegueBordes` el salto de (u, v) a través de las dos norma
   del tramo izquierdo salía "plegada"); ahora `Solape.PLIEGUE` descarta esos candidatos (`Pliegue.sustituye`); (2) el sector angular de la cuña se barría por el camino
   más corto entre los dos rayos, y puede pasar de 180°: ahora se desenrolla el ángulo a lo largo de la espina.
 - **Medido**: a = 3,5 (radios iguales y distintos): salto de u ≤ 0,001 en los dos bordes. a = 2,5 con radios iguales: 0,011 de media (máx. 0,04).
+- **Envolvente exacta** (`-Dgota.pliegue=envolvente`: ta y tb del cruce exacto y centro en el corte de las normales; `envolventeX`: también el centro en el cruce exacto; por
+  defecto `esquina`). Con radios iguales (a = 3,5 y a = 2,5) los tres dan lo mismo: salto de u 0,000. Con radios distintos la envolvente es peor en el extremo de radio menor:
+  salto máximo de u 0,30 con a = 3,5 (frente a 0,001 con `esquina`) y 0,27 / 0,25 con a = 2,5 (frente a 0,14). En ese extremo el punto interior de la envolvente queda tapado por
+  los discos del otro tramo antes del cruce, y entre tb(envolvente) y tb(esquina) la semianchura de la tira sigue disparada. En el único caso donde mejora es en ta del codo
+  a = 2,5 con r1 = 1,6 y r2 = 1,0 (0,217 frente a 0,506: salto de v 0,005 frente a 0,058), pero allí empeora tb.
 - **No resuelto**: a = 2,5 con r1 = 1,6 y r2 = 1,0 (ta = 0,51, tb = 0,83): salto de u de 0,01–0,05 y de v de hasta 0,21 en un borde. Aquí el lazo de la envolvente
   queda casi todo dentro de la gota (la salida crece poco a poco, de 1,09·r a 2,8·r, sin esquina clara), así que no hay una ta bien definida con este criterio.
 - **Pendiente**: un solo intervalo por gota (S, espirales); el umbral 1,35 y la fusión de 0,2 están elegidos con estos cinco codos.
