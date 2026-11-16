@@ -372,6 +372,11 @@ Se mide con `EstudioPliegueBordes` el salto de (u, v) a través de las dos norma
   ORTOGONAL**, las suites de `Todas` pasan pero no se ha comparado la imagen en otras formas) y el pliegue es el intervalo [ta, tb] donde esa salida pasa de 1,35·r
   (se funden tramos separados por menos de 0,2 de t, porque en un codo suave baja en medio). El centro es el corte de las normales de ta y tb por el lado
   interior, de modo que los bordes de la cuña están sobre las líneas de t constante.
+- **Zonas** (`EstudioPliegueZonas`, `estudio/pliegue_zonas_ortogonal.png`): con radios distintos la tira ya tiene 7 zonas (tapa, dos cuñas del conector, banda, dos cuñas
+  del extremo y tapa); con el pliegue son 9: la banda se parte en banda antes de ta y banda tras tb, y aparece la polar. Dos fallos corregidos al revisar el mapa:
+  (1) la mitad interior de las hebras con t en [ta, tb] seguía reclamando, con su semianchura que atraviesa el codo, píxeles de la pierna anterior (la mitad superior
+  del tramo izquierdo salía "plegada"); ahora `Solape.PLIEGUE` descarta esos candidatos (`Pliegue.sustituye`); (2) el sector angular de la cuña se barría por el camino
+  más corto entre los dos rayos, y puede pasar de 180°: ahora se desenrolla el ángulo a lo largo de la espina.
 - **Medido**: a = 3,5 (radios iguales y distintos): salto de u ≤ 0,001 en los dos bordes. a = 2,5 con radios iguales: 0,011 de media (máx. 0,04).
 - **No resuelto**: a = 2,5 con r1 = 1,6 y r2 = 1,0 (ta = 0,51, tb = 0,83): salto de u de 0,01–0,05 y de v de hasta 0,21 en un borde. Aquí el lazo de la envolvente
   queda casi todo dentro de la gota (la salida crece poco a poco, de 1,09·r a 2,8·r, sin esquina clara), así que no hay una ta bien definida con este criterio.

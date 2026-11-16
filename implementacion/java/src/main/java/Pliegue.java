@@ -27,7 +27,12 @@ final class Pliegue {
         this.ta = ta; this.tb = tb; this.xx = xx; this.xy = xy; this.lado = lado; this.soloInterior = soloInterior;
         double[] ca = { g.cx(ta), g.cy(ta) }, cb = { g.cx(tb), g.cy(tb) };
         a0 = Math.atan2(ca[1] - xy, ca[0] - xx);
-        da = envuelve(Math.atan2(cb[1] - xy, cb[0] - xx) - a0);
+        double barrido = 0, ant = a0;       // el sector es el que recorre la espina de ta a tb (puede pasar de 180°): se desenrolla el ángulo
+        for (int i = 1; i <= NS; i++) {
+            double tt = ta + (tb - ta) * i / NS, an = Math.atan2(g.cy(tt) - xy, g.cx(tt) - xx);
+            barrido += envuelve(an - ant); ant = an;
+        }
+        da = barrido;
         double[][] esp = new double[NS + 1][], ext = soloInterior ? null : new double[NS + 1][];
         int otro = 1 - lado;
         double sg = otro == 1 ? 1 : -1;
@@ -177,10 +182,18 @@ final class Pliegue {
         return mejor;
     }
 
+    /** Si el candidato es de la mitad interior de una hebra con t dentro de [ta, tb]: esa parte de la tira la sustituye la polar. */
+    boolean sustituye(Zonas.Candidato k) {
+        double u = k.c().uv().u();
+        return k.clave() > ta && k.clave() < tb && (lado == 1 ? u > 0.5 : u < 0.5);
+    }
+
     /** {t, q} del píxel si cae dentro de la cuña (q en [-1, 1], con el signo de u de la tira), o null. */
     double[] localiza(double x, double y) {
         double dx = x - xx, dy = y - xy, rho = Math.hypot(dx, dy);
-        double rel = envuelve(Math.atan2(dy, dx) - a0) / da;
+        double w = Math.atan2(dy, dx) - a0;
+        w = da > 0 ? w - 2 * Math.PI * Math.floor(w / (2 * Math.PI)) : w - 2 * Math.PI * Math.ceil(w / (2 * Math.PI));
+        double rel = w / da;
         if (!(rel >= 0 && rel <= 1)) return null;
         double f = rel * NA;
         int k = Math.min(NA - 1, (int) f);
