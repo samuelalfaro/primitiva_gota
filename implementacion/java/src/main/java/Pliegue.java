@@ -304,6 +304,11 @@ final class Pliegue {
      * <ul><li>{@code interior} (por defecto, opción A): las zonas anidadas usan solo su mitad interior (el abanico hacia X); su mitad exterior vuelve a la
      *     banda, cuyas costillas son normales a la espina. La zona que las contiene sigue siendo una cuña entera.</li>
      *   <li>{@code cortar} (opción C, lectura 1): a la zona que contiene a otras se le quitan los píxeles cuyo t cae en el tramo de una anidada.</li>
+     *   <li>{@code acordeon} (opción C, corte X–X): las zonas se ordenan por el punto medio de su tramo (los lados alternan) y el sector de cada cuña se corta por los rayos
+     *     que van de su X a los centros de giro de las vecinas; se conserva el trozo que contiene el rayo central.</li>
+     *   <li>{@code espina}: si los tramos de t de dos zonas se pisan, cada una conserva solo su mitad interior (su lado de la espina, la espina como frontera).
+     *     Lo que queda fuera de las mitades interiores vuelve a la banda.</li>
+     *   <li>{@code acordeont}: variante por t de la anterior (descartada: deja la cuña ancha casi vacía y las vecinas cruzándola).</li>
      *   <li>{@code no}: cada cuña entera.</li></ul>
      */
     static final String ANIDADAS = System.getProperty("gota.anidadas", "interior");
@@ -315,6 +320,31 @@ final class Pliegue {
     static double[] localiza(java.util.List<Pliegue> zs, Pliegue p, double x, double y) {
         double[] tq = p.localiza(x, y);
         if (tq == null || "no".equals(ANIDADAS)) return tq;
+        if ("acordeont".equals(ANIDADAS)) {
+            java.util.List<Pliegue> o = new java.util.ArrayList<>(zs);
+            o.sort((a, b) -> Double.compare(a.ta + a.tb, b.ta + b.tb));      // por el punto medio del tramo: los lados alternan
+            int i = o.indexOf(p);
+            if (i > 0) { Pliegue v = o.get(i - 1); if (v.tb > p.ta && v.tb < p.tb && tq[0] < v.tb) return null; }
+            if (i < o.size() - 1) { Pliegue v = o.get(i + 1); if (v.ta > p.ta && v.ta < p.tb && tq[0] > v.ta) return null; }
+            return tq;
+        }
+        if ("espina".equals(ANIDADAS)) {
+            for (Pliegue k : zs) if (k != p && k.ta < p.tb && p.ta < k.tb) return p.interior(tq) ? tq : null;   // tramos que se pisan: cada zona solo en su lado de la espina
+            return tq;
+        }
+        if ("acordeon".equals(ANIDADAS)) {
+            java.util.List<Pliegue> o = new java.util.ArrayList<>(zs);
+            o.sort((a, b) -> Double.compare(a.ta + a.tb, b.ta + b.tb));
+            int i = o.indexOf(p);
+            double lo = 0, hi = 1, rp = p.rel(x, y);
+            for (int j : new int[] { i - 1, i + 1 }) {
+                if (j < 0 || j >= o.size()) continue;
+                double c = p.rel(o.get(j).xx, o.get(j).xy);          // rayo de X hacia el centro de giro de la vecina
+                if (!(c > 0 && c < 1)) continue;
+                if (c <= 0.5) lo = Math.max(lo, c); else hi = Math.min(hi, c);   // se conserva el trozo que contiene el rayo central de la cuña
+            }
+            return rp >= lo && rp <= hi ? tq : null;
+        }
         if ("cortar".equals(ANIDADAS)) {
             for (Pliegue k : zs) if (k != p && k.ta > p.ta && k.tb < p.tb && tq[0] >= k.ta && tq[0] <= k.tb) return null;
             return tq;
@@ -327,6 +357,14 @@ final class Pliegue {
     static boolean sustituye(java.util.List<Pliegue> zs, Zonas.Candidato k) {
         for (Pliegue p : zs) if (p.sustituye(k)) return true;
         return false;
+    }
+
+    /** Posición angular (0 en la pata de ta, 1 en la de tb) del punto visto desde X, o NaN si cae fuera del sector. */
+    double rel(double x, double y) {
+        double w = Math.atan2(y - xy, x - xx) - a0;
+        w = da > 0 ? w - 2 * Math.PI * Math.floor(w / (2 * Math.PI)) : w - 2 * Math.PI * Math.ceil(w / (2 * Math.PI));
+        double rel = w / da;
+        return rel >= 0 && rel <= 1 ? rel : Double.NaN;
     }
 
     /** {t, q} del píxel si cae dentro de la cuña (q en [-1, 1], con el signo de u de la tira), o null. */

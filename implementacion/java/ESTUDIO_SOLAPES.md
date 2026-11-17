@@ -490,6 +490,27 @@ Samuel relaja el requisito de que las costillas sean un único segmento de extre
 - t3b: las zonas 1 y 2 pasan a 100 y 305 px (solo su abanico interior); la zona 0 queda entera (3889 px). Píxeles con más de una zona: 960 → 405 (0 y 1: 100; 0 y 2: 305; 1 y 2: 0), todos entre una zona ancha y el abanico interior de una anidada; la regla de la mitad interior los decide a favor de la anidada. El mapa de ganadoras ya no sale dentado: cuña azul con las dos astillas (roja, verde) dentro (`estudio/pliegue_cunas_t3b_ortogonal_A.png`) y la textura sale continua (`estudio/pliegue_t3b_ortogonal_A.png`).
 - Sin medir todavía: saltos de u/v en los bordes de t3a y t3b con esta opción.
 
+#### Prueba del «acordeón» (opción C, tres lecturas) y la espina como frontera
+
+Samuel propone que el extremo de una cuña quede limitado por el centro de giro (X) de la cuña opuesta, y confirma que en una cúbica los pliegues van en lados alternos (la curvatura cambia de signo en cada inflexión; se ordenan por el punto medio de su tramo de t: en t3b, +N, −N, +N). Esquema con la geometría real: `estudio/esquema_acordeon_t3b.png` (generado fuera del repositorio). Tres lecturas probadas en t3b (solo con `-Dgota.anidadas=`):
+
+| Modo | Regla | Píxeles con más de una zona | Veredicto |
+|---|---|---|---|
+| `interior` (A, por defecto) | las anidadas solo con su mitad interior | 405 | referencia |
+| `acordeont` | el tramo de t de cada cuña no sobrepasa el ta/tb de la vecina | 112 | la ancha queda en una tira de 295 px y aparece un solape nuevo (1 y 2: 69 px) |
+| `acordeon` | se cortan los sectores por los rayos X → X vecino | 908 | peor: los rayos caen casi pegados a las patas (rel 0,10 y 0,96) y solo recortan tiras finas; las mitades exteriores de las pequeñas siguen cruzando la espina |
+| `espina` | si dos tramos de t se pisan, cada zona conserva solo su mitad interior (su lado de la espina) | **0** | sin solapes, pero la ancha pierde su mitad exterior |
+
+Resultado de `espina`:
+
+- t3b: zona 0, 3889 → 976 px; zonas 1 y 2 sin cambio (100 y 305 px); 0 píxeles con más de una zona.
+- t3a: zona 0, 1413 → 355 px; zonas 1 y 2 sin cambio (31 y 84 px); 0 píxeles con más de una zona.
+- Coste: unos 2900 px de la mitad exterior de la cuña ancha (t3b) vuelven a la banda, donde sigue plegada como en TRAZO. No queda limpio.
+- Lo que sí resuelve: una zona ya no sobrepasa a la que no le corresponde. Equivale a un comportamiento tipo ESPIGA (solo abanico interior) para las zonas que se pisan y ORTOGONAL entero para las que no.
+- Lectura del esquema: el rayo X–X no separa las cuñas porque lo que se pisa es la mitad exterior de las pequeñas, no la interior.
+
+Decisión de Samuel (2026-11-17): documentarlo para estudiarlo más adelante («no queda muy limpio, pierde zonas, pero resuelve que una zona sobrepase a la que no le corresponde»); caso límite extremo. El modo por defecto sigue siendo `interior`; `espina` queda como opción de estudio. Imágenes: `estudio/pliegue_t3b_ortogonal_espina.png`, `estudio/pliegue_cunas_t3a_espina.png`, `estudio/pliegue_cunas_t3b_espina.png`.
+
 ## Referencias y aviso sobre patentes
 
 Los pliegues en cintas texturadas a lo largo de una curva (trazos esqueléticos, *skeletal strokes*) ya se habían estudiado; reconocemos a sus autores. Nuestra solución se alcanzó con una mezcla de inspiración, imitación y medios propios, y no se ha copiado código de ninguno de ellos.
