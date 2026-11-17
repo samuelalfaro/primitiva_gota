@@ -12,32 +12,47 @@ public class EstudioPliegueBordes {
         double d = 0.6;   // px a cada lado de la normal
         for (double[] q : p) {
             Gota g = EstudioCasosBasicos.codo(q[0], q[1], q[2], 150, 130);
-            Coordenadas c = Coordenadas.de(g, op); Pliegue z = c.zonaPliegue();
-            if (z == null) { System.out.println("sin zona"); continue; }
-            System.out.printf("codo a=%.1f r1=%.1f r2=%.1f  ta=%.3f tb=%.3f%n", q[0], q[1], q[2], z.ta, z.tb);
+            mide(g, Coordenadas.de(g, op), String.format("codo a=%.1f r1=%.1f r2=%.1f", q[0], q[1], q[2]), d);
+        }
+        // cúbicas con dos pliegues (rama de varios pliegues)
+        double[][][] dos = { {{0.89}, {2.26, 2.39, 2.94, -1.0, -0.19, 2.96, 1.2, -2.66}}, {{0.65}, {-0.73, -1.34, -1.57, 2.79, 1.01, -0.21, 0.44, 2.07}},
+                             {{0.88}, {0, 0, 3.19, -1.72, -0.57, -0.49, 4.74, -2.08}} };
+        String[] et = {"c147", "c219", "dos"};
+        for (int k = 0; k < dos.length; k++) {
+            EstudioPliegueDos.ajusta(dos[k][0][0], dos[k][1], et[k]);
+            Gota g = EstudioPliegueDos.gota(dos[k][0][0], dos[k][0][0]);
+            mide(g, Coordenadas.de(g, op), et[k] + " r=" + dos[k][0][0], d);
+        }
+    }
+
+    /** Salto de (u, v) a través de los dos bordes de cada zona de pliegue de la gota. */
+    static void mide(Gota g, Coordenadas c, String etiqueta, double d) {
+        for (Pliegue z : c.zonasPliegue()) {
+            System.out.printf("%s  ta=%.3f tb=%.3f lado=%d%n", etiqueta, z.ta, z.tb, z.lado);
             for (int e = 0; e < 2; e++) {
                 double t = e == 0 ? z.ta : z.tb;
                 double cx = g.cx(t), cy = g.cy(t), dx = z.xx - cx, dy = z.xy - cy, L = Math.hypot(dx, dy);
-                double ux = dx / L, uy = dy / L, nx = -uy, ny = ux, sgn = e == 0 ? 1 : -1;  // lado de fuera del abanico: hacia t menor (ta) o mayor (tb)
+                double ux = dx / L, uy = dy / L, nx = -uy, ny = ux;
                 double r = g.rad(t);
-                double maxU = 0, maxV = 0, sumU = 0, sumV = 0; int n = 0, nIn = 0;
-                double hmax = 0;
+                double maxU = 0, maxV = 0, sumU = 0, sumV = 0, natV = 0, maxNat = 0; int n = 0;
                 for (double s = 0.1 * r; s < 1.9 * r; s += 0.05 * r) {            // desde X hacia c y más allá (exterior)
                     double px = z.xx - ux * s, py = z.xy - uy * s;
-                    for (int lado = 0; lado < 1; lado++) {
-                        Coordenadas.Costurado dentro = null, fuera = null;
-                        for (double sg : new double[] { -1, 1 }) {
-                            double qx = px + sg * d * nx, qy = py + sg * d * ny;
-                            Coordenadas.Costurado k = c.pliegue(qx, qy);
-                            if (k != null) dentro = k; else fuera = vecino(c, qx, qy, e == 0 ? z.ta : z.tb, e == 0);
-                        }
-                        if (dentro == null || fuera == null) continue;
-                        if (!g.mascara().contiene(px, py)) continue;
-                        double du = Math.abs(dentro.uv().u() - fuera.uv().u()), dv = Math.abs(dentro.uv().v() - fuera.uv().v());
-                        maxU = Math.max(maxU, du); maxV = Math.max(maxV, dv); sumU += du; sumV += dv; n++;
+                    Coordenadas.Costurado dentro = null, fuera = null; double sgIn = 0;
+                    for (double sg : new double[] { -1, 1 }) {
+                        double qx = px + sg * d * nx, qy = py + sg * d * ny;
+                        Coordenadas.Costurado k = c.pliegue(qx, qy);
+                        if (k != null) { dentro = k; sgIn = sg; } else fuera = vecino(c, qx, qy, t, e == 0);
                     }
+                    if (dentro == null || fuera == null) continue;
+                    if (!g.mascara().contiene(px, py)) continue;
+                    // control: variación natural de v dentro de la zona entre dos puntos a la misma distancia (2d) que los dos lados del borde
+                    Coordenadas.Costurado i1 = c.pliegue(px + sgIn * d * nx, py + sgIn * d * ny), i2 = c.pliegue(px + sgIn * 3 * d * nx, py + sgIn * 3 * d * ny);
+                    if (i1 == null || i2 == null) continue;
+                    double nat = Math.abs(i1.uv().v() - i2.uv().v()); natV += nat; maxNat = Math.max(maxNat, nat);
+                    double du = Math.abs(dentro.uv().u() - fuera.uv().u()), dv = Math.abs(dentro.uv().v() - fuera.uv().v());
+                    maxU = Math.max(maxU, du); maxV = Math.max(maxV, dv); sumU += du; sumV += dv; n++;
                 }
-                System.out.printf("   borde %s: %3d puntos | |Δu| medio %.3f máx %.3f | |Δv| medio %.4f máx %.4f%n", e == 0 ? "ta" : "tb", n, n == 0 ? 0 : sumU / n, maxU, n == 0 ? 0 : sumV / n, maxV);
+                System.out.printf("   borde %s: %3d puntos | |Δu| medio %.3f máx %.3f | |Δv| medio %.4f máx %.4f | control dentro: medio %.4f máx %.4f%n", e == 0 ? "ta" : "tb", n, n == 0 ? 0 : sumU / n, maxU, n == 0 ? 0 : sumV / n, maxV, n == 0 ? 0 : natV / n, maxNat);
             }
         }
     }
