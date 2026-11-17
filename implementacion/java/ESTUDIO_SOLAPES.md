@@ -465,6 +465,16 @@ El control de arriba muestra de paso que v = t hace que la textura corra a veloc
 
 Actualización 2026-11-17 (tarde): Samuel propone que el mapeo sea d → v, con d la distancia normalizada sobre la curva (longitud de arco), en lugar de t → v; queda pendiente y antes de fijar reglas de prioridad entre zonas.
 
+### Diagnóstico de t3b en ORTOGONAL: cuñas anidadas
+
+`EstudioPliegueCunas` dibuja cada zona por separado, todas superpuestas y el mapa de la ganadora (`estudio/pliegue_cunas_t3b_ortogonal.png`: zona 0, zona 1, zona 2, todas con los solapes en negro, ganadora).
+
+- Tres zonas: 0 (t∈[0,287, 0,815], lado −N), 1 ([0,392, 0,457], lado +N) y 2 ([0,599, 0,779], lado +N). Los intervalos de 1 y 2 están **dentro** del de 0 (anidados).
+- Cada cuña por separado es una forma limpia. El desorden viene de que se cruzan: 0 y 1 se pisan en 226 px, 0 y 2 en 803 px (más de la mitad de la zona 2) y 1 y 2 en 69 px; en total 960 px con más de una zona sobre 4852 con alguna.
+- **En ESPIGA no se pisan nunca (0 px)**, porque solo cuentan los abanicos interiores. El solape sale entero de las **mitades exteriores** de las cuñas, que cruzan la espina y atraviesan el cuerpo hasta el otro lado; la cuña de la zona 0, al ser ancha, cubre a las otras.
+- Con la regla de la mitad interior, la zona 2 (una cuña fina) queda recortada por la zona 0 y sale dentada (muesca verde dentro de azul en el mapa de ganadoras).
+- Opciones a decidir (no implementadas): (a) las zonas anidadas usan solo el abanico interior (mitad exterior vuelve a la banda); (b) gana la zona de menor tramo de t (la más específica); (c) partir la zona ancha por donde empieza la anidada.
+
 ## Referencias y aviso sobre patentes
 
 Los pliegues en cintas texturadas a lo largo de una curva (trazos esqueléticos, *skeletal strokes*) ya se habían estudiado; reconocemos a sus autores. Nuestra solución se alcanzó con una mezcla de inspiración, imitación y medios propios, y no se ha copiado código de ninguno de ellos.
