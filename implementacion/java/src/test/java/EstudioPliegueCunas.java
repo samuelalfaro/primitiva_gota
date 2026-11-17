@@ -23,7 +23,7 @@ public class EstudioPliegueCunas {
         for (int y = 0; y < H; y++) for (int x = 0; x < W; x++) {
             if (!g.mascara().contiene(x + 0.5, y + 0.5)) continue;
             int k = 0;
-            for (int i = 0; i < n; i++) if (zs.get(i).localiza(x + 0.5, y + 0.5) != null) { cub[i][y][x] = true; cnt[i]++; k++; for (int j = 0; j < i; j++) if (cub[j][y][x]) par[j][i]++; }
+            for (int i = 0; i < n; i++) if (Pliegue.localiza(zs, zs.get(i), x + 0.5, y + 0.5) != null) { cub[i][y][x] = true; cnt[i]++; k++; for (int j = 0; j < i; j++) if (cub[j][y][x]) par[j][i]++; }
             if (k > 0) algo++; if (k > 1) multi++;
         }
         System.out.printf("%s | zonas: %d | píxeles con alguna zona %d, con varias %d%n", cos, n, algo, multi);
@@ -49,7 +49,7 @@ public class EstudioPliegueCunas {
                     Coordenadas.Costurado cs = c.pliegue(x + 0.5, y + 0.5);
                     if (cs != null) {
                         int best = -1; double bq = -9;
-                        for (int i = 0; i < n; i++) { double[] q = cub[i][y][x] ? zs.get(i).localiza(x + 0.5, y + 0.5) : null; if (q != null) { double s = zs.get(i).interior(q) ? 1 + Math.abs(q[1]) : Math.abs(q[1]); if (s > bq) { bq = s; best = i; } } }
+                        for (int i = 0; i < n; i++) { double[] q = cub[i][y][x] ? Pliegue.localiza(zs, zs.get(i), x + 0.5, y + 0.5) : null; if (q != null) { double s = zs.get(i).interior(q) ? 1 + Math.abs(q[1]) : Math.abs(q[1]); if (s > bq) { bq = s; best = i; } } }
                         col = best < 0 ? 0xDDDDDD : pal[best % 4].getRGB();
                     }
                 }

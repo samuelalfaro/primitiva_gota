@@ -475,6 +475,14 @@ Actualización 2026-11-17 (tarde): Samuel propone que el mapeo sea d → v, con 
 - Con la regla de la mitad interior, la zona 2 (una cuña fina) queda recortada por la zona 0 y sale dentada (muesca verde dentro de azul en el mapa de ganadoras).
 - Opciones a decidir (no implementadas): (a) las zonas anidadas usan solo el abanico interior (mitad exterior vuelve a la banda); (b) gana la zona de menor tramo de t (la más específica); (c) partir la zona ancha por donde empieza la anidada.
 
+#### Prueba de la opción (c): cortar la zona que contiene a otras
+
+Lectura de la propuesta de Samuel (a confirmar): si el extremo opuesto al punto de pliegue de una cuña sobrepasa otro punto de pliegue, el trozo de la cuña que corresponde al tramo de t de ese pliegue (de su t mínima a su t máxima) deja de ser de la zona ancha; vale en cada nivel de anidamiento. Implementado en `Pliegue.localiza(lista, zona, x, y)`; `-Dgota.anidadas=no` restaura la cuña entera. Solo afecta a zonas anidadas (no a c147, c219, `dos` ni a los codos).
+
+- t3b: los píxeles con más de una zona bajan de 960 a 533 (0 y 1: 226 → 129; 0 y 2: 803 → 371; 1 y 2: 69, sin cambio). La zona 0 pasa de 3889 a 2305 px y su abanico queda en tres trozos separados por huecos (`estudio/pliegue_cunas_t3b_ortogonal_cortadas.png`).
+- Quedan solapes: los trozos del abanico de la zona 0 con t fuera de los tramos anidados siguen cruzando las mitades exteriores de las zonas 1 y 2.
+- Los huecos que deja el corte (píxeles de la zona 0 cuyo t cae en un tramo anidado) pasan a la banda si la zona anidada no los cubre, es decir, vuelven a las coordenadas (t, u) plegadas; no se ha medido cuántos son ni cómo se ven con textura.
+
 ## Referencias y aviso sobre patentes
 
 Los pliegues en cintas texturadas a lo largo de una curva (trazos esqueléticos, *skeletal strokes*) ya se habían estudiado; reconocemos a sus autores. Nuestra solución se alcanzó con una mezcla de inspiración, imitación y medios propios, y no se ha copiado código de ninguno de ellos.

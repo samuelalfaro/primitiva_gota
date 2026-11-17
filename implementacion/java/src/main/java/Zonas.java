@@ -307,7 +307,7 @@ final class Zonas {
         // la mitad exterior de una cuña es solo su prolongación. Con empate, la de mayor |q|. -Dgota.prioridad=primera: la primera de la lista.
         double[] tq = null; Pliegue pg = null;
         for (Pliegue p : pliegues) {
-            double[] c = p.localiza(x, y);
+            double[] c = Pliegue.localiza(pliegues, p, x, y);
             if (c == null) continue;
             if (pg == null) { tq = c; pg = p; if (!PRIORIDAD_INTERIOR) break; continue; }
             boolean ci = p.interior(c), gi = pg.interior(tq);
