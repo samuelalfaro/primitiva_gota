@@ -160,8 +160,40 @@ final class Zonas {
         return out;
     }
 
+    /** EXPERIMENTAL: -Dgota.v=longitud usa la longitud de arco de la espina (normalizada a cada lado de tm) en lugar de t como coordenada v de la banda. */
+    private static final boolean V_LONGITUD = "longitud".equals(System.getProperty("gota.v"));
+    private volatile double[] acum;
+
+    private double[] acumulada() {
+        double[] a = acum;
+        if (a == null) {
+            a = new double[NS + 1];
+            for (int i = 1; i <= NS; i++) a[i] = a[i - 1] + Math.hypot(tabla[i].cx - tabla[i - 1].cx, tabla[i].cy - tabla[i - 1].cy);
+            acum = a;
+        }
+        return a;
+    }
+
+    /** Longitud de arco de la espina hasta t, entre 0 y la longitud total. */
+    double longitud(double t) {
+        double[] a = acumulada();
+        double f = Utils.acota(t, 0, 1) * NS;
+        int i = Math.min(NS - 1, (int) f);
+        return a[i] + (a[i + 1] - a[i]) * (f - i);
+    }
+
+    private double vBanda(double t) {
+        double tm = g.tm();
+        if (V_LONGITUD) {
+            double l = longitud(t), lm = longitud(tm), lt = longitud(1);
+            if (lm > 1e-12 && lt - lm > 1e-12)
+                return t < tm ? cortes.c1() + (cortes.c2() - cortes.c1()) * l / lm : cortes.c2() + (cortes.c3() - cortes.c2()) * (l - lm) / (lt - lm);
+        }
+        return t < tm ? cortes.c1() + (cortes.c2() - cortes.c1()) * t / tm : cortes.c2() + (cortes.c3() - cortes.c2()) * (t - tm) / (1 - tm);
+    }
+
     private Coordenadas.Costurado enBanda(double t, double w, int s) {
-        double v = t < g.tm() ? cortes.c1() + (cortes.c2() - cortes.c1()) * t / g.tm() : cortes.c2() + (cortes.c3() - cortes.c2()) * (t - g.tm()) / (1 - g.tm());
+        double v = vBanda(t);
         return new Coordenadas.Costurado(t, new Coordenadas.Uv(0.5 + 0.5 * s * Utils.acota(w, 0, 1), Utils.acota(v, 0, 1)));
     }
 
@@ -410,7 +442,7 @@ final class Zonas {
                 h = salida(f, side == 1 ? 1 : -1);      // celda a caballo de un pliegue: la interpolación mezclaría una salida disparada con una normal
             if (estricto && Math.abs(Sp) > h * 1.02) return null;
             double q = Utils.acota(Sp / h, -1, 1);
-            double v = t < g.tm() ? cortes.c1() + (cortes.c2() - cortes.c1()) * t / g.tm() : cortes.c2() + (cortes.c3() - cortes.c2()) * (t - g.tm()) / (1 - g.tm());
+            double v = vBanda(t);
             return new Candidato(t, new Coordenadas.Costurado(t, new Coordenadas.Uv(0.5 + 0.5 * q, Utils.acota(v, 0, 1))));
         }
     }
