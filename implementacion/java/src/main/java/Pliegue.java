@@ -299,18 +299,27 @@ final class Pliegue {
         return k.clave() > ta && k.clave() < tb && (lado == 1 ? u > 0.5 : u < 0.5);
     }
 
-    /** EXPERIMENTAL: -Dgota.anidadas=no desactiva el corte de las zonas que contienen a otras (cada cuña llega entera). */
-    static final boolean CORTA_ANIDADAS = !"no".equals(System.getProperty("gota.anidadas"));
+    /**
+     * EXPERIMENTAL: tratamiento de las zonas anidadas (el tramo de t de una está dentro del de otra), -Dgota.anidadas=
+     * <ul><li>{@code interior} (por defecto, opción A): las zonas anidadas usan solo su mitad interior (el abanico hacia X); su mitad exterior vuelve a la
+     *     banda, cuyas costillas son normales a la espina. La zona que las contiene sigue siendo una cuña entera.</li>
+     *   <li>{@code cortar} (opción C, lectura 1): a la zona que contiene a otras se le quitan los píxeles cuyo t cae en el tramo de una anidada.</li>
+     *   <li>{@code no}: cada cuña entera.</li></ul>
+     */
+    static final String ANIDADAS = System.getProperty("gota.anidadas", "interior");
 
     /**
-     * Resultado de {@link #localiza} de la zona p dentro de la lista zs, con el corte de las zonas anidadas: si otra zona k tiene su tramo de t dentro del de p
-     * (ta_p < ta_k y tb_k < tb_p) y el t del píxel cae en [ta_k, tb_k], ese trozo de la cuña de p no es de p (lo ocupa k o, si k no lo cubre, la banda).
+     * Resultado de {@link #localiza} de la zona p dentro de la lista zs, aplicando el tratamiento de las zonas anidadas ({@link #ANIDADAS}).
      * Con varios niveles de anidamiento se aplica en cada nivel.
      */
     static double[] localiza(java.util.List<Pliegue> zs, Pliegue p, double x, double y) {
         double[] tq = p.localiza(x, y);
-        if (tq == null || !CORTA_ANIDADAS) return tq;
-        for (Pliegue k : zs) if (k != p && k.ta > p.ta && k.tb < p.tb && tq[0] >= k.ta && tq[0] <= k.tb) return null;
+        if (tq == null || "no".equals(ANIDADAS)) return tq;
+        if ("cortar".equals(ANIDADAS)) {
+            for (Pliegue k : zs) if (k != p && k.ta > p.ta && k.tb < p.tb && tq[0] >= k.ta && tq[0] <= k.tb) return null;
+            return tq;
+        }
+        for (Pliegue k : zs) if (k != p && p.ta > k.ta && p.tb < k.tb) return p.interior(tq) ? tq : null;   // p está anidada en k: solo la mitad interior
         return tq;
     }
 
