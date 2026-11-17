@@ -299,6 +299,21 @@ final class Pliegue {
         return k.clave() > ta && k.clave() < tb && (lado == 1 ? u > 0.5 : u < 0.5);
     }
 
+    /** EXPERIMENTAL: -Dgota.anidadas=no desactiva el corte de las zonas que contienen a otras (cada cuña llega entera). */
+    static final boolean CORTA_ANIDADAS = !"no".equals(System.getProperty("gota.anidadas"));
+
+    /**
+     * Resultado de {@link #localiza} de la zona p dentro de la lista zs, con el corte de las zonas anidadas: si otra zona k tiene su tramo de t dentro del de p
+     * (ta_p < ta_k y tb_k < tb_p) y el t del píxel cae en [ta_k, tb_k], ese trozo de la cuña de p no es de p (lo ocupa k o, si k no lo cubre, la banda).
+     * Con varios niveles de anidamiento se aplica en cada nivel.
+     */
+    static double[] localiza(java.util.List<Pliegue> zs, Pliegue p, double x, double y) {
+        double[] tq = p.localiza(x, y);
+        if (tq == null || !CORTA_ANIDADAS) return tq;
+        for (Pliegue k : zs) if (k != p && k.ta > p.ta && k.tb < p.tb && tq[0] >= k.ta && tq[0] <= k.tb) return null;
+        return tq;
+    }
+
     /** Algún pliegue de la lista sustituye al candidato. */
     static boolean sustituye(java.util.List<Pliegue> zs, Zonas.Candidato k) {
         for (Pliegue p : zs) if (p.sustituye(k)) return true;
