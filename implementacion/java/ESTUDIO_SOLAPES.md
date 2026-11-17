@@ -483,6 +483,13 @@ Lectura de la propuesta de Samuel (a confirmar): si el extremo opuesto al punto 
 - Quedan solapes: los trozos del abanico de la zona 0 con t fuera de los tramos anidados siguen cruzando las mitades exteriores de las zonas 1 y 2.
 - Los huecos que deja el corte (píxeles de la zona 0 cuyo t cae en un tramo anidado) pasan a la banda si la zona anidada no los cubre, es decir, vuelven a las coordenadas (t, u) plegadas; no se ha medido cuántos son ni cómo se ven con textura.
 
+#### Prueba de la opción (A): las zonas anidadas usan solo su mitad interior
+
+Samuel relaja el requisito de que las costillas sean un único segmento de extremo a extremo en ORTOGONAL: con la A, la parte exterior de las costillas de una zona anidada vuelve a la banda, donde sigue siendo normal a la espina. Las zonas que contienen a otras siguen siendo cuñas enteras. Es ahora el comportamiento por defecto (`-Dgota.anidadas=interior`; `cortar` = opción C anterior; `no` = cuñas enteras).
+
+- t3b: las zonas 1 y 2 pasan a 100 y 305 px (solo su abanico interior); la zona 0 queda entera (3889 px). Píxeles con más de una zona: 960 → 405 (0 y 1: 100; 0 y 2: 305; 1 y 2: 0), todos entre una zona ancha y el abanico interior de una anidada; la regla de la mitad interior los decide a favor de la anidada. El mapa de ganadoras ya no sale dentado: cuña azul con las dos astillas (roja, verde) dentro (`estudio/pliegue_cunas_t3b_ortogonal_A.png`) y la textura sale continua (`estudio/pliegue_t3b_ortogonal_A.png`).
+- Sin medir todavía: saltos de u/v en los bordes de t3a y t3b con esta opción.
+
 ## Referencias y aviso sobre patentes
 
 Los pliegues en cintas texturadas a lo largo de una curva (trazos esqueléticos, *skeletal strokes*) ya se habían estudiado; reconocemos a sus autores. Nuestra solución se alcanzó con una mezcla de inspiración, imitación y medios propios, y no se ha copiado código de ninguno de ellos.
