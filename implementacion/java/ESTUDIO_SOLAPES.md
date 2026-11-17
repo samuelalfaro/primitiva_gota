@@ -450,7 +450,16 @@ Búsqueda aleatoria (puntos de control en [−3, 3]², unas 290 000 cúbicas con
 - `Pliegue.todos` detecta las tres zonas en los dos casos y en las dos costuras. En t3b (`estudio/pliegue_tres_t3b_*.png`) **ESPIGA** sale limpia, pero en **ORTOGONAL** las cuñas se encajan unas dentro de otras y el reparto de píxeles queda irregular (bordes dentados, costillas cruzadas): con zonas anidadas la regla de la mitad interior no basta. No he medido los bordes de estos casos.
 - Lectura: el límite de la cúbica para tres pliegues es un lóbulo central casi cúspide (el caso límite ya documentado); no es una conclusión demostrada, solo lo que sale de la búsqueda aleatoria. Una `Composicion` de varias curvas sí puede dar tres codos suaves.
 
-### Anotado: v por longitud de arco (no implementado)
+### Prueba: v por longitud de arco (`-Dgota.v=longitud`, experimental)
+
+`Zonas.vBanda(t)` calcula la v de la banda; con `-Dgota.v=longitud` usa la longitud de arco de la espina (normalizada a cada lado de tm, de modo que c1, c2, c3 siguen igual) en lugar de t. Solo cambia la coordenada v: la silueta, las zonas (ta, tb), la clave de solape y la prioridad no cambian. Por defecto sigue siendo t.
+
+- **Textura** (`estudio/pliegue_v_longitud_c147_espiga.png`, izquierda t, derecha longitud): las bandas de la textura guía quedan equiespaciadas a lo largo de la espina; con t se apretaban y estiraban.
+- **Medida de bordes** (`EstudioPliegueBordes`, control = variación natural de v entre dos puntos a la misma distancia dentro de la zona): el control máximo baja de 0,023–0,108 (t) a 0,014–0,033 (longitud) y es más parejo entre zonas. Los saltos de borde siguen por debajo del control en c147 y c219, en ESPIGA y en ORTOGONAL, y en `dos` en ESPIGA. En `dos` ORTOGONAL, los bordes donde las cuñas se pisan siguen por encima del control (0,023 frente a 0,014 en el borde ta de A), como con t.
+- **Predicción comprobada (anidamiento)**: d crece con t, así que conserva el orden de los intervalos. En t3b ORTOGONAL (`estudio/pliegue_v_longitud_t3b_ortogonal.png`) las zonas son las mismas y el reparto dentado de las cuñas anidadas **no cambia**; solo se redistribuye la textura. El anidamiento no depende de la variable de la espina.
+- **Pendiente**: muestreo uniforme en longitud (y por ángulo de la tangente cerca de cúspides) para la espina y la envolvente; incluir o no las tapas en la longitud; `Composicion` (longitud acumulada por cuerpo). No he medido t3b con longitud.
+
+### Anotado antes de la prueba: v por longitud de arco
 
 El control de arriba muestra de paso que v = t hace que la textura corra a velocidad muy distinta según el punto (velocidad máx/mín 5,8 en c147 y c219, 19 en `dos`; la longitud acumulada se separa hasta 0,2 de t). Idea: usar como v la longitud de arco de la espina (tabla longitud(t), como la de semianchuras) solo como coordenada de textura. La silueta, el perfil de radios en t, la clave de solape y ta/tb no cambian. Se plantea como un eje opcional más (junto a Costura y Solape), con t por defecto hasta compararlo con la textura de referencia. Abierto: si la longitud incluye las tapas (hoy los límites tapa/banda son fracciones fijas); en `Composicion`, longitud acumulada por cuerpo y no por arista (fallo 2 de la API). No arregla la compresión en el interior de los codos, que es geométrica.
 
