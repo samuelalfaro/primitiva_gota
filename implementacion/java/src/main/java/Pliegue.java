@@ -11,6 +11,8 @@
  * </ul>
  * Solo se trata un cruce (el de mayor tramo de t). Con varios (S, espirales) el resto queda con la tira. Pendiente: radios
  * muy distintos con inclinación fuerte del contorno (aquí la normal es la de la tira, no la de la envolvente exacta).
+ * <p>Referencias y aviso de patentes (Asente 2010, Berio et al. 2019, Kilgard 2020; patente US 8,674,995 B1): ver ESTUDIO_SOLAPES.md,
+ * sección «Referencias y aviso sobre patentes».
  */
 final class Pliegue {
     private static final int NA = 512;          // rayos de la tabla
