@@ -439,6 +439,17 @@ En `dos` (r = 0,88) las zonas A (t∈[0,28, 0,41], lado −N) y B ([0,33, 0,67],
 - Los cinco codos dan exactamente los mismos píxeles cambiados que antes (una sola zona) y las 11 suites de `Todas` pasan.
 - **Pendiente**: ver si es la regla que se quiere visualmente en más casos con pisado (hay muchos en la búsqueda aleatoria); caso con tres lóbulos; derivada en los bordes.
 
+### Tres lóbulos: búsqueda de casos con tres pliegues
+
+Búsqueda aleatoria (puntos de control en [−3, 3]², unas 290 000 cúbicas con dos inflexiones; r = 1,15 × el mayor radio de curvatura mínimo de los tres lóbulos; se exigen tres cruces que sean esquina real):
+
+- Con filtros estrictos (radio de curvatura mínimo de cada lóbulo ≥ 5 % de la longitud y velocidad máx/mín ≤ 8): **ningún caso**.
+- Relajando (≥ 1–3 % y velocidad máx/mín ≤ 15–100): cinco casos. En todos el lóbulo central es casi una cúspide (ρ mín 0,01–0,04 con longitud 2–6) y la estructura es la misma: un cruce ancho (t del orden de 0,3–0,8) que **encierra** a otros dos pequeños en el lado contrario. Ejemplos: t3a, r = 1,0, puntos (−2,74, 2,77) (2,75, 1,49) (0,79, 1,64) (1,62, 1,69); t3b, r = 1,39, puntos (−0,28, −2,39) (−2,98, 1,88) (−1,45, −1,6) (−2,26, 1,54).
+- `Pliegue.todos` detecta las tres zonas en los dos casos y en las dos costuras. En t3b (`estudio/pliegue_tres_t3b_*.png`) **ESPIGA** sale limpia, pero en **ORTOGONAL** las cuñas se encajan unas dentro de otras y el reparto de píxeles queda irregular (bordes dentados, costillas cruzadas): con zonas anidadas la regla de la mitad interior no basta. No he medido los bordes de estos casos.
+- Lectura: con una sola cúbica los tres pliegues solo aparecen con un lóbulo central casi cúspide (el caso límite ya documentado); no es una conclusión demostrada, solo lo que sale de la búsqueda aleatoria. Una `Composicion` de varias curvas sí puede dar tres codos suaves.
+
 ### Anotado: v por longitud de arco (no implementado)
 
 El control de arriba muestra de paso que v = t hace que la textura corra a velocidad muy distinta según el punto (velocidad máx/mín 5,8 en c147 y c219, 19 en `dos`; la longitud acumulada se separa hasta 0,2 de t). Idea: usar como v la longitud de arco de la espina (tabla longitud(t), como la de semianchuras) solo como coordenada de textura. La silueta, el perfil de radios en t, la clave de solape y ta/tb no cambian. Se plantea como un eje opcional más (junto a Costura y Solape), con t por defecto hasta compararlo con la textura de referencia. Abierto: si la longitud incluye las tapas (hoy los límites tapa/banda son fracciones fijas); en `Composicion`, longitud acumulada por cuerpo y no por arista (fallo 2 de la API). No arregla la compresión en el interior de los codos, que es geométrica.
+
+Actualización 2026-11-17 (tarde): Samuel propone que el mapeo sea d → v, con d la distancia normalizada sobre la curva (longitud de arco), en lugar de t → v; queda pendiente y antes de fijar reglas de prioridad entre zonas.
