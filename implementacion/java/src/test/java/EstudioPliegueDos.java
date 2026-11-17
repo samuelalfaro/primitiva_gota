@@ -22,14 +22,21 @@ public class EstudioPliegueDos {
         return Gota.curva(c1, r1 * E, v1, c2, r2 * E, v2, Perfil.recto());
     }
 
+
+    /** Ajusta el lienzo y la escala a la caja de los puntos de control (x0 y0 … x3 y3) más el radio r, y fija la etiqueta de los ficheros. */
+    static void ajusta(double r, double[] pts, String et) {
+        P = new double[4][2]; double mnx = 1e9, mny = 1e9, mxx = -1e9, mxy = -1e9;
+        for (int i = 0; i < 4; i++) { P[i][0] = pts[2 * i]; P[i][1] = pts[2 * i + 1];
+            mnx = Math.min(mnx, P[i][0]); mxx = Math.max(mxx, P[i][0]); mny = Math.min(mny, P[i][1]); mxy = Math.max(mxy, P[i][1]); }
+        ET = et; E = 300 / (Math.max(mxx - mnx, mxy - mny) + 2 * r); CW = (int) ((mxx - mnx + 2 * r) * E + 20); CH = (int) ((mxy - mny + 2 * r) * E + 20);
+        OX = 10 + (r - mnx) * E; OY = 10 + (r + mxy) * E;
+    }
+
     public static void main(String[] args) throws Exception {
         double r = args.length > 0 ? Double.parseDouble(args[0]) : 0.88;
-        if (args.length >= 10) {   // r x0 y0 x1 y1 x2 y2 x3 y3 etiqueta: el lienzo se ajusta a la caja de los puntos de control (mas r)
-            P = new double[4][2]; double mnx = 1e9, mny = 1e9, mxx = -1e9, mxy = -1e9;
-            for (int i = 0; i < 4; i++) { P[i][0] = Double.parseDouble(args[1 + 2 * i]); P[i][1] = Double.parseDouble(args[2 + 2 * i]);
-                mnx = Math.min(mnx, P[i][0]); mxx = Math.max(mxx, P[i][0]); mny = Math.min(mny, P[i][1]); mxy = Math.max(mxy, P[i][1]); }
-            ET = args[9]; E = 300 / (Math.max(mxx - mnx, mxy - mny) + 2 * r); CW = (int) ((mxx - mnx + 2 * r) * E + 20); CH = (int) ((mxy - mny + 2 * r) * E + 20);
-            OX = 10 + (r - mnx) * E; OY = 10 + (r + mxy) * E;
+        if (args.length >= 10) {
+            double[] pts = new double[8]; for (int i = 0; i < 8; i++) pts[i] = Double.parseDouble(args[1 + i]);
+            ajusta(r, pts, args[9]);
         }
         Relleno rel = Texturas.tira(new EstudioUV.Guia());
         for (String cos : new String[]{"ESPIGA", "ORTOGONAL"}) {
