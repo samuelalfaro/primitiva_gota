@@ -28,7 +28,7 @@ public enum Solape {
      */
     TRAZO {
         @Override void capas(Geometria g, Coordenadas c, double x, double y, Consumer<Capa> out) {
-            capasTrazo(g, c, x, y, null, out);
+            capasTrazo(g, c, x, y, java.util.List.of(), out);
         }
 
         @Override Coordenadas.Costurado ganador(Coordenadas c, double x, double y) {
@@ -114,16 +114,16 @@ public enum Solape {
             Coordenadas.Costurado p = c.pliegue(x, y);
             double cob = p == null ? 0 : g.mascara().cobertura(x, y);
             if (p != null && cob > 0) { out.accept(new Capa(cob, c.punto(x, y, () -> p))); return; }
-            capasTrazo(g, c, x, y, c.zonaPliegue(), out);
+            capasTrazo(g, c, x, y, c.zonasPliegue(), out);
         }
 
         @Override Coordenadas.Costurado ganador(Coordenadas c, double x, double y) {
             Coordenadas.Costurado p = c.pliegue(x, y);
             if (p != null) return p;
-            Pliegue z = c.zonaPliegue();
+            List<Pliegue> z = c.zonasPliegue();
             Zonas.Candidato mejor = null;
             for (Zonas.Candidato k : c.candidatos(x, y))
-                if ((z == null || !z.sustituye(k)) && (mejor == null || k.clave() > mejor.clave())) mejor = k;
+                if (!Pliegue.sustituye(z, k) && (mejor == null || k.clave() > mejor.clave())) mejor = k;
             return mejor != null ? mejor.c() : c.costurado(x, y);
         }
     };
@@ -146,7 +146,7 @@ public enum Solape {
     abstract void capas(Geometria g, Coordenadas c, double x, double y, Consumer<Capa> out);
 
     /** TRAZO; con zona de pliegue, los candidatos de la mitad interior con t dentro de [ta, tb] no cuentan (los sustituye la polar). */
-    private static void capasTrazo(Geometria g, Coordenadas c, double x, double y, Pliegue zona, Consumer<Capa> out) {
+    private static void capasTrazo(Geometria g, Coordenadas c, double x, double y, List<Pliegue> zona, Consumer<Capa> out) {
         List<Geometria.Hebra> hs = g.mascara().hebras(x, y);
         Memo memo = new Memo(c, x, y, zona);
         for (int h = 0; h < hs.size(); h++) {            // t creciente: la posterior tapa a la anterior
@@ -167,18 +167,18 @@ public enum Solape {
         private final double x, y;
         private List<Zonas.Candidato> cs;
 
-        private final Pliegue zona;
+        private final List<Pliegue> zona;
 
-        Memo(Coordenadas c, double x, double y) { this(c, x, y, null); }
+        Memo(Coordenadas c, double x, double y) { this(c, x, y, List.of()); }
 
-        Memo(Coordenadas c, double x, double y, Pliegue zona) { this.c = c; this.x = x; this.y = y; this.zona = zona; }
+        Memo(Coordenadas c, double x, double y, List<Pliegue> zona) { this.c = c; this.x = x; this.y = y; this.zona = zona; }
 
         List<Zonas.Candidato> candidatos() {
             if (cs == null) {
                 cs = c.candidatos(x, y);
-                if (zona != null) {
+                if (!zona.isEmpty()) {
                     List<Zonas.Candidato> f = new java.util.ArrayList<>();
-                    for (Zonas.Candidato k : cs) if (!zona.sustituye(k)) f.add(k);
+                    for (Zonas.Candidato k : cs) if (!Pliegue.sustituye(zona, k)) f.add(k);
                     if (!f.isEmpty()) cs = f;
                 }
             }

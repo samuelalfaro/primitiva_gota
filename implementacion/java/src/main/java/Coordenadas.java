@@ -90,6 +90,9 @@ public final class Coordenadas {
     /** La zona de pliegue de la gota con esta costura (ORTOGONAL o ESPIGA), o null. */
     Pliegue zonaPliegue() { return zonas().zonaPliegue(); }
 
+    /** Todas las zonas de pliegue, por ta creciente. */
+    java.util.List<Pliegue> zonasPliegue() { return zonas().zonasPliegue(); }
+
     /** Todas las soluciones del píxel, con su clave de orden (solape TRAZO). */
     java.util.List<Zonas.Candidato> candidatos(double x, double y) { return zonas().candidatos(x, y); }
 
