@@ -276,12 +276,20 @@ final class Zonas {
                 pliegueCalculado = true;
             }
         }
+        // Si un píxel cae en varias zonas (cuñas ORTOGONAL que se pisan), manda aquella en cuya mitad interior cae (donde el polar hace falta de verdad);
+        // la mitad exterior de una cuña es solo su prolongación. Con empate, la de mayor |q|. -Dgota.prioridad=primera: la primera de la lista.
+        double[] tq = null; Pliegue pg = null;
         for (Pliegue p : pliegues) {
-            double[] tq = p.localiza(x, y);
-            if (tq != null) return enBanda(tq[0], Math.abs(tq[1]), tq[1] < 0 ? -1 : 1);
+            double[] c = p.localiza(x, y);
+            if (c == null) continue;
+            if (pg == null) { tq = c; pg = p; if (!PRIORIDAD_INTERIOR) break; continue; }
+            boolean ci = p.interior(c), gi = pg.interior(tq);
+            if ((ci && !gi) || (ci == gi && Math.abs(c[1]) > Math.abs(tq[1]))) { tq = c; pg = p; }
         }
-        return null;
+        return tq == null ? null : enBanda(tq[0], Math.abs(tq[1]), tq[1] < 0 ? -1 : 1);
     }
+
+    private static final boolean PRIORIDAD_INTERIOR = !"primera".equals(System.getProperty("gota.prioridad"));
 
     /** EXPERIMENTAL: -Dgota.pliegues=uno restaura el tratamiento de un solo pliegue (el de mayor tramo de t). */
     private static final boolean MULTIPLE = !"uno".equals(System.getProperty("gota.pliegues"));

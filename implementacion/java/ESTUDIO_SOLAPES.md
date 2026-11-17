@@ -428,6 +428,17 @@ Una cúbica tiene como mucho dos inflexiones (el numerador de la curvatura, cros
   - Límites de la medida: resolución de 0,6 px, solo continuidad de orden cero (la derivada en los bordes no se ha medido) y, en `dos` ORTOGONAL, un borde queda tapado por la otra zona y no se puede muestrear.
 - **Pendiente**: ningún caso con los tres lóbulos estrechos a la vez; regla de prioridad entre zonas con intervalos de t que se pisan (hoy gana la primera de la lista; en ORTOGONAL las mitades exteriores de las cuñas se solapan); derivada en los bordes.
 
+### Prioridad entre cuñas que se pisan (ORTOGONAL, caso `dos`)
+
+En `dos` (r = 0,88) las zonas A (t∈[0,28, 0,41], lado −N) y B ([0,33, 0,67], lado +N) se pisan en 248 px (solo A 385, solo B 1282; `estudio/pliegue_dos_solape_cunas.png`: azul A, rojo B, verde las dos).
+`EstudioPliegueSolape` calcula (t, q) con cada zona en esos píxeles: difieren en media 0,074 en t y hasta 0,31, así que no son la misma solución: la región tiene dos soluciones.
+
+- **Ninguna regla da continuidad.** Seis reglas por píxel (primera, última, t mayor, t menor, |q| menor, |q| mayor) dejan un salto medio de 0,06–0,08 donde cambia la zona ganadora, frente a 0,018 de variación natural entre vecinos de la misma zona. Al ser un doble recubrimiento, el borde de la zona de arriba es un salto inevitable (como en un solape legítimo de TRAZO).
+- **Regla geométrica adoptada:** manda la zona en cuya **mitad interior** cae el píxel (donde el polar hace falta de verdad); la mitad exterior de una cuña es solo prolongación. En los 248 píxeles el reparto es siempre una zona en el interior y la otra en el exterior (0 empates), así que la regla decide todos. Con empate, la de mayor |q|; `-Dgota.prioridad=primera` restaura «la primera de la lista». Implementada en `Zonas.pliegue`.
+- **Medido tras el cambio** (`EstudioPliegueBordes ortogonal`): el borde tb de B pasa de |Δu| 0,018 y |Δv| máx 0,134 a 0,000 y 0,009 (por debajo del control). El borde tb de A sigue con salto (|Δv| medio 0,11; solo 4 puntos muestreables, el resto lo tapa B): es el cambio de zona ganadora.
+- Los cinco codos dan exactamente los mismos píxeles cambiados que antes (una sola zona) y las 11 suites de `Todas` pasan.
+- **Pendiente**: ver si es la regla que se quiere visualmente en más casos con pisado (hay muchos en la búsqueda aleatoria); caso con tres lóbulos; derivada en los bordes.
+
 ### Anotado: v por longitud de arco (no implementado)
 
 El control de arriba muestra de paso que v = t hace que la textura corra a velocidad muy distinta según el punto (velocidad máx/mín 5,8 en c147 y c219, 19 en `dos`; la longitud acumulada se separa hasta 0,2 de t). Idea: usar como v la longitud de arco de la espina (tabla longitud(t), como la de semianchuras) solo como coordenada de textura. La silueta, el perfil de radios en t, la clave de solape y ta/tb no cambian. Se plantea como un eje opcional más (junto a Costura y Solape), con t por defecto hasta compararlo con la textura de referencia. Abierto: si la longitud incluye las tapas (hoy los límites tapa/banda son fracciones fijas); en `Composicion`, longitud acumulada por cuerpo y no por arista (fallo 2 de la API). No arregla la compresión en el interior de los codos, que es geométrica.

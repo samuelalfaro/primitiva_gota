@@ -321,5 +321,8 @@ final class Pliegue {
         return new double[] { tt, lado == 1 ? q : -q };
     }
 
+    /** El resultado de {@link #localiza} cae en la mitad interior de la zona (hacia X) y no en la prolongación exterior de la cuña. */
+    boolean interior(double[] tq) { return lado == 1 ? tq[1] > 0 : tq[1] < 0; }
+
     @Override public String toString() { return String.format("Pliegue[ta=%.3f tb=%.3f X=(%.1f, %.1f) lado=%d]", ta, tb, xx, xy, lado); }
 }
