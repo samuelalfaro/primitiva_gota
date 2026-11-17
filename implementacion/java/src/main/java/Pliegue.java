@@ -19,7 +19,7 @@ final class Pliegue {
 
     final double ta, tb, xx, xy;
     private final double a0, da;
-    private final int lado;                     // lado interior (0 = -N, 1 = +N)
+    final int lado;                     // lado interior (0 = -N, 1 = +N)
     private final boolean soloInterior;         // ESPIGA: solo el abanico interior (w de 1 en X a 0 en la espina); ORTOGONAL: toda la cuña
     private final double[] d = new double[NA + 1], r = new double[NA + 1], t = new double[NA + 1];
 
@@ -208,6 +208,65 @@ final class Pliegue {
         return mejor(g, null, m, q, true);
     }
 
+    /**
+     * EXPERIMENTAL (varios pliegues): todos los cruces de la envolvente que son esquina de la silueta (ningún otro disco los cubre), ordenados por ta.
+     * Cada lado puede aportar varios (una cúbica con dos inflexiones tiene hasta tres lóbulos de curvatura); los cruces con el mismo X se funden en el
+     * de mayor tramo de t. {@code orto}: ORTOGONAL (cuña completa, ta y tb en los pies de X sobre la espina); si no, ESPIGA (solo el abanico interior).
+     * Solapes entre zonas (intervalos de t que se pisan) todavía sin regla de prioridad: gana la primera de la lista.
+     */
+    static java.util.List<Pliegue> todos(Geometria g, Zonas z, double[][] hw, int m, boolean orto) {
+        java.util.List<Pliegue> out = new java.util.ArrayList<>();
+        if (g.arcos() != null) return out;
+        double[][][] qs = new double[2][m + 1][2];
+        for (int i = 0; i <= m; i++) {
+            Zonas.Fr f = z.marco(i / (double) m);
+            for (int l = 0; l < 2; l++) { qs[l][i][0] = f.cx() + f.ox()[l]; qs[l][i][1] = f.cy() + f.oy()[l]; }
+        }
+        for (int l = 0; l < 2; l++) {
+            double[][] q = qs[l];
+            java.util.List<double[]> cr = new java.util.ArrayList<>();      // {i, j, s, u, X, Y}
+            for (int i = 0; i < m; i++) for (int j = i + HUECO; j < m; j++) {
+                double r1x = q[i + 1][0] - q[i][0], r1y = q[i + 1][1] - q[i][1], r2x = q[j + 1][0] - q[j][0], r2y = q[j + 1][1] - q[j][1];
+                double den = r1x * r2y - r1y * r2x;
+                if (Math.abs(den) < 1e-12) continue;
+                double wx = q[j][0] - q[i][0], wy = q[j][1] - q[i][1];
+                double s = (wx * r2y - wy * r2x) / den, u = (wx * r1y - wy * r1x) / den;
+                if (s < 0 || s > 1 || u < 0 || u > 1) continue;
+                double px = q[i][0] + s * r1x, py = q[i][1] + s * r1y;
+                if (cubierto(g, px, py, m)) continue;
+                cr.add(new double[] { i, j, s, u, px, py });
+            }
+            cr.sort((a, b) -> Double.compare(b[1] - b[0], a[1] - a[0]));
+            java.util.List<double[]> ok = new java.util.ArrayList<>();
+            for (double[] c : cr) {
+                boolean dup = false;
+                double tol = 0.15 * g.rad((c[0] + c[2]) / m);
+                for (double[] o : ok) if (Math.hypot(o[4] - c[4], o[5] - c[5]) < tol) { dup = true; break; }
+                if (!dup) ok.add(c);
+            }
+            for (double[] c : ok) {
+                double ta = (c[0] + c[2]) / m, tb = (c[1] + c[3]) / m;
+                if (orto) {
+                    double pa = pie(g, c[4], c[5], ta, m), pb = pie(g, c[4], c[5], tb, m);
+                    if (!(pb - pa > 1e-3)) continue;
+                    ta = pa; tb = pb;
+                }
+                out.add(new Pliegue(ta, tb, c[4], c[5], l, g, hw, m, !orto));
+            }
+        }
+        out.sort((a, b) -> Double.compare(a.ta, b.ta));
+        return out;
+    }
+
+    /** Otro disco de la familia cubre el punto (x, y): |X - c(s)| < r(s) para algún s. Los discos de los dos t del cruce quedan en r (tolerancia 1 %). */
+    private static boolean cubierto(Geometria g, double x, double y, int m) {
+        for (int i = 0; i <= m; i++) {
+            double t = i / (double) m, rr = g.rad(t);
+            if (Math.sqrt(dist2(g, x, y, t)) < rr * 0.99) return true;
+        }
+        return false;
+    }
+
     private static Pliegue mejor(Geometria g, double[][] hw, int m, double[][][] qs, boolean soloInterior) {
         Pliegue mejor = null;
         double mejorDt = 0;
@@ -236,6 +295,12 @@ final class Pliegue {
     boolean sustituye(Zonas.Candidato k) {
         double u = k.c().uv().u();
         return k.clave() > ta && k.clave() < tb && (lado == 1 ? u > 0.5 : u < 0.5);
+    }
+
+    /** Algún pliegue de la lista sustituye al candidato. */
+    static boolean sustituye(java.util.List<Pliegue> zs, Zonas.Candidato k) {
+        for (Pliegue p : zs) if (p.sustituye(k)) return true;
+        return false;
     }
 
     /** {t, q} del píxel si cae dentro de la cuña (q en [-1, 1], con el signo de u de la tira), o null. */

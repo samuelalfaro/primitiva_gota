@@ -41,7 +41,7 @@ final class Zonas {
     private final Fr[] tabla = new Fr[NS + 1];
     private final double[][][] dist = new double[2][2][NW + 1], fase = new double[2][2][NW + 1];   // curva de cada extremo y lado
     private volatile Ortogonal ort;
-    private volatile Pliegue pliegue;
+    private volatile java.util.List<Pliegue> pliegues = java.util.List.of();
     private volatile boolean pliegueCalculado;
 
     Zonas(Geometria g, Costura modo, Cortes cortes) {
@@ -265,16 +265,26 @@ final class Zonas {
         if (modo == Costura.SUAVIZADO) return null;      // pendiente: el Hermite no tiene costilla recta
         if (!pliegueCalculado) synchronized (this) {
             if (!pliegueCalculado) {
-                pliegue = modo == Costura.ORTOGONAL ? Pliegue.de(g, this, ortogonal().hw, M) : Pliegue.espiga(g, this, 512);
+                pliegues = MULTIPLE
+                    ? Pliegue.todos(g, this, modo == Costura.ORTOGONAL ? ortogonal().hw : null, modo == Costura.ORTOGONAL ? M : 512, modo == Costura.ORTOGONAL)
+                    : java.util.stream.Stream.of(modo == Costura.ORTOGONAL ? Pliegue.de(g, this, ortogonal().hw, M) : Pliegue.espiga(g, this, 512)).filter(java.util.Objects::nonNull).toList();
                 pliegueCalculado = true;
             }
         }
-        Pliegue p = pliegue;
-        double[] tq = p == null ? null : p.localiza(x, y);
-        return tq == null ? null : enBanda(tq[0], Math.abs(tq[1]), tq[1] < 0 ? -1 : 1);
+        for (Pliegue p : pliegues) {
+            double[] tq = p.localiza(x, y);
+            if (tq != null) return enBanda(tq[0], Math.abs(tq[1]), tq[1] < 0 ? -1 : 1);
+        }
+        return null;
     }
 
-    Pliegue zonaPliegue() { pliegue(0, 0); return pliegue; }
+    /** EXPERIMENTAL: -Dgota.pliegues=uno restaura el tratamiento de un solo pliegue (el de mayor tramo de t). */
+    private static final boolean MULTIPLE = !"uno".equals(System.getProperty("gota.pliegues"));
+
+    java.util.List<Pliegue> zonasPliegue() { pliegue(0, 0); return pliegues; }
+
+    /** La primera zona de pliegue (la de menor ta), o null. */
+    Pliegue zonaPliegue() { java.util.List<Pliegue> l = zonasPliegue(); return l.isEmpty() ? null : l.get(0); }
 
     private Ortogonal ortogonal() {
         Ortogonal o = ort;

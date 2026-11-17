@@ -408,3 +408,17 @@ Se mide con `EstudioPliegueBordes` el salto de (u, v) a través de las dos norma
 - **Medido** (`EstudioPliegue espiga`, imagen `estudio/pliegue_polar_espiga.png`): en los cinco codos el pliegue desaparece; cambia entre el 3 % y el 7 % de los
   píxeles de la gota (menos que en ORTOGONAL porque solo se sustituye la mitad interior). Las suites de `Todas` pasan.
 - **Pendiente**: SUAVIZADO (el Hermite no tiene costilla recta); un solo cruce por gota; continuidad de la derivada en los bordes del abanico.
+
+### Varios pliegues en la misma gota (cúbica con dos inflexiones)
+
+Una cúbica tiene como mucho dos inflexiones (el numerador de la curvatura, cross(B′, B″), es de grado 2), es decir, hasta tres lóbulos de curvatura y, por tanto, hasta tres pliegues.
+`Pliegue.todos` (por defecto; `-Dgota.pliegues=uno` restaura el tratamiento de uno solo) recoge **todos** los cruces de la envolvente que son esquina de la silueta
+(ningún otro disco de la familia los cubre: |X − c(s)| ≥ r(s) en toda la espina), por lado, ordenados por ta; los cruces con el mismo X se funden en el de mayor tramo de t.
+`Solape.PLIEGUE` y `Zonas.pliegue` trabajan con la lista.
+
+- **Casos** (búsqueda aleatoria de cúbicas con dos cruces verificados en lados opuestos y tramos de t disjuntos; `EstudioPliegueDos r x0 y0 … x3 y3 etiqueta`):
+  - c147, r = 0,89: puntos de control (2,26, 2,39) (2,94, −1,0) (−0,19, 2,96) (1,2, −2,66); zonas t∈[0,09, 0,45] (lado −N) y [0,47, 0,75] (lado +N).
+  - c219, r = 0,65: (−0,73, −1,34) (−1,57, 2,79) (1,01, −0,21) (0,44, 2,07); zonas [0,25, 0,48] y [0,55, 0,96].
+  - Con el código de un solo pliegue el segundo codo se quedaba con las costillas cruzadas; con la lista salen las dos zonas, en ESPIGA y en ORTOGONAL (`estudio/pliegue_dos_c147_espiga.png`, `estudio/pliegue_dos_c219_ortogonal.png`).
+- **Comprobado**: los cinco codos de `EstudioPliegue` dan lo mismo que con una zona; las 11 suites de `Todas` pasan.
+- **Pendiente**: ningún caso con los tres lóbulos estrechos a la vez; intervalos de t que se pisan (hoy gana la primera zona de la lista, sin regla de prioridad; en ORTOGONAL las mitades exteriores de las cuñas pueden solaparse); derivada en los bordes; no se ha medido el salto de u/v en los bordes de las zonas de estos casos (solo se han mirado las imágenes).
