@@ -439,14 +439,16 @@ En `dos` (r = 0,88) las zonas A (t∈[0,28, 0,41], lado −N) y B ([0,33, 0,67],
 - Los cinco codos dan exactamente los mismos píxeles cambiados que antes (una sola zona) y las 11 suites de `Todas` pasan.
 - **Pendiente**: ver si es la regla que se quiere visualmente en más casos con pisado (hay muchos en la búsqueda aleatoria); caso con tres lóbulos; derivada en los bordes.
 
-### Tres lóbulos: búsqueda de casos con tres pliegues
+### Tres lóbulos: límite de la cúbica (casos límite, no curvas «bonitas»)
+
+Objetivo de la búsqueda (Samuel): llegar a los límites de la cúbica, no dibujar una curva agradable de tres codos; por eso los casos con lóbulo central casi cúspide son los que se buscaban.
 
 Búsqueda aleatoria (puntos de control en [−3, 3]², unas 290 000 cúbicas con dos inflexiones; r = 1,15 × el mayor radio de curvatura mínimo de los tres lóbulos; se exigen tres cruces que sean esquina real):
 
 - Con filtros estrictos (radio de curvatura mínimo de cada lóbulo ≥ 5 % de la longitud y velocidad máx/mín ≤ 8): **ningún caso**.
 - Relajando (≥ 1–3 % y velocidad máx/mín ≤ 15–100): cinco casos. En todos el lóbulo central es casi una cúspide (ρ mín 0,01–0,04 con longitud 2–6) y la estructura es la misma: un cruce ancho (t del orden de 0,3–0,8) que **encierra** a otros dos pequeños en el lado contrario. Ejemplos: t3a, r = 1,0, puntos (−2,74, 2,77) (2,75, 1,49) (0,79, 1,64) (1,62, 1,69); t3b, r = 1,39, puntos (−0,28, −2,39) (−2,98, 1,88) (−1,45, −1,6) (−2,26, 1,54).
 - `Pliegue.todos` detecta las tres zonas en los dos casos y en las dos costuras. En t3b (`estudio/pliegue_tres_t3b_*.png`) **ESPIGA** sale limpia, pero en **ORTOGONAL** las cuñas se encajan unas dentro de otras y el reparto de píxeles queda irregular (bordes dentados, costillas cruzadas): con zonas anidadas la regla de la mitad interior no basta. No he medido los bordes de estos casos.
-- Lectura: con una sola cúbica los tres pliegues solo aparecen con un lóbulo central casi cúspide (el caso límite ya documentado); no es una conclusión demostrada, solo lo que sale de la búsqueda aleatoria. Una `Composicion` de varias curvas sí puede dar tres codos suaves.
+- Lectura: el límite de la cúbica para tres pliegues es un lóbulo central casi cúspide (el caso límite ya documentado); no es una conclusión demostrada, solo lo que sale de la búsqueda aleatoria. Una `Composicion` de varias curvas sí puede dar tres codos suaves.
 
 ### Anotado: v por longitud de arco (no implementado)
 
