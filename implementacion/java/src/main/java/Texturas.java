@@ -192,6 +192,33 @@ public final class Texturas {
     /** Igual que {@link #tira(Textura)}: hay un solo mapeo de textura en la tira (tapas de semidisco). */
     public static Relleno textura(Textura tex) { return tira(tex); }
 
+    /**
+     * Sentido en que gira la textura de un disco al ir de un extremo al otro de la gota (ángulos en grados): es una
+     * rotación, no un color, y para girar más de media vuelta hace falta poder elegir el sentido.
+     * HORARIO = ángulo creciente, ANTIHORARIO = decreciente.
+     */
+    public enum Giro {
+        /** El arco más corto entre los dos ángulos (valor por defecto). */
+        CORTO,
+        /** El arco más largo. Con dos ángulos iguales da una vuelta completa. */
+        LARGO,
+        /** Ángulo creciente. */
+        HORARIO,
+        /** Ángulo decreciente. */
+        ANTIHORARIO;
+
+        /** Giro con signo, en grados, para ir del ángulo a0 al a1 en este sentido. */
+        public double giro(double a0, double a1) {
+            double corto = ((a1 - a0 + 180) % 360 + 360) % 360 - 180;   // [-180, 180)
+            return switch (this) {
+                case CORTO -> corto;
+                case LARGO -> corto > 0 ? corto - 360 : corto + 360;
+                case HORARIO -> ((a1 - a0) % 360 + 360) % 360;
+                case ANTIHORARIO -> -(((a0 - a1) % 360 + 360) % 360);
+            };
+        }
+    }
+
     // ---------- Mapeo en disco ----------
     //
     // Cada círculo de la familia se lleva a un disco de la textura mediante una semejanza:
@@ -200,7 +227,7 @@ public final class Texturas {
     // unidad). Los extremos fijan los discos: c1 y c2 son los centros
     // de la textura a los que va el centro de cada círculo, y el punto del borde e1 / e2 fija a la vez la escala
     // s = |e - c| y el ángulo θ = atan2(e - c). Entre ambos se interpolan linealmente c y s, y θ con el sentido
-    // de Mezcla.Tono (CORTO por defecto). Como en glTexEnv y la tira, depende solo de (t, axial, lateral).
+    // de Giro (CORTO por defecto). Como en glTexEnv y la tira, depende solo de (t, axial, lateral).
     //
     // Con TANGENTE el sistema local gira con el camino (x' en el sentido de avance, y' hacia la derecha del avance en
     // pantalla): el punto e va a la proa del círculo. Con FIJA el sistema local son los ejes de la pantalla
@@ -243,11 +270,11 @@ public final class Texturas {
 
     /** Todos los círculos al disco inscrito en la textura, orientado con el camino (una especie de proyección). */
     public static Relleno disco(Textura tex) {
-        return disco(tex, Disco.inscrito(), Disco.inscrito(), Orientacion.TANGENTE, Mezcla.Tono.CORTO);
+        return disco(tex, Disco.inscrito(), Disco.inscrito(), Orientacion.TANGENTE, Giro.CORTO);
     }
 
     public static Relleno disco(Textura tex, Disco primero, Disco segundo) {
-        return disco(tex, primero, segundo, Orientacion.TANGENTE, Mezcla.Tono.CORTO);
+        return disco(tex, primero, segundo, Orientacion.TANGENTE, Giro.CORTO);
     }
 
     /**
@@ -256,15 +283,15 @@ public final class Texturas {
      * centros a dos radios de distancia reproduce la textura idéntica.
      */
     public static Relleno discoCapsula(Textura tex) {
-        return disco(tex, Disco.capsulaInicio(), Disco.capsulaFin(), Orientacion.TANGENTE, Mezcla.Tono.CORTO);
+        return disco(tex, Disco.capsulaInicio(), Disco.capsulaFin(), Orientacion.TANGENTE, Giro.CORTO);
     }
 
     public static Relleno disco(Textura tex, Disco primero, Disco segundo, Orientacion orientacion) {
-        return disco(tex, primero, segundo, orientacion, Mezcla.Tono.CORTO);
+        return disco(tex, primero, segundo, orientacion, Giro.CORTO);
     }
 
     public static Relleno disco(Textura tex, Disco primero, Disco segundo,
-                                     Orientacion orientacion, Mezcla.Tono giro) {
+                                     Orientacion orientacion, Giro giro) {
         Objects.requireNonNull(tex, "textura");
         Objects.requireNonNull(primero, "primero");
         Objects.requireNonNull(segundo, "segundo");
@@ -277,12 +304,12 @@ public final class Texturas {
         private final Textura tex;
         private final Disco d1, d2;
         private final Orientacion orientacion;
-        private final Mezcla.Tono giro;
+        private final Giro giro;
         private final Gota gota;
         private final double s1, s2, th1, th2;   // escala (en unidades del ancho) y ángulo (grados) de cada extremo
         private final double al;                  // aspecto ancho/alto de la textura
 
-        DiscoRelleno(Textura tex, Disco d1, Disco d2, Orientacion o, Mezcla.Tono giro, Gota gota) {
+        DiscoRelleno(Textura tex, Disco d1, Disco d2, Orientacion o, Giro giro, Gota gota) {
             this.tex = tex; this.d1 = d1; this.d2 = d2; this.orientacion = o; this.giro = giro; this.gota = gota;
             al = tex.aspecto();
             if (!(al > 0) || !Double.isFinite(al)) throw new IllegalArgumentException("aspecto de la textura no válido");
@@ -320,9 +347,9 @@ public final class Texturas {
         }
     }
 
-    /** Ángulo interpolado en grados, normalizado a [0, 360), con el sentido pedido (mismas reglas que el tono). */
-    static double interpolaAngulo(double a0, double a1, double u, Mezcla.Tono tono) {
-        double d = tono.giro(a0, a1);
+    /** Ángulo interpolado en grados, normalizado a [0, 360), con el sentido pedido (reglas de Giro). */
+    static double interpolaAngulo(double a0, double a1, double u, Giro giro) {
+        double d = giro.giro(a0, a1);
         return (((a0 + d * u) % 360) + 360) % 360;
     }
 

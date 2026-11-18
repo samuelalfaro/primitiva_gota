@@ -1,60 +1,25 @@
-import java.util.Objects;
-
 /**
  * Interpolación entre dos colores ARGB: u = 0 devuelve c0, u = 1 devuelve c1. Las implementaciones listas para usar
- * son RGB (por defecto), RGB_LINEAL, HSL y LCH (Oklch), estas dos con sentido de tono configurable ({@link Tono}), o
- * cualquier lambda propia. Si solo se da una Mezcla, se usa para todas las interpolaciones. Con tonos HORARIO /
- * ANTIHORARIO / LARGO conviene dar una segunda Mezcla de sentido CORTO para centroBorde: un sentido forzado en esa
- * mezcla puede dar vueltas completas por la rueda de color.
+ * son RGB (por defecto), RGB_LINEAL, HSL y LCH (Oklab), o cualquier lambda propia. Si solo se da una Mezcla, se usa
+ * para todas las interpolaciones.
+ *
+ * <p>HSL y LCH no interpolan el tono como un ángulo (para eso habría que elegir un sentido, y la elección salta cuando
+ * dos tonos quedan a ~180°, lo que dibujaba cortes en el color): interpolan el vector (croma·cos tono, croma·sen tono),
+ * que es continuo en todo el espacio. Entre tonos opuestos el color pasa por un gris, como en RGB; un color
+ * acromático (croma 0) no aporta tono, y el vector se limita a atenuarse hacia él.
  */
 @FunctionalInterface
 public interface Mezcla {
     int mezclar(int c0, int c1, double u);
 
-    /**
-     * Sentido en que el tono recorre la rueda de color (HSL y LCH).
-     * HORARIO = tono creciente (rojo → amarillo → verde → azul), ANTIHORARIO = decreciente.
-     */
-    public enum Tono {
-        /** El arco más corto entre los dos tonos (valor por defecto). */
-        CORTO,
-        /** El arco más largo. Con dos tonos iguales da una vuelta completa (igual que CSS). */
-        LARGO,
-        /** Tono creciente. */
-        HORARIO,
-        /** Tono decreciente. */
-        ANTIHORARIO;
-
-        /** Giro con signo, en grados, para ir del ángulo a0 al a1 en este sentido (ángulos en grados). */
-        public double giro(double a0, double a1) {
-            double corto = ((a1 - a0 + 180) % 360 + 360) % 360 - 180;   // [-180, 180)
-            return switch (this) {
-                case CORTO -> corto;
-                case LARGO -> corto > 0 ? corto - 360 : corto + 360;
-                case HORARIO -> ((a1 - a0) % 360 + 360) % 360;
-                case ANTIHORARIO -> -(((a0 - a1) % 360 + 360) % 360);
-            };
-        }
-    }
-
     /** sRGB directo, alfa premultiplicado. Es el valor por defecto. */
     public static final Mezcla RGB = Mezcla::mezclaRgb;
     /** Interpola en luz lineal (sin la curva sRGB), alfa premultiplicado. */
     public static final Mezcla RGB_LINEAL = Mezcla::mezclaRgbLineal;
-    /** Tono, saturación, luminosidad; arco más corto del tono. */
-    public static final Mezcla HSL = hsl(Tono.CORTO);
-    /** Luminosidad, croma, tono en Oklab (variante perceptual de LCH); arco más corto del tono. */
-    public static final Mezcla LCH = lch(Tono.CORTO);
-
-    public static Mezcla hsl(Tono tono) {
-        Objects.requireNonNull(tono, "tono");
-        return (c0, c1, u) -> mezclaHsl(c0, c1, u, tono);
-    }
-
-    public static Mezcla lch(Tono tono) {
-        Objects.requireNonNull(tono, "tono");
-        return (c0, c1, u) -> mezclaOklch(c0, c1, u, tono);
-    }
+    /** Tono, saturación, luminosidad; el vector (saturación·cos tono, saturación·sen tono) se interpola linealmente. */
+    public static final Mezcla HSL = Mezcla::mezclaHsl;
+    /** Oklab (variante perceptual de LCH): luminosidad y vector (a, b) lineales, sin saltos de tono. */
+    public static final Mezcla LCH = Mezcla::mezclaOklab;
 
     // ---------- RGB ----------
 
@@ -102,12 +67,15 @@ public interface Mezcla {
 
     // ---------- HSL ----------
 
-    private static int mezclaHsl(int c0, int c1, double u, Tono tono) {
+    private static int mezclaHsl(int c0, int c1, double u) {
         if (u <= 0) return c0;
         if (u >= 1) return c1;
         double[] x = rgbAHsl(c0), y = rgbAHsl(c1);
-        double h = mezclaTono(x[0], x[1], y[0], y[1], u, 1e-6, tono);
-        double s = x[1] + (y[1] - x[1]) * u;
+        double h0 = Math.toRadians(x[0]), h1 = Math.toRadians(y[0]);
+        double vx = x[1] * Math.cos(h0) + (y[1] * Math.cos(h1) - x[1] * Math.cos(h0)) * u;
+        double vy = x[1] * Math.sin(h0) + (y[1] * Math.sin(h1) - x[1] * Math.sin(h0)) * u;
+        double s = Math.min(1, Math.hypot(vx, vy)), h = s < 1e-9 ? 0 : Math.toDegrees(Math.atan2(vy, vx));
+        if (h < 0) h += 360;
         double l = x[2] + (y[2] - x[2]) * u;
         double a = (c0 >>> 24) + ((c1 >>> 24) - (c0 >>> 24)) * u;
         return hslARgb(h, s, l, a);
@@ -140,34 +108,27 @@ public interface Mezcla {
         return empaqueta(alfa, (r + m) * 255, (g + m) * 255, (b + m) * 255);
     }
 
-    // ---------- Oklch ----------
+    // ---------- Oklab ----------
 
-    private static int mezclaOklch(int c0, int c1, double u, Tono tono) {
+    private static int mezclaOklab(int c0, int c1, double u) {
         if (u <= 0) return c0;
         if (u >= 1) return c1;
-        double[] x = rgbAOklch(c0), y = rgbAOklch(c1);
-        double h = mezclaTono(x[2], x[1], y[2], y[1], u, 2e-3, tono);
-        double cr = x[1] + (y[1] - x[1]) * u;
-        double l = x[0] + (y[0] - x[0]) * u;
+        double[] x = rgbAOklab(c0), y = rgbAOklab(c1);
         double a = (c0 >>> 24) + ((c1 >>> 24) - (c0 >>> 24)) * u;
-        return oklchARgb(l, cr, h, a);
+        return oklabARgb(x[0] + (y[0] - x[0]) * u, x[1] + (y[1] - x[1]) * u, x[2] + (y[2] - x[2]) * u, a);
     }
 
-    private static double[] rgbAOklch(int c) {
+    private static double[] rgbAOklab(int c) {
         double r = TablaLineal.LIN[(c >> 16) & 0xFF], g = TablaLineal.LIN[(c >> 8) & 0xFF], b = TablaLineal.LIN[c & 0xFF];
         double l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
         double m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
         double s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
-        double bigL = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s;
-        double oa = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s;
-        double ob = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s;
-        double h = Math.toDegrees(Math.atan2(ob, oa));
-        if (h < 0) h += 360;
-        return new double[] { bigL, Math.hypot(oa, ob), h };
+        return new double[] { 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+                              1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+                              0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s };
     }
 
-    private static int oklchARgb(double bigL, double chroma, double h, double alfa) {
-        double hr = Math.toRadians(h), oa = chroma * Math.cos(hr), ob = chroma * Math.sin(hr);
+    private static int oklabARgb(double bigL, double oa, double ob, double alfa) {
         double l = bigL + 0.3963377774 * oa + 0.2158037573 * ob;
         double m = bigL - 0.1055613458 * oa - 0.0638541728 * ob;
         double s = bigL - 0.0894841775 * oa - 1.2914855480 * ob;
@@ -180,16 +141,6 @@ public interface Mezcla {
     }
 
     // ---------- Utilidades ----------
-
-    /** Tono interpolado según el sentido pedido; si un extremo es acromático toma el tono del otro. */
-    private static double mezclaTono(double h0, double c0, double h1, double c1,
-                                     double u, double eps, Tono tono) {
-        if (c0 < eps) return h1;
-        if (c1 < eps) return h0;
-        double d = tono.giro(h0, h1);
-        double h = (h0 + d * u) % 360;
-        return h < 0 ? h + 360 : h;
-    }
 
     private static int empaqueta(double a, double r, double g, double b) {
         return clamp255(a) << 24 | clamp255(r) << 16 | clamp255(g) << 8 | clamp255(b);
