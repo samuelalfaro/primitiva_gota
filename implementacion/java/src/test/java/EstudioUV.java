@@ -3,8 +3,18 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import javax.imageio.ImageIO;
 public class EstudioUV {
-    /** textura guía de CosturasDemo: lados distintos, líneas transversales en el cuerpo y radios en las tapas */
+    /**
+     * Textura de referencia de los estudios: {@link EstudioGuia.GuiaAjedrez} (distancia a la espina: núcleo y aro sólidos con los colores de zona, degradado de la
+     * propia gota en medio y ajedrez encima). Sustituye a la antigua {@link GuiaLineas}, que se conserva para comparar.
+     */
     static final class Guia implements Texturas.Textura {
+        private final Texturas.Textura t = new EstudioGuia.GuiaAjedrez(0.30, 0.10);
+        @Override public double aspecto() { return t.aspecto(); }
+        @Override public int muestrea(double u, double v) { return t.muestrea(u, v); }
+    }
+
+    /** textura guía anterior (la de CosturasDemo): lados distintos, líneas transversales en el cuerpo y radios en las tapas */
+    static final class GuiaLineas implements Texturas.Textura {
         final Texturas.Textura base = Texturas.referenciaLados();
         static final double MEDIO = 0.012, SUAVE = 0.004; static final int ROJO = 0xFFC62828;
         @Override public double aspecto() { return 0.5; }

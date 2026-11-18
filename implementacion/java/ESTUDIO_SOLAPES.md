@@ -511,6 +511,18 @@ Resultado de `espina`:
 
 Decisión de Samuel (2026-11-17): documentarlo para estudiarlo más adelante («no queda muy limpio, pierde zonas, pero resuelve que una zona sobrepase a la que no le corresponde»); caso límite extremo. El modo por defecto sigue siendo `interior`; `espina` queda como opción de estudio. Imágenes: `estudio/pliegue_t3b_ortogonal_espina.png`, `estudio/pliegue_cunas_t3a_espina.png`, `estudio/pliegue_cunas_t3b_espina.png`.
 
+## Textura de referencia de los estudios: `GuiaAjedrez`
+
+Desde 2026-11-18 los estudios usan una textura «chivata» (`EstudioUV.Guia` = `EstudioGuia.GuiaAjedrez`; la anterior queda como `EstudioUV.GuiaLineas`). Definida sobre una textura de 16 × 32 unidades por la distancia d a la espina (segmento entre los centros (8, 8) y (8, 24)):
+
+- d ≤ 2: sólido (banda central de 4 y seminúcleo de las tapas); 6 < d ≤ 8: aro exterior sólido. Colores de zona por cuarto de v y por lado de u.
+- 2 < d ≤ 6: degradado de 6 colores generado por la propia gota (recta, radio 6, centros (8, 8) y (8, 24)) y reutilizado como textura (`Texturas.deImagen`), aclarado un 30 %.
+- Ajedrez encima (oscurece un 10 % las celdas impares): celdas de 2 unidades en el cuerpo; en las tapas, anillos de 2 y sectores de 18° (10 por media tapa, par, para que el eje caiga en un borde y la alternancia cruce la costura; la tapa de arriba lleva desfase 1 para alternar con el cuerpo).
+- Ajuste por efecto óptico: el verde derecho es `#81C784` (con `#A5D6A7` el verde claro con celda oscura se confundía con el verde oscuro con celda clara; distancia de color 22 → 71).
+- Qué delata: el ajedrez, la densidad de texels (compresión y estiramiento); el degradado, la continuidad de u/v; los sólidos, la pertenencia a cada zona. Un giro de 180° ya no invierte la paridad del ajedrez de las tapas; la pista de orientación son los colores sólidos.
+
+Imágenes: `estudio/guia_ajedrez_textura.png`, `estudio/pliegue_t3b_ortogonal_guia_ajedrez.png`. Pendiente: suavizar (o no) los cortes duros en d = 2 y d = 6; decidir si esta textura pasa a la biblioteca (`Texturas.referenciaLados`) o a `CosturasDemo.Guia`, que no se han tocado.
+
 ## Referencias y aviso sobre patentes
 
 Los pliegues en cintas texturadas a lo largo de una curva (trazos esqueléticos, *skeletal strokes*) ya se habían estudiado; reconocemos a sus autores. Nuestra solución se alcanzó con una mezcla de inspiración, imitación y medios propios, y no se ha copiado código de ninguno de ellos.
