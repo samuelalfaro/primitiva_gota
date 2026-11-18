@@ -515,11 +515,17 @@ Decisión de Samuel (2026-11-17): documentarlo para estudiarlo más adelante («
 
 Desde 2026-11-18 los estudios usan una textura «chivata» (`EstudioUV.Guia` = `EstudioGuia.GuiaAjedrez`; la anterior queda como `EstudioUV.GuiaLineas`). Definida sobre una textura de 16 × 32 unidades por la distancia d a la espina (segmento entre los centros (8, 8) y (8, 24)):
 
-- d ≤ 2: sólido (banda central de 4 y seminúcleo de las tapas); 6 < d ≤ 8: aro exterior sólido. Colores de zona por cuarto de v y por lado de u.
-- 2 < d ≤ 6: degradado de 6 colores generado por la propia gota (recta, radio 6, centros (8, 8) y (8, 24)) y reutilizado como textura (`Texturas.deImagen`), aclarado un 30 %.
+- d ≤ 2 (banda central de 4 y seminúcleo de las tapas) y 6 < d ≤ 8 (aro exterior): sólido, con los colores de zona (pasteles por cuarto de v y lado de u).
+- 2 < d ≤ 6: degradado generado por la propia gota (recta, radio 6, centros (8, 8) y (8, 24)) y reutilizado como textura (`Texturas.deImagen`). Sus seis colores: los pasteles de las tapas con la saturación subida a 0,75 en los extremos y un gris neutro (`#D0D0D0`) en el centro de cada nodo, interpolados en LCH por el arco corto del tono.
 - Ajedrez encima (oscurece un 10 % las celdas impares): celdas de 2 unidades en el cuerpo; en las tapas, anillos de 2 y sectores de 18° (10 por media tapa, par, para que el eje caiga en un borde y la alternancia cruce la costura; la tapa de arriba lleva desfase 1 para alternar con el cuerpo).
-- Ajuste por efecto óptico: el verde derecho es `#81C784` (con `#A5D6A7` el verde claro con celda oscura se confundía con el verde oscuro con celda clara; distancia de color 22 → 71).
 - Qué delata: el ajedrez, la densidad de texels (compresión y estiramiento); el degradado, la continuidad de u/v; los sólidos, la pertenencia a cada zona. Un giro de 180° ya no invierte la paridad del ajedrez de las tapas; la pista de orientación son los colores sólidos.
+
+Decisiones tomadas probando variantes (2026-11-18):
+
+- El verde derecho del cuerpo es `#81C784`: con `#A5D6A7` el verde claro con celda oscura se confundía con el verde oscuro con celda clara (distancia de color 22 → 71).
+- Degradado con los 6 colores vivos de la gota (`SuiteMatriz_03_Colores.RELLENO`): informaba «demasiado» y podía dar información contradictoria; con pasteles sin más, informaba poco (la mezcla RGB entre complementarios pasa por grises).
+- Interpolar por tono: con el arco corto aparecen saltos donde dos colores quedan a ~180° de tono (naranja/azul, rosa/verde); con el tono fijo (horario o antihorario) se da la vuelta entera al círculo cromático. El centro **gris** (acromático) evita los saltos: LCH toma el tono del extremo.
+- Probado y descartado: centros azul y verde muy saturados (solo se ven si se remapea la distancia para que el centro de la gota caiga junto al núcleo, y el verde puro dio una costura). Samuel elige el centro gris: «buen equilibrio entre información y sutileza».
 
 Imágenes: `estudio/guia_ajedrez_textura.png`, `estudio/pliegue_t3b_ortogonal_guia_ajedrez.png`. Pendiente: suavizar (o no) los cortes duros en d = 2 y d = 6; decidir si esta textura pasa a la biblioteca (`Texturas.referenciaLados`) o a `CosturasDemo.Guia`, que no se han tocado.
 

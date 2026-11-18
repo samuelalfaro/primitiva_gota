@@ -8,7 +8,7 @@ public class EstudioUV {
      * propia gota en medio y ajedrez encima). Sustituye a la antigua {@link GuiaLineas}, que se conserva para comparar.
      */
     static final class Guia implements Texturas.Textura {
-        private final Texturas.Textura t = new EstudioGuia.GuiaAjedrez(0.30, 0.10);
+        private final Texturas.Textura t = new EstudioGuia.GuiaAjedrez();
         @Override public double aspecto() { return t.aspecto(); }
         @Override public int muestrea(double u, double v) { return t.muestrea(u, v); }
     }
