@@ -488,7 +488,7 @@ Lectura de la propuesta de Samuel (a confirmar): si el extremo opuesto al punto 
 Samuel relaja el requisito de que las costillas sean un único segmento de extremo a extremo en ORTOGONAL: con la A, la parte exterior de las costillas de una zona anidada vuelve a la banda, donde sigue siendo normal a la espina. Las zonas que contienen a otras siguen siendo cuñas enteras. Es ahora el comportamiento por defecto (`-Dgota.anidadas=interior`; `cortar` = opción C anterior; `no` = cuñas enteras).
 
 - t3b: las zonas 1 y 2 pasan a 100 y 305 px (solo su abanico interior); la zona 0 queda entera (3889 px). Píxeles con más de una zona: 960 → 405 (0 y 1: 100; 0 y 2: 305; 1 y 2: 0), todos entre una zona ancha y el abanico interior de una anidada; la regla de la mitad interior los decide a favor de la anidada. El mapa de ganadoras ya no sale dentado: cuña azul con las dos astillas (roja, verde) dentro (`estudio/pliegue_cunas_t3b_ortogonal_A.png`) y la textura sale continua (`estudio/pliegue_t3b_ortogonal_A.png`).
-- Sin medir todavía: saltos de u/v en los bordes de t3a y t3b con esta opción.
+- Saltos de u/v en los bordes de t3a y t3b: medidos el 2026-11-18 (ver «Saltos de u/v en los casos de tres lóbulos»).
 
 #### Prueba del «acordeón» (opción C, tres lecturas) y la espina como frontera
 
@@ -510,6 +510,24 @@ Resultado de `espina`:
 - Lectura del esquema: el rayo X–X no separa las cuñas porque lo que se pisa es la mitad exterior de las pequeñas, no la interior.
 
 Decisión de Samuel (2026-11-17): documentarlo para estudiarlo más adelante («no queda muy limpio, pierde zonas, pero resuelve que una zona sobrepase a la que no le corresponde»); caso límite extremo. El modo por defecto sigue siendo `interior`; `espina` queda como opción de estudio. Imágenes: `estudio/pliegue_t3b_ortogonal_espina.png`, `estudio/pliegue_cunas_t3a_espina.png`, `estudio/pliegue_cunas_t3b_espina.png`.
+
+#### Saltos de u/v en los casos de tres lóbulos (`EstudioPliegueBordesT3`)
+
+Mismo método que en c147/c219 (`EstudioPliegueBordes.mide`: |Δu|, |Δv| entre el último píxel de la zona y el candidato de banda más cercano por fuera, con un control de la variación natural de v dentro de la zona entre puntos a la misma distancia), ORTOGONAL, a 0,6 px de cada borde. Más la frontera nueva de `espina`: la espina dentro del tramo de la zona (interior → banda).
+
+| Caso y borde | `interior` |Δv| medio (control) | `espina` |Δv| medio (control) |
+|---|---|---|
+| t3a zona 0, ta / tb | 0,0099 / 0,0104 (0,023 / 0,024) | 0,0135 / 0,0142 (0,040 / 0,042) |
+| t3b zona 0, ta / tb | 0,0052 / 0,0057 (0,010 / 0,012) | 0,0069 / 0,0075 (0,017 / 0,020) |
+| t3a zona 2, ta / tb | 1 punto | 0,0318 / 0,0148 (0,025 / 0,024) |
+| t3b zona 1, ta / tb | 0 puntos | 0,0112 / 0,0193 (0,015 / 0,015) |
+| t3b zona 2, ta / tb | 1 punto / 0 | 0,0269 / 0,0091 (0,025 / 0,015) |
+| Espina de la zona 0 (t3a / t3b) | sin frontera (cuña entera) | |Δu| 0,015 / 0,010; |Δv| 0,0036 / 0,0029 (0,0086 / 0,0066) |
+
+- |Δu| es nulo en todos los bordes (máx 0,008 en ta/tb; 0,015 en la espina): u es la proporción de la semianchura y coincide a ambos lados.
+- |Δv| medio queda por debajo de la variación natural de la zona en casi todo, y como máximo 1,3 veces por encima (t3a zona 2 en ta, t3b zona 2 en ta). No hay salto detectable que supere el gradiente natural, ni en los bordes ta/tb ni en la espina de `espina`.
+- Sin medir: con `interior` los bordes de las zonas anidadas caen dentro de la zona ancha (0–1 puntos medibles con este método) y con `espina` las zonas pequeñas no tienen puntos con banda al otro lado de la espina. El método no mide la frontera entre dos zonas que se tocan; sí lo hace la textura de referencia (la diferencia se ve a simple vista).
+- Esto mide continuidad de coordenadas, no que el resultado visual sea limpio: eso lo decide la mirada con la textura de referencia.
 
 ## Textura de referencia de los estudios: `GuiaAjedrez`
 
