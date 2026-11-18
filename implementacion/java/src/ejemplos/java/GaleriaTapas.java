@@ -34,8 +34,8 @@ public class GaleriaTapas {
                 if (rs[c] == null) continue;
                 BufferedImage panel = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
                 java.util.Arrays.fill(((DataBufferInt) panel.getRaster().getDataBuffer()).getData(), FONDO);
-                if (f < 2) gruesa.render(panel, rs[c]);
-                else for (Gota g : estT.gotas()) g.render(panel, rs[c]);
+                if (f < 2) Plotter.raster(panel).plot(gruesa, rs[c]);
+                else for (Gota g : estT.gotas()) Plotter.raster(panel).plot(g, rs[c]);
                 g2.drawImage(panel, c * W, f * H, null);
             }
         }

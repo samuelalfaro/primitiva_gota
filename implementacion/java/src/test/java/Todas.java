@@ -8,9 +8,23 @@ import java.util.List;
  */
 public class Todas {
     static final String[] SUITES = {
-            "GotaRegresion", "GotaCadena", "GotaCombina", "GotaDisco",
-            "TexturaReferencia", "TapasDisco", "ComposicionPruebas"
+             "GotaRegresion"
+            ,"GotaCombina"
+            ,"TexturaReferencia"
+            ,"TapasDisco"
+            ,"ComposicionPruebas"
+            //FIXME ,"SiluetaPruebas"
+            //FIXME ,"SiluetaCurvaPruebas"
+            ,"EsquemaPruebas"
+            ,"SuiteMatriz_01_Alambre"
+            ,"SuiteMatriz_02_Siluetas"
+            ,"SuiteMatriz_03_Colores"
+            ,"SuiteMatriz_04_Limites"
+            ,"SuiteMatriz_05_Acercamiento"
     };
+
+    /** Líneas de la salida de una suite que se muestran si falla. */
+    static final int COLA = 40;
 
     public static void main(String[] args) throws Exception {
         String cp0 = args.length > 0 ? args[0] : System.getProperty("java.class.path");
@@ -29,12 +43,21 @@ public class Todas {
             Process p = new ProcessBuilder(java, "-Djava.awt.headless=true", "-Dstdout.encoding=UTF-8", "-cp", cp, s)
                     .directory(dir).redirectErrorStream(true).start();
             String ultima = "";
+            java.util.ArrayDeque<String> cola = new java.util.ArrayDeque<>();   // últimas líneas, para diagnosticar un fallo
             try (var in = new java.io.BufferedReader(new java.io.InputStreamReader(p.getInputStream(), "UTF-8"))) {
-                for (String l; (l = in.readLine()) != null; ) if (l.contains("pruebas,")) ultima = l.trim();
+                for (String l; (l = in.readLine()) != null; ) {
+                    if (l.contains("pruebas,")) ultima = l.trim();
+                    if (cola.size() == COLA) cola.removeFirst();
+                    cola.addLast(l);
+                }
             }
             int code = p.waitFor();
-            System.out.printf("%-20s %s%n", s, ultima.isEmpty() ? "(sin resumen)" : ultima);
-            if (code != 0) fallidas.add(s);
+            System.out.printf("%-20s %s%n", s, ultima.isEmpty() ? "(sin resumen, salida " + code + ")" : ultima);
+            if (code != 0) {
+                fallidas.add(s);
+                System.out.println("  --- últimas líneas de " + s + " (salida " + code + ") ---");
+                for (String l : cola) System.out.println("  | " + l);
+            }
             total++;
         }
         System.out.printf("%n%d suites, %d con fallos%n", total, fallidas.size());

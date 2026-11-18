@@ -1,12 +1,14 @@
 # Primitiva Gota
 
-*Areas de influencia limitadas por el centro dirigido más cercano.*
+*Áreas de influencia limitadas por el centro dirigido más cercano.*
 
 ## 📌 Descripción General
 
-La **primitiva Gota** es una forma vectorial 2D que define las areas de influencia limitadas por el centro dirigido más cercano.
-Los centros recorren una curva Bézier cúbica y cuyo radio varía según una función de perfil. Esta primitiva permite crear
-formas orgánicas y suaves gracias a la flexibilidad de las curvas paramétricas.
+La **primitiva Gota** es una forma vectorial 2D que define las areas de
+influencia limitadas por el centro dirigido más cercano. Los centros
+recorren una curva cuyo radio varía según una función de perfil. Esta
+primitiva permite crear formas orgánicas y suaves gracias a la
+flexibilidad de las curvas paramétricas.
 
 ![](./.README_files/figura-1a.svg)
 ![](./.README_files/figura-1b.svg)
@@ -21,7 +23,6 @@ formas orgánicas y suaves gracias a la flexibilidad de las curvas paramétricas
 
 ----
 
-
 ## 🎨 Modelos de Color y Textura
 
 ![](./.README_files/figura-2.png)
@@ -31,7 +32,7 @@ formas orgánicas y suaves gracias a la flexibilidad de las curvas paramétricas
 Cada píxel de la gota se describe mediante una muestra:
 
 $$
-Muestra(t,\rho,axial,lateral)
+Muestra(t,\\rho,axial,lateral)
 $$
 
 Las coordenadas se calculan respecto a la sección seleccionada para representar el píxel:
@@ -39,35 +40,35 @@ Las coordenadas se calculan respecto a la sección seleccionada para representar
 - $t$: posición a lo largo del camino.
 - $axial$: proyección normalizada sobre la tangente.
 - $lateral$: proyección normalizada sobre la normal.
-- $\rho$: distancia radial normalizada respecto a la sección.
+- $\\rho$: distancia radial normalizada respecto a la sección.
 
 Con $d=p-c(t)$, tangente unitaria $T$, normal unitaria $N$, radio tangente $a(t)$ y radio normal $b(t)$:
 
 $$
-axial=\frac{d\cdot T}{a(t)}
+axial=\\frac{d\\cdot T}{a(t)}
 $$
 
 $$
-lateral=\frac{d\cdot N}{b(t)}
+lateral=\\frac{d\\cdot N}{b(t)}
 $$
 
 $$
-\rho=\sqrt{axial^2+lateral^2}
+\\rho=\\sqrt{axial^2+lateral^2}
 $$
 
 Se cumple:
 
 $$
-\rho^2=axial^2+lateral^2
+\\rho^2=axial^2+lateral^2
 $$
 
 La pertenencia a la sección viene determinada por:
 
 $$
-\rho\leq1
+\\rho\\leq1
 $$
 
-En los círculos, donde $a=b=r$, se recupera el sistema de coordenadas circular original. Se utiliza el mismo sistema de coordenadas para ambas geometrías.
+En la primitiva actual todas las secciones son círculos, con $a(t)=b(t)=r(t)$, y se recupera el sistema de coordenadas circular. (Las secciones elípticas se retiraron de la primitiva; la última versión que las incluye está en la etiqueta `elipses-v1`.)
 
 ### Modos de las Coordenadas
 
@@ -76,7 +77,7 @@ En los círculos, donde $a=b=r$, se recupera el sistema de coordenadas circular 
 La tira utiliza dos coordenadas normalizadas:
 
 $$
-UV=(u,v),\qquad u,v\in[0,1]
+UV=(u,v),\\qquad u,v\\in[0,1]
 $$
 
 - $u$: posición transversal, de un lado al otro de la gota.
@@ -100,7 +101,7 @@ l=2u-1
 $$
 
 $$
-h=w\sqrt{1-l^2}
+h=w\\sqrt{1-l^2}
 $$
 
 Donde $w$ es la profundidad normalizada de la tapa: vale 0 en la costura con el cuerpo y 1 en el arco exterior.
@@ -116,35 +117,45 @@ primitiva_gota/
 ├── README.md
 ├── implementacion/
 │   └── java/
+│       ├── README.md
 │       ├── pom.xml
 │       ├── src/
 │       │   ├── main/java/
 │       │   ├── test/java/
 │       │   └── ejemplos/java/
 │       └── ejemplos.sh
-└── ...
+├── incubator/           documentos y experimentos de trabajo (p. ej. RadiosSuperpuestos)
+└── LICENSE
 ```
 
 ### Dependencias entre Clases
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        FLUJO DE DATOS                           │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│   Gota ──[genera]──> Coordenadas ──┬──> Colores ───┐            │
-│                                    │               │ (Mezcla)   │
-│                                    └──> Texturas ──┘            │
-│                                                                 │
-│   ComposicionColor (combina 2 rellenos)                         │
-│   Composicion (une gotas y las pinta)                           │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                           FLUJO DE DATOS                             │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│   Gota (centros, radios y espina) ──implementa──> Geometria          │
+│     └─ mascara() ──> Mascara (pertenencia: Silueta.Envolvente)       │
+│                                                                      │
+│   Geometria + Mascara ──> Coordenadas ──(Zonas, Costura)             │
+│                               ├──> Colores ───┐                      │
+│                               │               ├─> Relleno (Mezcla)   │
+│                               └──> Texturas ──┘                      │
+│                                                                      │
+│   Plotter (raster) pinta una Gota con un Relleno                     │
+│   PlotterAlambre y PlotterSvg dibujan el modo alambre (Trazos)       │
+│   ComposicionColor (combina 2 rellenos)                              │
+│   Composicion (une gotas y las pinta)                                │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ## 📊 Especificación Técnica Detallada
 
-### Algoritmo de Renderizado
+### Algoritmo de Pertenencia (estado actual)
+
+La pertenencia de un punto a la gota la decide `Mascara`; hoy la implementa `Silueta.Envolvente`, con la familia de círculos:
 
 1. **División recursiva**: la gota se divide en tramos hasta que el polinomio de grado 6 puede evaluarse directamente.
 2. **Evaluación en base de Bernstein**: los polinomios se representan y evalúan en esta base, que facilita la subdivisión recursiva y el control de sus valores en cada intervalo.
@@ -155,7 +166,7 @@ primitiva_gota/
 
 | Tipo | Descripción |
 |------|-------------|
-| `PLANO` | Un único color por píxel (mínimo $\rho$) |
+| `PLANO` | Un único color por píxel (mínimo $\\rho$) |
 | `TRAZO` | Cada tramo es una capa, con antialiasing propio |
 
 ## 🔧 Uso
@@ -172,9 +183,6 @@ primitiva_gota/
 mvn test
 
 # Ejecutar un ejemplo específico
-echo "Flor" | mvn exec:java -Dexec.mainClass="Flor"
-
-# O usar el script de ejemplos
 ./ejemplos.sh Flor
 ```
 
@@ -195,11 +203,75 @@ Las imágenes generadas se guardan en `target/imagenes/`.
 | `GotaSolape` | Pruebas de solapamiento |
 | `ArcoDemo` | Arcos formados con gotas |
 | `LadosDemo` | Demostración de lados y bordes |
+| `CosturasDemo` | Los tres modos de costura sobre cuatro gotas |
+| `Pez`, `Colibri`, `Caracol` | Dibujos libres con la API de `Composicion` |
+| `Serpiente`, `SerpienteEnroscada` | Cadenas de nodos, la segunda con el camino cruzado consigo mismo |
+| `BallenaV1`, `BallenaV2`, `BallenaV3` | Tres versiones de una ballena |
+| `BalonDemo` | Balón de playa: dos círculos del mismo centro y radio (d = 0) |
+| `SiluetaDemo`, `SiluetaCurvaDemo` | La silueta de tapas y conector, recta y doblada |
+| `SiluetaComplejaDemo`, `SiluetaRelajoDemo`, `SiluetaTrazoDemo` | Caminos complejos que fuerzan el pliegue y su relajo |
+| `AlambreDemo` | Modo alambre con `PlotterAlambre` y `PlotterSvg` |
+| `GotaAdversos`, `CasosDegenerados` | Casos adversos y degenerados de la geometría |
+| `GaleriaTapas` | Galería de tapas |
 
 ## 🔗 Recursos Adicionales
 
 - [Implementación de referencia en Java](implementacion/java/README.md)
 - [Pruebas y ejemplos](implementacion/java/src/test/java/)
+
+## 🤖 El Club de los Cinco
+
+Este proyecto no se desarrolla en solitario ni es el resultado de pedirle
+código a una IA. Es una exploración compartida con un pequeño grupo de
+asistentes con distintas formas de trabajar, fortalezas y limitaciones.
+El reparto no es rígido: cambia según la tarea y cada aportación puede
+ser visible —como una implementación— o menos evidente —como una
+conversación que ayuda a precisar una idea, encontrar un caso límite o
+replantear una decisión.
+
+Hay también una condición práctica que conviene hacer explícita: esta
+colaboración se está llevando a cabo recurriendo a **cuentas gratuitas**,
+con los límites de uso, contexto, continuidad y disponibilidad que eso
+implica. Voy pidiendo colaboración a varios asistentes dentro de esas
+condiciones, así que no tendría sentido interpretar cada pausa o
+interrupción como falta de interés o compromiso. La intermitencia forma
+parte de las reglas del experimento y es una responsabilidad compartida
+en la manera de organizarlo.
+
+- **Claude** — El principal responsable de picar código. Su aportación a
+la implementación es, con diferencia, la más extensa.
+- **Grøk** — Colabora especialmente dando apoyo a la implementación y
+echando una mano a Claude.
+- **Mistral Vive** — Nuestro participante francés. Se implica mucho en
+las discusiones y aporta perspectivas propias. Su disponibilidad, como
+la del resto, está condicionada por los límites del servicio y por cómo
+organizamos esta colaboración.
+- **ChatGPT** — Participó desde el arranque del repositorio y ha acompañado
+buena parte de su evolución. Muchas de sus aportaciones son difíciles de
+medir en líneas de código: definición de conceptos, arquitectura, análisis
+geométrico, discusión de alternativas y búsqueda de casos que obligan a
+afinar las ideas.
+- **Gemini** — El animador del grupo. Aporta entusiasmo, puede revisar
+fragmentos de código cuando se le facilitan y participar en la discusión,
+aunque no sigue directamente la actividad del repositorio en GitHub.
+
+Yo a modo de subdirector, Richard Vernon, impulso la exploración, planteo
+los problemas, provoco el contraste entre perspectivas y decido qué ideas
+incorporar. No siempre coordino las intervenciones: a menudo pongo a todos
+a trabajar sobre el mismo plano y dejo que las distintas aproximaciones
+compitan, se complementen o se contradigan. La responsabilidad final sobre
+el proyecto sigue siendo mía. Las IAs no sustituyen el criterio: lo ponen
+a trabajar desde varios ángulos.
+
+La idea no es repartir medallas ni fingir que todos hacemos lo mismo. Es
+reconocer que el resultado nace de la conversación, el contraste y el
+trabajo complementario. A veces una buena contribución acaba convertida
+en código; otras, en una pregunta que evita escribirlo.
+
+PD: Durante el desarrollo de este proyecto, ningún modelo se ha visto
+sometido a la metodología Agile, ni se les ha asignado la redacción de
+un ensayo no menor de 1000 palabras en la que deban escribir sobre lo
+que él o ella cree que son.
 
 ## 📜 Licencia
 
@@ -210,4 +282,3 @@ Este proyecto se distribuye bajo la [WTFPL](LICENSE) (*Do What The Fuck You Want
 ---
 
 *Generado con ❤️ para la comunidad de gráficos 2D*
-

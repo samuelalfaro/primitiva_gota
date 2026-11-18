@@ -1,55 +1,28 @@
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferInt;
-import java.awt.image.SinglePixelPackedSampleModel;
-import java.awt.image.WritableRaster;
-import java.util.stream.IntStream;
 
 /**
  * Primitiva 2D "gota": envolvente de la familia de círculos (c(t), r(t)), t en [0,1].
  *  - c(t): Bézier cúbica; sus extremos son los centros de los círculos.
  *  - r(t): cuadrática de Bézier por r1, r(tm) = rm, r2 (rm = radio medio, tm desplazable) o, con
  *    suavizado < 1, dos cuadráticas unidas en tm con pendientes interpoladas (véase Perfil).
- * Un punto p pertenece a la gota si existe t con |p - c(t)|^2 - r(t)^2 <= 0.
- * Ese polinomio (grado 6) se evalúa en base de Bernstein: sin contornos ni tangentes explícitas.
+ * Un punto p pertenece a la envolvente si existe t con |p - c(t)|^2 - r(t)^2 <= 0. Ese polinomio (grado 6) se evalúa en base
+ * de Bernstein en {@link Silueta.Envolvente}; la minimización de |p - c(t)| - r(t) está en {@link Geometria} y las coordenadas en {@link Coordenadas}.
  */
 public final class Gota implements Geometria {
 
     /** Vector relativo (tirador respecto a su centro). */
     public record Vec(double x, double y) {}
 
-    private static final int GRADO = 6;          // círculos
-    private static final int MAX_G = 6;
-    private static final double BANDA = 0.5;   // semiancho del antialiasing, en píxeles
-    private static final int PROF_MAX = 24;    // profundidad máxima de subdivisión
-    private static final double[][] BIN = new double[MAX_G + 1][MAX_G + 1];
-    static {
-        for (int n = 0; n <= MAX_G; n++) {
-            BIN[n][0] = 1;
-            for (int k = 1; k <= n; k++)
-                BIN[n][k] = BIN[n - 1][k - 1] + (k <= n - 1 ? BIN[n - 1][k] : 0);
-        }
-    }
+    private static final double BANDA = Silueta.Envolvente.BANDA;   // semiancho del antialiasing, en píxeles
 
-    private static final int EXT = 0, CERO = 1, INT = 2;   // banda del antialiasing para la pertenencia
-
-    /** Un trozo del camino [t0, t1] con su cúbica de centros y su cuadrática de radio, en base de Bernstein. */
+    /** Un trozo del perfil del radio en [t0, t1]: la cuadrática de Bézier de controles a. */
     static final class Tramo {
         final double t0, t1;
         final double[] a;                          // controles de la cuadrática del radio en el tramo
-        final double[] cx6, cy6;                   // c(t) del tramo, en Bernstein de grado 6
-        final double[] kExt, kCero, kInt;          // K = |c|^2 - (r + d)^2 para d = +BANDA, 0, -BANDA
 
-        Tramo(double t0, double t1, double[] pxs, double[] pys, double[] a) {
-            this.t0 = t0; this.t1 = t1; this.a = a;
-            cx6 = elevar(pxs, GRADO);
-            cy6 = elevar(pys, GRADO);
-            double[] c2 = suma(producto(pxs, pxs), producto(pys, pys));
-            kExt = k(c2, a, +BANDA);
-            kCero = k(c2, a, 0);
-            kInt = k(c2, a, -BANDA);
-        }
+        Tramo(double t0, double t1, double[] a) { this.t0 = t0; this.t1 = t1; this.a = a; }
 
         double rad(double t) {
             double u = (t - t0) / (t1 - t0), w = 1 - u;
@@ -69,13 +42,21 @@ public final class Gota implements Geometria {
     private final double r1, r2;          // radios de los extremos
     final double rm, tm, suav;    // perfil efectivo (tras recortar)
     final Tramo[] tramos;         // 1 tramo (cuadrática) o 2 (partido en tm)
-    private final boolean interiorValido;
     private final Rectangle2D.Double bounds;
     final int muestras;
-    /** Coordenadas intrínsecas de esta gota, una por combinación de costura y tira (se crean al pedirlas). */
-    private final java.util.concurrent.ConcurrentMap<Clave, Coordenadas> coords = new java.util.concurrent.ConcurrentHashMap<>();
-
-    private record Clave(Costura costura, Tira tira) {}
+    /**
+     * La máscara de la gota. Con una trayectoria (la longitud de la curva entre los centros) d mayor que r1 + r2 es la unión de la familia
+     * de círculos ({@link Silueta.Envolvente}), aunque los centros coincidan (lazos); con d <= r1 + r2 es la silueta de dos tapas y dos
+     * conectores, que no admite deformación: se descarta la curva y se toma la recta de los centros.
+     */
+    private final Mascara mascara;
+    /** La silueta rígida (cuatro arcos sobre la recta de los centros) si la gota es rígida; null si no. */
+    private final Silueta silueta;
+    /** La silueta rígida de la gota, o null si su trayectoria mide más de r1 + r2 (entonces la forma es la envolvente). */
+    Silueta silueta() { return silueta; }
+    private volatile double[] largos;
+    /** Coordenadas intrínsecas de esta gota, una por combinación de costura y tira: las gestiona {@link Coordenadas#de}. */
+    private final java.util.concurrent.ConcurrentMap<Object, Coordenadas> coords = new java.util.concurrent.ConcurrentHashMap<>();
 
     // ---------- Fábricas ----------
 
@@ -101,44 +82,72 @@ public final class Gota implements Geometria {
         this.tm = pr.tm();
         this.suav = pr.suavizado();
 
-        px = new double[] { c1.getX(), c1.getX() + v1.x(), c2.getX() + v2.x(), c2.getX() };
-        py = new double[] { c1.getY(), c1.getY() + v1.y(), c2.getY() + v2.y(), c2.getY() };
+        double[] qx = { c1.getX(), c1.getX() + v1.x(), c2.getX() + v2.x(), c2.getX() };
+        double[] qy = { c1.getY(), c1.getY() + v1.y(), c2.getY() + v2.y(), c2.getY() };
+        // Con una trayectoria d <= r1 + r2 la forma no admite deformación: se descarta la curva y el camino es la recta de los centros.
+        final boolean rigida = this.r1 + this.r2 > 0 && longitudCamino(qx, qy) <= (this.r1 + this.r2) * (1 + 1e-9);
+        if (rigida) {
+            double ex = qx[3] - qx[0], ey = qy[3] - qy[0];
+            if (Math.hypot(ex, ey) <= 1e-9 * (this.r1 + this.r2)) {    // centros coincidentes: la tangente inicial del camino orienta la forma
+                ex = qx[1] - qx[0]; ey = qy[1] - qy[0];
+                if (ex == 0 && ey == 0) { ex = qx[2] - qx[0]; ey = qy[2] - qy[0]; }
+                if (ex == 0 && ey == 0) { ex = qx[3] - qx[0]; ey = qy[3] - qy[0]; }
+                double n = Math.hypot(ex, ey);
+                if (n == 0) { ex = 1; ey = 0; n = 1; }
+                double e = 1e-6 * (this.r1 + this.r2) / n;
+                ex *= e; ey *= e;
+                qx[3] = qx[0] + ex; qy[3] = qy[0] + ey;
+            } else { ex = qx[3] - qx[0]; ey = qy[3] - qy[0]; }
+            for (int i = 1; i <= 2; i++) { qx[i] = qx[0] + i * ex / 3; qy[i] = qy[0] + i * ey / 3; }
+        }
+        px = qx;
+        py = qy;
 
         // Perfil del radio. Cuadrática única si es suave y sus controles son >= 0; si no, dos
         // cuadráticas unidas en tm con pendientes interpoladas entre la secante y la suave.
+        double[][] pxs, pys;                         // controles de c(t) en cada tramo del perfil
         double w = 1 - tm;
         double q = (rm - w * w * this.r1 - tm * tm * this.r2) / (2 * tm * w);
         if (suav >= 1 && q >= -1e-12) {
-            tramos = new Tramo[] { new Tramo(0, 1, px, py, new double[] { this.r1, Math.max(0, q), this.r2 }) };
+            tramos = new Tramo[] { new Tramo(0, 1, new double[] { this.r1, Math.max(0, q), this.r2 }) };
+            pxs = new double[][] { px };
+            pys = new double[][] { py };
         } else {
             double d1 = (rm - this.r1) / tm, d2 = (this.r2 - rm) / w, mS = w * d1 + tm * d2;
             double mL = (1 - suav) * d1 + suav * mS, mR = (1 - suav) * d2 + suav * mS;
             mL = Math.min(mL, 2 * rm / tm);          // controles >= 0: r(t) >= 0 siempre
             mR = Math.max(mR, -2 * rm / w);
             double[] ax = new double[4], bx = new double[4], ay = new double[4], by = new double[4];
-            dividirEn(px, tm, ax, bx);
-            dividirEn(py, tm, ay, by);
+            Silueta.Envolvente.dividirEn(px, tm, ax, bx);
+            Silueta.Envolvente.dividirEn(py, tm, ay, by);
             tramos = new Tramo[] {
-                new Tramo(0, tm, ax, ay, new double[] { this.r1, rm - mL * tm / 2, rm }),
-                new Tramo(tm, 1, bx, by, new double[] { rm, rm + mR * w / 2, this.r2 }) };
+                new Tramo(0, tm, new double[] { this.r1, rm - mL * tm / 2, rm }),
+                new Tramo(tm, 1, new double[] { rm, rm + mR * w / 2, this.r2 }) };
+            pxs = new double[][] { ax, bx };
+            pys = new double[][] { ay, by };
         }
 
-        double minX = px[0], maxX = px[0], minY = py[0], maxY = py[0], largo = 0, rc = 0, rmin = Double.MAX_VALUE;
+        double minX = px[0], maxX = px[0], minY = py[0], maxY = py[0], largo = 0, rc = 0;
         for (int i = 0; i < 4; i++) {
             minX = Math.min(minX, px[i]); maxX = Math.max(maxX, px[i]);
             minY = Math.min(minY, py[i]); maxY = Math.max(maxY, py[i]);
             if (i > 0) largo += Math.hypot(px[i] - px[i - 1], py[i] - py[i - 1]);
         }
-        for (Tramo t : tramos) { rc = Math.max(rc, t.maxControl()); rmin = Math.min(rmin, t.minControl()); }
-        interiorValido = rmin >= BANDA;
+        double[][] controles = new double[tramos.length][];
+        for (int i = 0; i < tramos.length; i++) { rc = Math.max(rc, tramos[i].maxControl()); controles[i] = tramos[i].a; }
+        if (!(this.r1 + this.r2 > 0)) { mascara = VACIA; silueta = null; }
+        else if (rigida) {
+            silueta = Silueta.de(new Point2D.Double(px[0], py[0]), this.r1, new Point2D.Double(px[3], py[3]), this.r2);
+            mascara = silueta.mascara();
+        }
+        else { mascara = new Silueta.Envolvente(this, pxs, pys, controles); silueta = null; }
         double rmax = rc + 1;
         bounds = new Rectangle2D.Double(minX - rmax, minY - rmax, maxX - minX + 2 * rmax, maxY - minY + 2 * rmax);
+        if (silueta != null) {                                          // la silueta rígida sobresale de los círculos: sus límites mandan
+            Rectangle2D f = silueta.forma().getBounds2D();
+            bounds.add(new Rectangle2D.Double(f.getMinX() - 1, f.getMinY() - 1, f.getWidth() + 2, f.getHeight() + 2));
+        }
         muestras = (int) Math.max(32, Math.min(512, largo / 2 + 16));
-    }
-
-    private Coordenadas coordenadas(Opciones op) {
-        return coords.computeIfAbsent(new Clave(op.costura(), op.tira()),
-                k -> new Coordenadas(this, k.costura(), k.tira().cortes(this)));
     }
 
     // ---------- Consultas ----------
@@ -158,228 +167,105 @@ public final class Gota implements Geometria {
 
     public double radio(double t) { return rad(t); }
 
-    /** Pertenencia exacta (a precisión de punto flotante). */
-    @Override public boolean contiene(double x, double y) { return dentro(x, y, CERO); }
+    // ---------- La máscara y las coordenadas viven fuera (Silueta, Coordenadas); el pintado, en Plotter ----------
 
-    /**
-     * Distancia con signo. Exacta fuera de la gota. Dentro es la profundidad respecto al
-     * mejor círculo de la familia: exacta cerca del borde, aproximada (por defecto) en el interior profundo.
-     */
-    public double sdf(double x, double y) { return minimizar(x, y, false)[1]; }
+    /** La máscara de la gota: pertenencia, cobertura (antialiasing) y pasadas del camino. */
+    @Override public Mascara mascara() { return mascara; }
 
-    /**
-     * Muestra del píxel: el círculo de la familia al que la costura (ver {@link Costura}) asigna el punto.
-     * Es la misma t de la que salen las coordenadas de la tira ({@link #uv}), así que colores y texturas coinciden.
-     */
-    public Coordenadas.Muestra parametros(double x, double y) { return parametros(x, y, Opciones.POR_DEFECTO); }
-
-    public Coordenadas.Muestra parametros(double x, double y, Opciones op) {
-        return Coordenadas.muestra(this, x, y, ganador(x, y, op).t());
+    /** Longitud de arco de la cúbica de Bézier de controles (px, py), por muestreo. */
+    private static double longitudCamino(double[] px, double[] py) {
+        final int n = 256;
+        double l = 0, x0 = px[0], y0 = py[0];
+        for (int i = 1; i <= n; i++) {
+            double t = i / (double) n, u = 1 - t;
+            double a = u * u * u, b = 3 * u * u * t, c = 3 * u * t * t, d = t * t * t;
+            double x = a * px[0] + b * px[1] + c * px[2] + d * px[3], y = a * py[0] + b * py[1] + c * py[2] + d * py[3];
+            l += Math.hypot(x - x0, y - y0);
+            x0 = x; y0 = y;
+        }
+        return l;
     }
 
-    /** Muestra del círculo en el que el píxel está más centrado (mínimo de rho): decide qué gota manda en una composición. */
-    Coordenadas.Muestra porRho(double x, double y) { return porRho(x, y, Solape.PLANO); }
+    // ---------- Forma rígida: radios de la silueta ----------
 
-    Coordenadas.Muestra porRho(double x, double y, Solape solape) {
-        if (solape == Solape.TRAZO) {   // la capa más tardía que contiene el punto
-            java.util.List<Hebra> hs = hebras(x, y, 0);
-            if (!hs.isEmpty()) {
-                return Coordenadas.muestra(this, x, y, hs.get(hs.size() - 1).t());
+    private static final int NL = 256;
+
+    /** Distancia de (x0, y0) al primer punto del contorno de la silueta en la dirección unitaria (ux, uy). */
+    private double largoRayo(double x0, double y0, double ux, double uy) {
+        double tope = 2 * (silueta.r1 + silueta.r2 + silueta.d) + 1, ant = 0, lo = 0, hi = tope;
+        final int n = 64;
+        for (int i = 1; i <= n; i++) {
+            double s = tope * i / n;
+            if (!silueta.contiene(x0 + s * ux, y0 + s * uy)) { lo = ant; hi = s; break; }
+            ant = s;
+        }
+        for (int i = 0; i < 40; i++) {
+            double m = 0.5 * (lo + hi);
+            if (silueta.contiene(x0 + m * ux, y0 + m * uy)) lo = m; else hi = m;
+        }
+        return 0.5 * (lo + hi);
+    }
+
+    @Override public java.util.List<Geometria.Arco> arcos() {
+        if (silueta == null) return null;
+        java.util.List<java.awt.geom.Path2D.Double> t = silueta.tramos();
+        return java.util.List.of(new Geometria.Arco(false, t.get(0)), new Geometria.Arco(true, t.get(1)),
+                                 new Geometria.Arco(false, t.get(2)), new Geometria.Arco(true, t.get(3)));
+    }
+
+    /** Longitud de la costilla en NL + 1 valores de t (la silueta es simétrica: sirve para los dos lados). */
+    private double[] largos() {
+        double[] l = largos;
+        if (l == null) synchronized (this) {
+            if ((l = largos) == null) {
+                Silueta.Angulos a = silueta.angulos();
+                double g0 = Math.PI - a.psi1(), g1 = a.psi2();
+                double[] v = new double[NL + 1];
+                for (int i = 0; i <= NL; i++) {
+                    double t = i / (double) NL, ga = g0 + (g1 - g0) * t;
+                    double ux = Math.cos(ga) * silueta.tx + Math.sin(ga) * silueta.ty, uy = Math.cos(ga) * silueta.ty - Math.sin(ga) * silueta.tx;
+                    v[i] = largoRayo(cx(t), cy(t), ux, uy);
+                }
+                v[0] = silueta.r1; v[NL] = silueta.r2;
+                largos = l = v;
             }
         }
-        double t = minimizar(x, y, true)[0];
-        return Coordenadas.muestra(this, x, y, t);
+        return l;
     }
 
-    /** Coordenadas de textura de la tira en el punto (valores en [0, 1] dentro de la gota). */
-    public Coordenadas.Uv uv(double x, double y) { return uv(x, y, Opciones.POR_DEFECTO); }
-
-    public Coordenadas.Uv uv(double x, double y, Opciones op) { return ganador(x, y, op).uv(); }
-
-    /** Coordenadas del píxel como un todo, según el solape y la costura. */
-    private Coordenadas.Costurado ganador(double x, double y, Opciones op) {
-        return op.solape().ganador(coordenadas(op), x, y);
+    /** En una gota rígida, el radio hacia el punto de la silueta en el que cae el extremo P de cada tapa, y de ahí el abanico lineal en t. */
+    @Override public double[] costilla(double t, int lado) {
+        if (silueta == null) return null;
+        double[] L = largos();
+        double f = Math.max(0, Math.min(1, t)) * NL;
+        int i = Math.min(NL - 1, (int) f);
+        double len = L[i] * (1 - (f - i)) + L[i + 1] * (f - i);
+        Silueta.Angulos a = silueta.angulos();
+        double ga = Math.PI - a.psi1() + (a.psi2() - (Math.PI - a.psi1())) * Math.max(0, Math.min(1, t)), s = lado == 1 ? 1 : -1;
+        double c = Math.cos(ga), sn = s * Math.sin(ga);
+        return new double[] { len * (c * silueta.tx + sn * silueta.ty), len * (c * silueta.ty - sn * silueta.tx) };
     }
 
-    /** El punto (x, y) visto desde esta gota: su muestra y sus coordenadas de tira se calculan al pedirlas, una sola vez. */
-    public Punto punto(double x, double y) { return punto(x, y, Opciones.POR_DEFECTO); }
-
-    public Punto punto(double x, double y, Opciones op) {
-        return coordenadas(op).punto(x, y, () -> ganador(x, y, op));
+    @Override public double escala(double t, double dx, double dy) {
+        if (silueta == null) return rad(t);
+        double n = Math.hypot(dx, dy);
+        if (n < 1e-12) return rad(t);
+        return largoRayo(cx(t), cy(t), dx / n, dy / n);
     }
 
-    /** Color del relleno en el píxel (con las opciones por defecto). */
-    int color(Relleno rel, double x, double y) { return color(rel, x, y, Opciones.POR_DEFECTO); }
+    /** La máscara de una gota sin radio. */
+    private static final Mascara VACIA = new Mascara() {
+        @Override public boolean contiene(double x, double y) { return false; }
+        @Override public double cobertura(double x, double y) { return 0; }
+        @Override public java.util.List<Geometria.Hebra> hebras(double x, double y) { return java.util.List.of(); }
+    };
 
-    int color(Relleno rel, double x, double y, Opciones op) {
-        return rel.argb(punto(x, y, op));
-    }
+    /** Caché de coordenadas de esta gota (la usa {@link Coordenadas#de}). */
+    java.util.concurrent.ConcurrentMap<Object, Coordenadas> cacheCoordenadas() { return coords; }
 
-    // ---------- Render ----------
+    @Override public int muestras() { return muestras; }
 
-    /** Pinta sobre dst (TYPE_INT_ARGB) con antialiasing y composición alfa, con las opciones por defecto. */
-    public void render(BufferedImage dst, Relleno relleno) { render(dst, relleno, Opciones.POR_DEFECTO); }
-
-    /** Pinta sobre dst (TYPE_INT_ARGB) con antialiasing y composición alfa. */
-    public void render(BufferedImage dst, Relleno relleno, Opciones op) {
-        if (dst.getType() != BufferedImage.TYPE_INT_ARGB)
-            throw new IllegalArgumentException("Se requiere BufferedImage.TYPE_INT_ARGB");
-        // El píxel (i, j) no está en j * ancho + i si dst es una subimagen: el raster comparte el búfer del
-        // padre y conserva su desplazamiento y su stride. Se calcula el índice real a partir del raster.
-        final WritableRaster raster = dst.getRaster();
-        if (!(raster.getSampleModel() instanceof SinglePixelPackedSampleModel sm))
-            throw new IllegalArgumentException("Raster no soportado: se requiere INT_ARGB empaquetado");
-        final int[] datos = ((DataBufferInt) raster.getDataBuffer()).getData();
-        final int stride = sm.getScanlineStride();
-        final int base = raster.getDataBuffer().getOffset()
-                - raster.getSampleModelTranslateY() * stride - raster.getSampleModelTranslateX();
-        final int w = dst.getWidth();
-        final int x0 = Math.max(0, (int) Math.floor(bounds.getMinX()));
-        final int x1 = Math.min(w, (int) Math.ceil(bounds.getMaxX()));
-        final int y0 = Math.max(0, (int) Math.floor(bounds.getMinY()));
-        final int y1 = Math.min(dst.getHeight(), (int) Math.ceil(bounds.getMaxY()));
-        if (x0 >= x1 || y0 >= y1) return;
-        final Relleno rel = relleno.para(this, op);
-        final Solape solape = op.solape();
-        final Coordenadas coord = coordenadas(op);
-
-        IntStream.range(y0, y1).parallel().forEach(j -> {
-            for (int i = x0; i < x1; i++) {
-                final int idx = base + j * stride + i;
-                solape.capas(this, coord, i + 0.5, j + 0.5,
-                        capa -> datos[idx] = componer(datos[idx], rel.argb(capa.punto()), capa.cobertura()));
-            }
-        });
-    }
-
-    /** Fracción del píxel que cubre la unión de la gota (0 a más de BANDA del borde, 1 a más de BANDA de profundidad). */
-    @Override public double cobertura(double x, double y) {
-        if (!dentro(x, y, EXT)) return 0;
-        if (interiorValido && dentro(x, y, INT)) return 1;
-        return Math.max(0, Math.min(1, 0.5 - sdf(x, y)));        // franja del borde
-    }
-
-    @Override public java.util.List<Hebra> hebras(double x, double y) {
-        if (!dentro(x, y, EXT)) return java.util.List.of();
-        return hebras(x, y, BANDA);
-    }
-
-    // ---------- Pertenencia en base de Bernstein ----------
-
-    private boolean dentro(double x, double y, int banda) {
-        if (!Double.isFinite(x) || !Double.isFinite(y)) return false;   // con NaN la subdivisión nunca decide
-        double pp = x * x + y * y;
-        double[] b = new double[GRADO + 1];
-        for (Tramo t : tramos) {
-            double[] K = banda == EXT ? t.kExt : banda == INT ? t.kInt : t.kCero;
-            for (int i = 0; i <= GRADO; i++) b[i] = pp - 2 * (x * t.cx6[i] + y * t.cy6[i]) + K[i];
-            if (hayNoPositivo(b, PROF_MAX)) return true;
-        }
-        return false;
-    }
-
-    /** true si el polinomio de coeficientes b toma algún valor <= 0 en [0,1]. */
-    private static boolean hayNoPositivo(double[] b, int prof) {
-        double min = b[0];
-        for (int i = 1; i < b.length; i++) min = Math.min(min, b[i]);
-        if (min > 0) return false;                       // envolvente convexa: todo positivo
-        if (b[0] <= 0 || b[b.length - 1] <= 0) return true; // F(0) o F(1) ya no positivo
-        if (prof == 0) return true;                      // indeciso a esta resolución: dentro
-        double[] izq = new double[b.length], der = new double[b.length];
-        dividir(b, izq, der);
-        return hayNoPositivo(izq, prof - 1) || hayNoPositivo(der, prof - 1);
-    }
-
-    /** Divide la Bézier de controles b en el parámetro s: izq cubre [0, s] y der cubre [s, 1]. */
-    private static void dividirEn(double[] b, double s, double[] izq, double[] der) {
-        double[] w = b.clone();
-        int n = b.length - 1;
-        izq[0] = w[0];
-        der[n] = w[n];
-        for (int k = 1; k <= n; k++) {
-            for (int i = 0; i <= n - k; i++) w[i] = (1 - s) * w[i] + s * w[i + 1];
-            izq[k] = w[0];
-            der[n - k] = w[n - k];
-        }
-    }
-
-    private static void dividir(double[] b, double[] izq, double[] der) {
-        double[] w = b.clone();
-        int n = b.length - 1;
-        izq[0] = w[0];
-        der[n] = w[n];
-        for (int k = 1; k <= n; k++) {
-            for (int i = 0; i <= n - k; i++) w[i] = 0.5 * (w[i] + w[i + 1]);
-            izq[k] = w[0];
-            der[n - k] = w[n - k];
-        }
-    }
-
-    // ---------- Minimización numérica (sdf y t*) ----------
-
-    private double f(double x, double y, double t, boolean porRho) {
-        double dx = x - cx(t), dy = y - cy(t);
-        double d = Math.sqrt(dx * dx + dy * dy), r = rad(t);
-        return porRho ? d / Math.max(r, 1e-9) : d - r;
-    }
-
-    /** Devuelve {t, valor} del mínimo global de f en [0,1]: muestreo grueso + refinado. */
-    private double[] minimizar(double x, double y, boolean porRho) {
-        int n = muestras;
-        double[] g = new double[n + 1];
-        for (int i = 0; i <= n; i++) g[i] = f(x, y, i / (double) n, porRho);
-        double bestT = 0, bestV = Double.POSITIVE_INFINITY;
-        for (int i = 0; i <= n; i++) {
-            boolean izq = i == 0 || g[i] <= g[i - 1];
-            boolean der = i == n || g[i] <= g[i + 1];
-            if (!(izq && der)) continue;
-            double a = Math.max(i - 1, 0) / (double) n, b = Math.min(i + 1, n) / (double) n;
-            double[] m = dorada(x, y, a, b, porRho);
-            double tt = i / (double) n, tv = g[i];
-            if (m[1] < tv) { tt = m[0]; tv = m[1]; }
-            if (tv < bestV) { bestV = tv; bestT = tt; }
-        }
-        return new double[] { ajusta(bestT), bestV };
-    }
-
-    /** Si el mínimo cae a un error numérico de tm (codo del perfil), lo fija en tm exactamente. */
-    private double ajusta(double t) { return tramos.length == 2 && Math.abs(t - tm) < 1e-7 ? tm : t; }
-
-    private double[] dorada(double x, double y, double a, double b, boolean porRho) {
-        final double phi = 0.6180339887498949;
-        double c = b - phi * (b - a), d = a + phi * (b - a);
-        double fc = f(x, y, c, porRho), fd = f(x, y, d, porRho);
-        for (int k = 0; k < 32; k++) {
-            if (fc < fd) { b = d; d = c; fd = fc; c = b - phi * (b - a); fc = f(x, y, c, porRho); }
-            else         { a = c; c = d; fc = fd; d = a + phi * (b - a); fd = f(x, y, d, porRho); }
-        }
-        double t = 0.5 * (a + b);
-        return new double[] { t, f(x, y, t, porRho) };
-    }
-
-    // ---------- Modo TRAZO: hebras (tramos del camino) como capas ----------
-
-    /**
-     * Mínimos locales de g(t) = |p - c(t)| - r(t) con g < limite, como {t, g} en orden de t creciente.
-     * Cada uno es un tramo del camino que pasa cerca de p.
-     */
-    private java.util.List<Hebra> hebras(double x, double y, double limite) {
-        int n = muestras;
-        double[] g = new double[n + 1];
-        for (int i = 0; i <= n; i++) g[i] = f(x, y, i / (double) n, false);
-        java.util.List<Hebra> out = new java.util.ArrayList<>();
-        for (int i = 0; i <= n; i++) {
-            boolean izq = i == 0 || g[i] < g[i - 1];     // '<' a un lado: una sola muestra por meseta
-            boolean der = i == n || g[i] <= g[i + 1];
-            if (!(izq && der)) continue;
-            double a = Math.max(i - 1, 0) / (double) n, b = Math.min(i + 1, n) / (double) n;
-            double[] m = dorada(x, y, a, b, false);
-            double t = i / (double) n, v = g[i];
-            if (m[1] < v) { t = m[0]; v = m[1]; }
-            if (v < limite) out.add(new Hebra(ajusta(t), v));
-        }
-        return out;
-    }
+    @Override public boolean tieneCodo() { return tramos.length == 2; }
 
     /** Tangente unitaria del camino en t; si la derivada es nula usa la secante, y si no, el eje x. */
     @Override public double[] tangente(double t) {
@@ -416,66 +302,4 @@ public final class Gota implements Geometria {
 
     /** Tramo del perfil que contiene t (en el codo, el izquierdo). */
     Tramo tramoDe(double t) { return tramos.length == 1 || t <= tm ? tramos[0] : tramos[1]; }
-
-    // ---------- Álgebra de Bernstein ----------
-
-    private static double[] k(double[] c2sum, double[] a, double d) {
-        double[] rd = { a[0] + d, a[1] + d, a[2] + d };
-        double[] rd2 = elevar(producto(rd, rd), GRADO);
-        double[] out = new double[GRADO + 1];
-        for (int i = 0; i <= GRADO; i++) out[i] = c2sum[i] - rd2[i];
-        return out;
-    }
-
-    private static double[] producto(double[] a, double[] b) {
-        int m = a.length - 1, n = b.length - 1;
-        double[] c = new double[m + n + 1];
-        for (int i = 0; i <= m; i++)
-            for (int j = 0; j <= n; j++)
-                c[i + j] += BIN[m][i] * BIN[n][j] / BIN[m + n][i + j] * a[i] * b[j];
-        return c;
-    }
-
-    private static double[] resta(double[] a, double[] b) {
-        double[] c = new double[a.length];
-        for (int i = 0; i < a.length; i++) c[i] = a[i] - b[i];
-        return c;
-    }
-
-    private static double[] suma(double[] a, double[] b) {
-        double[] c = new double[a.length];
-        for (int i = 0; i < a.length; i++) c[i] = a[i] + b[i];
-        return c;
-    }
-
-    private static double[] elevar(double[] a, int grado) {
-        double[] c = a;
-        while (c.length - 1 < grado) {
-            int n = c.length - 1;
-            double[] d = new double[n + 2];
-            d[0] = c[0];
-            d[n + 1] = c[n];
-            for (int i = 1; i <= n; i++) {
-                double s = i / (double) (n + 1);
-                d[i] = s * c[i - 1] + (1 - s) * c[i];
-            }
-            c = d;
-        }
-        return c;
-    }
-
-    // ---------- Composición alfa (src-over, no premultiplicado) ----------
-
-    private static int componer(int dst, int src, double cob) {
-        double sa = ((src >>> 24) & 0xFF) / 255.0 * cob;
-        if (sa <= 0) return dst;
-        double da = ((dst >>> 24) & 0xFF) / 255.0;
-        double kd = da * (1 - sa);
-        double oa = sa + kd;
-        int r = (int) Math.round((((src >> 16) & 0xFF) * sa + ((dst >> 16) & 0xFF) * kd) / oa);
-        int g = (int) Math.round((((src >> 8) & 0xFF) * sa + ((dst >> 8) & 0xFF) * kd) / oa);
-        int b = (int) Math.round(((src & 0xFF) * sa + (dst & 0xFF) * kd) / oa);
-        int a = (int) Math.round(oa * 255);
-        return a << 24 | r << 16 | g << 8 | b;
-    }
 }

@@ -6,7 +6,7 @@ import java.util.Arrays;
 import java.util.Random;
 import javax.imageio.ImageIO;
 
-/** Mapeo en disco: semejanza por círculo, extremos, interpolación del ángulo (Tono), orientaciones y galería. */
+/** Mapeo en disco: semejanza por círculo, extremos, interpolación del ángulo (Giro), orientaciones y galería. */
 public class GotaDisco {
     static int pruebas = 0, fallos = 0;
 
@@ -55,7 +55,7 @@ public class GotaDisco {
 
         // interpolación de la escala
         double[] s = coords(rel, new Coordenadas.Muestra(0.5, 1, 1, 0));
-        double esc = (0.2 + 0.3) / 2, th = Math.toRadians(Texturas.interpolaAngulo(0, 90, 0.5, Mezcla.Tono.CORTO));
+        double esc = (0.2 + 0.3) / 2, th = Math.toRadians(Texturas.interpolaAngulo(0, 90, 0.5, Texturas.Giro.CORTO));
         comprueba("escala y ángulo interpolados en t = 1/2", Math.abs(s[0] - (0.5 + esc * Math.cos(th))) < 1e-12 && Math.abs(s[1] - (0.5 + esc * Math.sin(th))) < 1e-12, "");
 
         boolean lanza = false;
@@ -70,12 +70,12 @@ public class GotaDisco {
     static void degenerados() {
         // borde sobre el centro: radio 0, color plano del texel (cu, cv), sin NaN
         Texturas.Disco cero = new Texturas.Disco(0.5, 0.5, 0.5, 0.5);
-        double[] c = coords(Texturas.disco(REGISTRA, cero, cero, Texturas.Orientacion.TANGENTE, Mezcla.Tono.CORTO),
+        double[] c = coords(Texturas.disco(REGISTRA, cero, cero, Texturas.Orientacion.TANGENTE, Texturas.Giro.CORTO),
                 new Coordenadas.Muestra(0.3, 1, 0.7, 0.2));
         comprueba("disco de radio 0 en los dos extremos: muestrea siempre su centro", igual(c, 0.5, 0.5), "");
         // un solo extremo degenerado: la escala interpolada es la mitad, finita
         Texturas.Disco uno = new Texturas.Disco(0.5, 0.5, 1, 0.5);
-        double[] m = coords(Texturas.disco(REGISTRA, cero, uno, Texturas.Orientacion.TANGENTE, Mezcla.Tono.CORTO),
+        double[] m = coords(Texturas.disco(REGISTRA, cero, uno, Texturas.Orientacion.TANGENTE, Texturas.Giro.CORTO),
                 new Coordenadas.Muestra(0.5, 1, 1, 0));
         comprueba("un extremo de radio 0: la escala se interpola y el resultado es finito",
                 Double.isFinite(m[0]) && Double.isFinite(m[1]) && Math.abs(Math.hypot(m[0] - 0.5, m[1] - 0.5) - 0.25) < 1e-12,
@@ -85,7 +85,7 @@ public class GotaDisco {
         Random rnd = new Random(11);
         for (int i = 0; i < 2000; i++) {
             double a0 = rnd.nextDouble() * 1440 - 720, a1 = rnd.nextDouble() * 1440 - 720, u = rnd.nextDouble();
-            for (Mezcla.Tono t : Mezcla.Tono.values()) {
+            for (Texturas.Giro t : Texturas.Giro.values()) {
                 double v = Texturas.interpolaAngulo(a0, a1, u, t);
                 if (!(v >= 0 && v < 360)) rango = false;
                 double v0 = Texturas.interpolaAngulo(a0, a1, 0, t), v1 = Texturas.interpolaAngulo(a0, a1, 1, t);
@@ -96,7 +96,7 @@ public class GotaDisco {
         comprueba("interpolaAngulo devuelve siempre un ángulo en [0, 360)", rango, "");
         comprueba("interpolaAngulo sigue valiendo a0 y a1 (módulo 360) en u = 0 y u = 1", extremosOk, "");
         comprueba("350° -> 10° por el camino corto, u = 1: 10° y no 370°",
-                Math.abs(Texturas.interpolaAngulo(350, 10, 1, Mezcla.Tono.CORTO) - 10) < 1e-9, "");
+                Math.abs(Texturas.interpolaAngulo(350, 10, 1, Texturas.Giro.CORTO) - 10) < 1e-9, "");
     }
 
     static void giros() {
@@ -104,7 +104,7 @@ public class GotaDisco {
         Texturas.Disco a = new Texturas.Disco(0, 0, Math.cos(Math.toRadians(10)), Math.sin(Math.toRadians(10)));
         Texturas.Disco b = new Texturas.Disco(0, 0, Math.cos(Math.toRadians(350)), Math.sin(Math.toRadians(350)));
         double[] esperado = { 0, 180, 180, 0 };   // ángulo a mitad de camino: CORTO por 0°, LARGO por 180°, HORARIO (creciente) por 180°, ANTIHORARIO por 0°
-        Mezcla.Tono[] tonos = Mezcla.Tono.values();
+        Texturas.Giro[] tonos = Texturas.Giro.values();
         for (int i = 0; i < tonos.length; i++) {
             double[] c = coords(Texturas.disco(REGISTRA, a, b, Texturas.Orientacion.TANGENTE, tonos[i]), new Coordenadas.Muestra(0.5, 1, 1, 0));
             double ang = Math.toDegrees(Math.atan2(c[1], c[0]));
@@ -113,7 +113,7 @@ public class GotaDisco {
         }
         // extremos exactos en los cuatro sentidos
         boolean ok = true;
-        for (Mezcla.Tono t : tonos) {
+        for (Texturas.Giro t : tonos) {
             Relleno r = Texturas.disco(REGISTRA, a, b, Texturas.Orientacion.TANGENTE, t);
             double[] c0 = coords(r, new Coordenadas.Muestra(0, 1, 1, 0)), c1 = coords(r, new Coordenadas.Muestra(1, 1, 1, 0));
             ok &= Math.abs(c0[0] - a.eu()) < 1e-12 && Math.abs(c0[1] - a.ev()) < 1e-12 && Math.abs(c1[0] - b.eu()) < 1e-12 && Math.abs(c1[1] - b.ev()) < 1e-12;
@@ -130,10 +130,10 @@ public class GotaDisco {
         int malosH = 0, malosV = 0, malosT = 0, n = 0;
         for (int i = 0; i < 400; i++) {
             double x = 40 + rnd.nextDouble() * 170, y = 70 + rnd.nextDouble() * 60;
-            if (!h.contiene(x, y)) continue;
+            if (!h.mascara().contiene(x, y)) continue;
             Relleno rt = Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.TANGENTE).para(h);
             Relleno rf = Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.FIJA).para(h);
-            Coordenadas.Muestra m = h.parametros(x, y);
+            Coordenadas.Muestra m = Coordenadas.parametros(h, x, y, Opciones.POR_DEFECTO);
             double[] a = coords(rt, m), b = coords(rf, m);
             n++;
             if (Math.abs(a[0] - b[0]) > 1e-9 || Math.abs(a[1] - b[1]) > 1e-9) malosH++;
@@ -144,9 +144,9 @@ public class GotaDisco {
         }
         for (int i = 0; i < 400; i++) {   // camino vertical: FIJA sigue siendo el desplazamiento en pantalla; TANGENTE no
             double x = 70 + rnd.nextDouble() * 60, y = 40 + rnd.nextDouble() * 170;
-            if (!v.contiene(x, y)) continue;
+            if (!v.mascara().contiene(x, y)) continue;
             Relleno rf = Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.FIJA).para(v);
-            Coordenadas.Muestra m = v.parametros(x, y);
+            Coordenadas.Muestra m = Coordenadas.parametros(v, x, y, Opciones.POR_DEFECTO);
             double[] b = coords(rf, m);
             double cx = v.centro(m.t()).getX(), cy = v.centro(m.t()).getY(), r = v.radio(m.t());
             double ex = 0.5 + 0.4 * ((x - cx) / r), ey = 0.5 + 0.4 * ((y - cy) / r);
@@ -158,7 +158,7 @@ public class GotaDisco {
 
         // TANGENTE con camino vertical: la textura gira 90° respecto a FIJA
         Relleno rt = Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.TANGENTE).para(v);
-        Coordenadas.Muestra m = v.parametros(100, 110 + 8);
+        Coordenadas.Muestra m = Coordenadas.parametros(v, 100, 110 + 8, Opciones.POR_DEFECTO);
         double[] a = coords(rt, m);
         double cx = v.centro(m.t()).getX(), cy = v.centro(m.t()).getY(), r = v.radio(m.t());
         double x = (100 - cx) / r, y = (118 - cy) / r;   // desplazamiento en pantalla
@@ -172,9 +172,8 @@ public class GotaDisco {
         for (Solape s : Solape.values()) {
             BufferedImage img = new BufferedImage(300, 300, BufferedImage.TYPE_INT_ARGB);
             try {
-                arco.render(img, ComposicionColor.combinar(Colores.cadena(0xFF1E1B4B, 0xFFFFE27A, 0xFF2563EB, 0xFF7C2D12),
-                        Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.FIJA), ComposicionColor.Modo.MODULATE),
-                        Opciones.POR_DEFECTO.conSolape(s));
+                Plotter.raster(img).plot(arco, ComposicionColor.combinar(Colores.cadena(0xFF1E1B4B, 0xFFFFE27A, 0xFF2563EB, 0xFF7C2D12),
+                        Texturas.disco(REGISTRA, d1, d2, Texturas.Orientacion.FIJA), ComposicionColor.Modo.MODULATE), Opciones.POR_DEFECTO.conSolape(s));
             } catch (RuntimeException ex) { ok = false; }
         }
         comprueba("combinar(cadena, disco FIJA) se renderiza en PLANO y TRAZO sobre un arco", ok, "");
@@ -193,10 +192,10 @@ public class GotaDisco {
                            : Gota.curva(p(ox + 70, oy + 235), 35, new Gota.Vec(0, -200), p(ox + 230, oy + 235), 25, new Gota.Vec(0, -200), Perfil.recto());
             Relleno rel = switch (i % 3) {
                 case 0 -> Texturas.disco(tex);
-                case 1 -> Texturas.disco(tex, ins, giro, Texturas.Orientacion.TANGENTE, Mezcla.Tono.CORTO);
+                case 1 -> Texturas.disco(tex, ins, giro, Texturas.Orientacion.TANGENTE, Texturas.Giro.CORTO);
                 default -> Texturas.disco(tex, peq, peq, Texturas.Orientacion.FIJA);
             };
-            g.render(img, rel);
+            Plotter.raster(img).plot(g, rel);
         }
         ImageIO.write(img, "png", new File("gota_disco.png"));
     }

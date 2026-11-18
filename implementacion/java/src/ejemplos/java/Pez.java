@@ -14,12 +14,12 @@ public class Pez {
     static void agua(BufferedImage im) {
         java.util.Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), 0xFF0F5B7A);
         Point2D.Double a = new Point2D.Double(W / 2.0, -420), b = new Point2D.Double(W / 2.0 + 0.5, -420);
-        Gota.lineal(a, 1000, b, 1000, Perfil.recto()).render(im, Colores.cuatroColores(0xFF9AD9E8, 0xFF9AD9E8, 0xFF0F5B7A, 0xFF0F5B7A, Mezcla.RGB));
+        Plotter.raster(im).plot(Gota.lineal(a, 1000, b, 1000, Perfil.recto()), Colores.cuatroColores(0xFF9AD9E8, 0xFF9AD9E8, 0xFF0F5B7A, 0xFF0F5B7A, Mezcla.RGB));
     }
 
     static void disco(BufferedImage im, double x, double y, double r, int centro, int borde) {
         Point2D.Double a = new Point2D.Double(x, y), b = new Point2D.Double(x + 0.5, y);
-        Gota.lineal(a, r, b, r, Perfil.recto()).render(im, Colores.cuatroColores(centro, centro, borde, borde, Mezcla.RGB));
+        Plotter.raster(im).plot(Gota.lineal(a, r, b, r, Perfil.recto()), Colores.cuatroColores(centro, centro, borde, borde, Mezcla.RGB));
     }
 
     /** Alga: cadena de nodos en zigzag con el radio decreciente. */

@@ -57,7 +57,7 @@ public class Caracol {
     /** Un sol difuso: un disco de la primitiva con degradado del centro al borde. */
     static void sol(BufferedImage im, double x, double y) {
         java.awt.geom.Point2D.Double a = new java.awt.geom.Point2D.Double(x, y), b = new java.awt.geom.Point2D.Double(x + 0.5, y);
-        Gota.lineal(a, 46, b, 46, Perfil.recto()).render(im, Colores.cuatroColores(0xFFFFF3B0, 0xFFFFF3B0, 0xFFFFCF5A, 0xFFFFCF5A, Mezcla.RGB));
+        Plotter.raster(im).plot(Gota.lineal(a, 46, b, 46, Perfil.recto()), Colores.cuatroColores(0xFFFFF3B0, 0xFFFFF3B0, 0xFFFFCF5A, 0xFFFFCF5A, Mezcla.RGB));
     }
 
     static BufferedImage dibuja() {
@@ -76,7 +76,7 @@ public class Caracol {
         // ojos
         for (double[] o : new double[][] { { 484, 236 }, { 432, 232 } }) {
             java.awt.geom.Point2D.Double a = new java.awt.geom.Point2D.Double(o[0] + 1, o[1] - 1), b = new java.awt.geom.Point2D.Double(o[0] + 1.5, o[1] - 1);
-            Gota.lineal(a, 3, b, 3, Perfil.recto()).render(im, Colores.cuatroColores(0xFF444444, 0xFF444444, 0xFF111111, 0xFF111111, Mezcla.RGB));
+            Plotter.raster(im).plot(Gota.lineal(a, 3, b, 3, Perfil.recto()), Colores.cuatroColores(0xFF444444, 0xFF444444, 0xFF111111, 0xFF111111, Mezcla.RGB));
         }
         return im.getSubimage(0, RECORTE, W, ALTO);
     }

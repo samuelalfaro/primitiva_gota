@@ -19,20 +19,11 @@ public class GotaColorDemo {
         boolean ok = true;
 
         // Identidad: mezclar(c, c, u) debe devolver c (tolerancia de 1 por canal)
-        String[] nombres = { "RGB", "RGB_LINEAL", "HSL corto", "HSL horario", "HSL antihorario",
-                             "HSL largo", "LCH corto", "LCH horario", "LCH antihorario", "LCH largo" };
-        Mezcla[] todas = {
-            Mezcla.RGB, Mezcla.RGB_LINEAL,
-            Mezcla.hsl(Mezcla.Tono.CORTO), Mezcla.hsl(Mezcla.Tono.HORARIO),
-            Mezcla.hsl(Mezcla.Tono.ANTIHORARIO), Mezcla.hsl(Mezcla.Tono.LARGO),
-            Mezcla.lch(Mezcla.Tono.CORTO), Mezcla.lch(Mezcla.Tono.HORARIO),
-            Mezcla.lch(Mezcla.Tono.ANTIHORARIO), Mezcla.lch(Mezcla.Tono.LARGO),
-        };
+        String[] nombres = { "RGB", "RGB_LINEAL", "HSL", "LCH" };
+        Mezcla[] todas = { Mezcla.RGB, Mezcla.RGB_LINEAL, Mezcla.HSL, Mezcla.LCH };
         int[] prueba = { 0xFFFF0000, 0xFF00FF00, 0xFF0000FF, 0xFFFFFFFF, 0xFF000000,
                          0xFF808080, 0xFF2563EB, 0xFFFACC15, 0x80336699 };
         for (int i = 0; i < todas.length; i++) {
-            // LARGO entre tonos iguales da una vuelta completa por definición: no cumple identidad
-            if (nombres[i].endsWith("largo")) continue;
             int fallos = 0;
             for (int c : prueba)
                 for (double u : new double[] { 0.13, 0.5, 0.87 })
@@ -41,30 +32,43 @@ public class GotaColorDemo {
             if (fallos > 0) ok = false;
         }
 
-        // Sentido del tono: rojo (0°) a azul (240°), punto medio en HSL
-        int rojo = 0xFFFF0000, azul = 0xFF0000FF, magenta = 0xFFFF00FF, verde = 0xFF00FF00;
-        ok &= comprueba("corto      -> magenta", Mezcla.hsl(Mezcla.Tono.CORTO).mezclar(rojo, azul, 0.5), magenta);
-        ok &= comprueba("largo      -> verde  ", Mezcla.hsl(Mezcla.Tono.LARGO).mezclar(rojo, azul, 0.5), verde);
-        ok &= comprueba("horario    -> verde  ", Mezcla.hsl(Mezcla.Tono.HORARIO).mezclar(rojo, azul, 0.5), verde);
-        ok &= comprueba("antihorario-> magenta", Mezcla.hsl(Mezcla.Tono.ANTIHORARIO).mezclar(rojo, azul, 0.5), magenta);
+        // Sin cortes de tono: entre tonos opuestos (rojo y cian, 180°) el color pasa por un gris en vez de saltar de un lado a otro de la rueda
+        int rojo = 0xFFFF0000, cian = 0xFF00FFFF;
+        for (int i = 2; i < 4; i++) {
+            int maxPaso = 0;
+            for (int k = 0; k < 400; k++) {
+                int x = todas[i].mezclar(rojo, cian, k / 400.0), y = todas[i].mezclar(rojo, cian, (k + 1) / 400.0);
+                for (int s = 0; s <= 16; s += 8) maxPaso = Math.max(maxPaso, Math.abs(((x >> s) & 255) - ((y >> s) & 255)));
+            }
+            System.out.printf("%-16s rojo -> cian: salto máximo entre pasos de 1/400: %d%n", nombres[i], maxPaso);
+            if (maxPaso > 16) ok = false;   // el máximo cae en los extremos (curva sRGB); un corte real de tono daría un salto de decenas
+        }
+        ok &= comprueba("HSL rojo->cian, mitad: gris", Mezcla.HSL.mezclar(rojo, cian, 0.5), 0xFF808080);
+        // y también cuando los tonos quedan a poco menos de 180° (rojo y cian desplazado 10°), donde el arco corto cambiaba de lado
+        int cercano = 0xFF00FFE0;   // tono 170°
+        int maxPaso = 0;
+        for (int k = 0; k < 400; k++) {
+            int x = Mezcla.LCH.mezclar(rojo, cercano, k / 400.0), y = Mezcla.LCH.mezclar(rojo, cercano, (k + 1) / 400.0);
+            for (int s = 0; s <= 16; s += 8) maxPaso = Math.max(maxPaso, Math.abs(((x >> s) & 255) - ((y >> s) & 255)));
+        }
+        System.out.printf("LCH              rojo -> tono 170°: salto máximo entre pasos de 1/400: %d%n", maxPaso);
+        if (maxPaso > 16) ok = false;   // el máximo cae en los extremos (curva sRGB); un corte real de tono daría un salto de decenas
 
         // Colores: centros azul y amarillo, bordes azul noche y ladrillo
         int a = 0xFF2563EB, b = 0xFFFACC15, aBorde = 0xFF1E1B4B, bBorde = 0xFF7C2D12;
         Relleno[] rellenos = {
+            Colores.conGamma(a, b, aBorde, bBorde, 2.0, 0.7, Mezcla.RGB, Mezcla.RGB),
+            Colores.conGamma(a, b, aBorde, bBorde, 2.0, 0.7, Mezcla.RGB_LINEAL, Mezcla.RGB_LINEAL),
             Colores.conGamma(a, b, aBorde, bBorde, 2.0, 0.7, Mezcla.HSL, Mezcla.HSL),
-            Colores.conGamma(a, b, aBorde, bBorde, 2.0, 0.7,
-                              Mezcla.hsl(Mezcla.Tono.ANTIHORARIO), Mezcla.HSL),
             Colores.conGamma(a, b, aBorde, bBorde, 2.0, 0.7, Mezcla.LCH, Mezcla.LCH),
-            Colores.conGamma(a, b, aBorde, bBorde, 2.0, 0.7,
-                              Mezcla.lch(Mezcla.Tono.ANTIHORARIO), Mezcla.LCH),
         };
 
         BufferedImage img = new BufferedImage(1200, 600, BufferedImage.TYPE_INT_ARGB);
         Arrays.fill(((DataBufferInt) img.getRaster().getDataBuffer()).getData(), 0xFFFFFFFF);
         for (int col = 0; col < 4; col++) {
-            Gota.lineal(p(col, 0, 70, 150), 60, p(col, 0, 235, 150), 25, Perfil.central(1.4)).render(img, rellenos[col]);
-            Gota.curva(p(col, 1, 60, 240), 35, new Gota.Vec(0, -200),
-                       p(col, 1, 240, 240), 15, new Gota.Vec(0, -200), Perfil.central(1.0)).render(img, rellenos[col]);
+            Plotter.raster(img).plot(Gota.lineal(p(col, 0, 70, 150), 60, p(col, 0, 235, 150), 25, Perfil.central(1.4)), rellenos[col]);
+            Plotter.raster(img).plot(Gota.curva(p(col, 1, 60, 240), 35, new Gota.Vec(0, -200),
+                       p(col, 1, 240, 240), 15, new Gota.Vec(0, -200), Perfil.central(1.0)), rellenos[col]);
         }
         ImageIO.write(img, "png", new File("gota_tonos.png"));
         System.out.println(ok ? "OK" : "HAY FALLOS");

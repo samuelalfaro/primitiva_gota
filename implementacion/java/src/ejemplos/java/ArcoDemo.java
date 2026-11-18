@@ -16,7 +16,7 @@ public class ArcoDemo {
         for (int k = 0; k < 3; k++) {
             BufferedImage p = new BufferedImage(440, 250, BufferedImage.TYPE_INT_ARGB);
             java.util.Arrays.fill(((DataBufferInt) p.getRaster().getDataBuffer()).getData(), 0xFFF4F1EA);
-            g.render(p, Colores.cadenaLateral(a.conAjusteArco(s[k]), b.conAjusteArco(s[k]), Mezcla.RGB));
+            Plotter.raster(p).plot(g, Colores.cadenaLateral(a.conAjusteArco(s[k]), b.conAjusteArco(s[k]), Mezcla.RGB));
             out.getGraphics().drawImage(p, k * 440, 0, null);
         }
         ImageIO.write(out, "png", new File("arco_ajuste.png"));

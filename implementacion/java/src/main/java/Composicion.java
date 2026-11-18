@@ -1,15 +1,11 @@
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferInt;
-import java.awt.image.SinglePixelPackedSampleModel;
-import java.awt.image.WritableRaster;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.IntStream;
 
 /**
  * Composición de gotas: varias gotas que comparten nodos (una línea abierta, un ciclo, una estrella...).
@@ -68,7 +64,13 @@ public final class Composicion {
          */
         public Nodo lados(int contra, int normal) { this.contra = contra; this.normal = normal; sectores = null; return cambia(); }
 
-        /** Un color por sector, en orden de ángulo creciente (atan2, y hacia abajo) de las ramas del nodo. */
+        /**
+         * Un color por sector, en orden de ángulo creciente (atan2, y hacia abajo) de las ramas del nodo: el ángulo es el
+         * de la tangente con que sale cada rama, no la dirección al otro nodo. Hace falta un color por rama y la cuenta
+         * se comprueba al construir (gotas() o render), cuando ya se sabe qué aristas llegan al nodo: si no cuadra, el
+         * error lista las ramas con su ángulo y su nodo vecino. En un nodo de grado 2, {@link #lados(int, int)} evita
+         * contar ramas; con un solo color para todo el nodo, {@link #color(int)}.
+         */
         public Nodo sectores(int... colores) { sectores = colores.clone(); contra = normal = null; return cambia(); }
 
 
@@ -184,7 +186,7 @@ public final class Composicion {
     /** Pertenencia exacta a la unión dura (el suavizado solo afecta al pintado y a la sdf). */
     public boolean contiene(double x, double y) {
         construye();
-        for (Gota g : gotas) if (g.contiene(x, y)) return true;
+        for (Gota g : gotas) if (g.mascara().contiene(x, y)) return true;
         return false;
     }
 
@@ -192,7 +194,7 @@ public final class Composicion {
     public double sdf(double x, double y) {
         construye();
         double s = Double.MAX_VALUE;
-        for (Gota g : gotas) s = s == Double.MAX_VALUE ? g.sdf(x, y) : smin(s, g.sdf(x, y), suaviza);
+        for (Gota g : gotas) s = s == Double.MAX_VALUE ? g.distancia(x, y) : smin(s, g.distancia(x, y), suaviza);
         return s;
     }
 
@@ -248,36 +250,46 @@ public final class Composicion {
         pinta(dst, rs, op);
     }
 
+    /**
+     * Pinta la composición combinando en una sola pasada el color lateral de cada gota (Cf) con la textura (Ct), al estilo de
+     * glTexEnv ({@link ComposicionColor.Modo}). La gota que manda en cada píxel es la misma que con el color solo, y la cobertura del
+     * borde se aplica una vez (dos pasadas, color y luego textura con alfa, equivalen como mucho a DECAL y la cobertura se aplica dos veces).
+     * Con REPLACE da lo mismo que {@link #render(BufferedImage, Texturas.Textura, Opciones)}.
+     */
+    public void render(BufferedImage dst, Texturas.Textura tex, ComposicionColor.Modo modo) {
+        render(dst, tex, modo, Opciones.POR_DEFECTO);
+    }
+
+    /** Igual, con las opciones de pintado dadas. */
+    public void render(BufferedImage dst, Texturas.Textura tex, ComposicionColor.Modo modo, Opciones op) {
+        render(dst, tex, modo, 0xFF000000, op);
+    }
+
+    /** Igual, con el color de entorno Ce de BLEND (su alfa se ignora). */
+    public void render(BufferedImage dst, Texturas.Textura tex, ComposicionColor.Modo modo, int entorno, Opciones op) {
+        Objects.requireNonNull(tex, "textura");
+        Objects.requireNonNull(modo, "modo");
+        Objects.requireNonNull(op, "opciones");
+        construye();
+        List<Relleno> rs = new ArrayList<>();
+        for (int i = 0; i < gotas.size(); i++) rs.add(ComposicionColor.combinar(rellenos.get(i), Texturas.tira(tex), modo, entorno));
+        pinta(dst, rs, op);
+    }
+
     private void pinta(BufferedImage dst, List<Relleno> rellenos, Opciones op) {
-        if (dst.getType() != BufferedImage.TYPE_INT_ARGB)
-            throw new IllegalArgumentException("Se requiere BufferedImage.TYPE_INT_ARGB");
-        final WritableRaster raster = dst.getRaster();
-        if (!(raster.getSampleModel() instanceof SinglePixelPackedSampleModel sm))
-            throw new IllegalArgumentException("Raster no soportado: se requiere INT_ARGB empaquetado");
-        final int[] datos = ((DataBufferInt) raster.getDataBuffer()).getData();
-        final int stride = sm.getScanlineStride();
-        final int base = raster.getDataBuffer().getOffset()
-                - raster.getSampleModelTranslateY() * stride - raster.getSampleModelTranslateX();
-        final int w = dst.getWidth();
+        final Plotter.Raster raster = new Plotter.Raster(dst);
         final double marg = 2 + suaviza;
-        final int x0 = Math.max(0, (int) Math.floor(bounds.getMinX() - marg));
-        final int x1 = Math.min(w, (int) Math.ceil(bounds.getMaxX() + marg));
-        final int y0 = Math.max(0, (int) Math.floor(bounds.getMinY() - marg));
-        final int y1 = Math.min(dst.getHeight(), (int) Math.ceil(bounds.getMaxY() + marg));
-        if (x0 >= x1 || y0 >= y1) return;
+        final Plotter.Raster.Zona z = raster.zona(bounds.getMinX(), bounds.getMaxX(), bounds.getMinY(), bounds.getMaxY(), marg);
+        if (z == null) return;
         final List<Relleno> rel = new ArrayList<>();
         for (int i = 0; i < gotas.size(); i++) rel.add(rellenos.get(i).para(gotas.get(i), op));
-        IntStream.range(y0, y1).parallel().forEach(j -> {
-            for (int i = x0; i < x1; i++) {
-                double x = i + 0.5, y = j + 0.5;
-                double[] ev = evalua(x, y, op);
-                if (ev[1] < 0) continue;
-                Gota g = gotas.get((int) ev[1]);
-                Relleno rl = rel.get((int) ev[1]);
-                int c = g.color(rl, x, y, op);
-                int idx = base + j * stride + i;
-                datos[idx] = sobre(datos[idx], c, ev[0]);
-            }
+        raster.recorre(z, (i, j) -> {
+            double x = i + 0.5, y = j + 0.5;
+            double[] ev = evalua(x, y, op);
+            if (ev[1] < 0) return;
+            Gota g = gotas.get((int) ev[1]);
+            int c = rel.get((int) ev[1]).argb(Coordenadas.punto(g, x, y, op));
+            raster.set(i, j, sobre(raster.get(i, j), c, ev[0]));
         });
     }
 
@@ -300,7 +312,7 @@ public final class Composicion {
             Rectangle2D bb = gotas.get(k).bounds();
             if (x < bb.getMinX() - marg || x > bb.getMaxX() + marg || y < bb.getMinY() - marg || y > bb.getMaxY() + marg)
                 continue;
-            s[k] = gotas.get(k).sdf(x, y);
+            s[k] = gotas.get(k).distancia(x, y);
             smin = smin == Double.MAX_VALUE ? s[k] : smin(smin, s[k], suaviza);
         }
         if (smin == Double.MAX_VALUE) return new double[] { 0, -1 };
@@ -308,7 +320,7 @@ public final class Composicion {
         if (cob <= 0) return new double[] { 0, -1 };
         for (int k = 0; k < gotas.size(); k++) {
             if (s[k] >= 0.75 + suaviza) continue;
-            double rho = gotas.get(k).porRho(x, y, op.solape()).rho();
+            double rho = Coordenadas.porRho(gotas.get(k), x, y, op.solape()).rho();
             if (rho < rmin) { rmin = rho; mejor = k; }
         }
         return new double[] { cob, mejor };
@@ -424,6 +436,25 @@ public final class Composicion {
         return creciente ? new int[] { sDec, sCre } : new int[] { sCre, sDec };
     }
 
+    /**
+     * Mensaje de sectores() con el número de colores que no cuadra: dice cuántos colores hacen falta y por qué (qué
+     * aristas llegan al nodo, con su ángulo y el nodo del otro extremo), en el orden en que se esperan los colores.
+     */
+    private String mensajeSectores(Nodo n, List<Brazo> br) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("nodo %d (x=%.1f, y=%.1f): sectores() recibió %d colores y el nodo tiene %d rama%s; hace falta un color por rama",
+                n.id, n.x, n.y, n.sectores.length, br.size(), br.size() == 1 ? "" : "s"));
+        sb.append(", en orden de ángulo de salida creciente, en (-180°, 180°] (atan2 con y hacia abajo: 0° = +x, 90° = hacia abajo en pantalla; es la tangente con que sale la rama del nodo, no la dirección al otro nodo). Ramas: ");
+        for (int k = 0; k < br.size(); k++) {
+            Brazo b = br.get(k);
+            Nodo otro = b.inicio() ? b.e().b : b.e().a;
+            if (k > 0) sb.append("; ");
+            sb.append(String.format("%d.ª sale a %.0f° (arista hacia el nodo %d)", k + 1, Math.toDegrees(b.ang()), otro.id));
+        }
+        sb.append(". Si la cuenta no es la esperada, quizá falta o sobra una arista (o se añadió otra después de dar los colores).");
+        return sb.toString();
+    }
+
     private Colores.Lateral lateralDe(Nodo n, Arista e, boolean inicio) {
         int centro = n.centro != null ? n.centro : (n.sectores != null && n.sectores.length > 0 ? n.sectores[0] : 0xFFCCCCCC);
         List<Brazo> br = brazos(n);
@@ -431,8 +462,7 @@ public final class Composicion {
         int[] col = new int[d];
         java.util.Arrays.fill(col, centro);
         if (n.sectores != null) {
-            if (n.sectores.length != d)
-                throw new IllegalStateException("nodo " + n.id + ": " + n.sectores.length + " sectores para " + d + " ramas");
+            if (n.sectores.length != d) throw new IllegalStateException(mensajeSectores(n, br));
             col = n.sectores;
         } else if (n.contra != null) {
             if (d != 2) throw new IllegalStateException("lados() solo en nodos de grado 2 (nodo " + n.id + ")");

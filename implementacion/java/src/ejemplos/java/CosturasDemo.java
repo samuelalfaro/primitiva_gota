@@ -91,7 +91,7 @@ public class CosturasDemo {
                 BufferedImage celda = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
                 Graphics2D gc = celda.createGraphics();
                 gc.setColor(new Color(FONDO)); gc.fillRect(0, 0, w, h); gc.dispose();
-                casos[f].gota().render(celda, relleno, Opciones.POR_DEFECTO.conCostura(MODOS[c]));
+                Plotter.raster(celda).plot(casos[f].gota(), relleno, Opciones.POR_DEFECTO.conCostura(MODOS[c]));
                 g.drawImage(celda, ml + c * w, mt + f * h, null);
             }
         }

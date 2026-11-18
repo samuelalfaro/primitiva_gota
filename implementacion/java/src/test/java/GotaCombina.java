@@ -110,8 +110,8 @@ public class GotaCombina {
 
         // REPLACE con un color sólido == textura sola, píxel a píxel
         BufferedImage a = lienzo(), b = lienzo();
-        g.render(a, Texturas.textura(tx));
-        g.render(b, ComposicionColor.combinar(Relleno.solido(cc), Texturas.textura(tx), ComposicionColor.Modo.REPLACE));
+        Plotter.raster(a).plot(g, Texturas.textura(tx));
+        Plotter.raster(b).plot(g, ComposicionColor.combinar(Relleno.solido(cc), Texturas.textura(tx), ComposicionColor.Modo.REPLACE));
         comprueba("combinar(sólido, textura, REPLACE) == textura sola (píxel a píxel)", Arrays.equals(datos(a), datos(b)), "");
 
         // MODULATE: cada píxel interior coincide con la fórmula aplicada al color y al texel de ese píxel
@@ -123,9 +123,9 @@ public class GotaCombina {
             int malos = 0, n = 0;
             for (int y = 100; y < 200; y += 3)
                 for (int x = 10; x < 260; x += 3) {
-                    if (!g.contiene(x + 0.5, y + 0.5)) continue;
-                    Coordenadas.Muestra mu = g.parametros(x + 0.5, y + 0.5);
-                    Coordenadas.Uv uv = g.uv(x + 0.5, y + 0.5);
+                    if (!g.mascara().contiene(x + 0.5, y + 0.5)) continue;
+                    Coordenadas.Muestra mu = Coordenadas.parametros(g, x + 0.5, y + 0.5, Opciones.POR_DEFECTO);
+                    Coordenadas.Uv uv = Coordenadas.uv(g, x + 0.5, y + 0.5, Opciones.POR_DEFECTO);
                     int esperado = ref(m, c2.argb(mu, uv), t2.argb(mu, uv), 0xFF20C040);
                     n++;
                     if (!cerca(comb.argb(mu, uv), esperado, 1)) malos++;
@@ -135,8 +135,8 @@ public class GotaCombina {
 
         // la tira de Texturas y la textura comparten Uv: tira(tex) == textura(tex) con cortes por defecto
         BufferedImage c = lienzo(), d = lienzo();
-        g.render(c, Texturas.textura(tx));
-        g.render(d, Texturas.tira(tx));
+        Plotter.raster(c).plot(g, Texturas.textura(tx));
+        Plotter.raster(d).plot(g, Texturas.tira(tx));
         comprueba("tira(tex) == textura(tex) con los cortes por defecto", Arrays.equals(datos(c), datos(d)), "");
 
         // tira con cortes explícitos: el corte central sigue a tm
@@ -144,7 +144,7 @@ public class GotaCombina {
         Gota gm = Gota.lineal(p(60.5, 150.5), 50, p(240.5, 150.5), 20, Perfil.radioMedio(30, 0.3, 1));
         Relleno rt = Texturas.tira((u, v) -> { ult[0] = u; ult[1] = v; return 0xFFFFFFFF; }, 0, 0, 1, 1, 0.1, 0.9).para(gm);
         Point2D cm = gm.centro(gm.tm());
-        rt.argb(gm.parametros(cm.getX(), cm.getY()), gm.uv(cm.getX(), cm.getY()));
+        rt.argb(Coordenadas.parametros(gm, cm.getX(), cm.getY(), Opciones.POR_DEFECTO), Coordenadas.uv(gm, cm.getX(), cm.getY(), Opciones.POR_DEFECTO));
         comprueba("tira(tex, ..., c1, c3): v en el centro de t = tm es c1 + (c3 - c1)·tm", Math.abs(ult[1] - (0.1 + 0.8 * 0.3)) < 2e-3, String.format("v = %.4f", ult[1]));
 
         // multitextura (combinaciones anidadas) en PLANO y en TRAZO: cada píxel sigue la fórmula encadenada
@@ -157,9 +157,9 @@ public class GotaCombina {
             int malos = 0, n = 0;
             for (int y = 100; y < 200; y += 3)
                 for (int x = 10; x < 260; x += 3) {
-                    if (!gg.contiene(x + 0.5, y + 0.5)) continue;
-                    Coordenadas.Muestra mu = gg.parametros(x + 0.5, y + 0.5, op);
-                    Coordenadas.Uv uv = gg.uv(x + 0.5, y + 0.5, op);
+                    if (!gg.mascara().contiene(x + 0.5, y + 0.5)) continue;
+                    Coordenadas.Muestra mu = Coordenadas.parametros(gg, x + 0.5, y + 0.5, op);
+                    Coordenadas.Uv uv = Coordenadas.uv(gg, x + 0.5, y + 0.5, op);
                     int tt = t2.argb(mu, uv);
                     int esperado = ref(ComposicionColor.Modo.ADD, ref(ComposicionColor.Modo.MODULATE, cc, tt, 0), tt, 0);
                     n++;
@@ -187,7 +187,7 @@ public class GotaCombina {
             ComposicionColor.Modo m = i < 5 ? ms[i] : ComposicionColor.Modo.MODULATE;
             Relleno rel = i < 5 ? ComposicionColor.combinar(color, Texturas.textura(tx), m, 0xFF20C040)
                                      : ComposicionColor.combinar(color, Texturas.tira(tx, 0, 0, 1, 1, 0.1, 0.9), m);
-            g.render(img, rel);
+            Plotter.raster(img).plot(g, rel);
         }
         ImageIO.write(img, "png", new File("gota_combina.png"));
     }

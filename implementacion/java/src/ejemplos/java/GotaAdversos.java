@@ -41,7 +41,7 @@ public class GotaAdversos {
         boolean ok = true;
         for (int i = 0; i < g.length; i++) {
             long t0 = System.nanoTime();
-            g[i].render(img, rel);
+            Plotter.raster(img).plot(g[i], rel);
             double ms = (System.nanoTime() - t0) / 1e6;
             int x0 = (i % 4) * 300, y0 = (i / 4) * 300;
             int[] r = comparar(g[i], x0, y0, x0 + 300, y0 + 300);
@@ -80,14 +80,14 @@ public class GotaAdversos {
         for (int y = y0; y < y1; y++) {
             for (int x = x0; x < x1; x++) {
                 double px = x + 0.5, py = y + 0.5;
-                boolean a = g.contiene(px, py), bf = false;
+                boolean a = g.mascara().contiene(px, py), bf = false;
                 for (int k = 0; k < m && !bf; k++) {
                     double dx = px - cx[k], dy = py - cy[k];
                     bf = dx * dx + dy * dy <= rr[k];
                 }
                 if (a) dentro++;
                 if (a != bf) disc++;
-                double s = g.sdf(px, py);
+                double s = g.distancia(px, py);
                 if ((s < 0) != a && Math.abs(s) > 1e-3) discSdf++;
             }
         }

@@ -123,6 +123,15 @@ public class ComposicionPruebas {
             c.arista(a, b);
             c.gotas();
         }), "");
+        String msg = "";
+        try {
+            Composicion c = new Composicion();
+            var a = c.nodo(0, 0, 10).sectores(1, 2, 3); var b = c.nodo(100, 0, 10); var d = c.nodo(0, 100, 10);
+            c.arista(a, b); c.arista(a, d);
+            c.gotas();
+        } catch (IllegalStateException e) { msg = e.getMessage(); }
+        comprueba("el error de sectores dice cuántas ramas hay, en qué orden y hacia qué nodos", msg.contains("recibió 3 colores") && msg.contains("2 ramas")
+                && msg.contains("ángulo de salida creciente") && msg.contains("1.ª sale a -45° (arista hacia el nodo 1)") && msg.contains("2.ª sale a 135° (arista hacia el nodo 2)"), msg);
         comprueba("lados() en un nodo de grado 1 se rechaza", lanza(IllegalStateException.class, () -> {
             Composicion c = new Composicion();
             var a = c.nodo(0, 0, 10).lados(1, 2); var b = c.nodo(100, 0, 10);
@@ -146,7 +155,7 @@ public class ComposicionPruebas {
                     double a = Math.toRadians(s * 5);
                     for (double f : new double[] { 0.97, 0.5 }) {
                         double x = n.x() + Math.cos(a) * n.radio() * f, y = n.y() + Math.sin(a) * n.radio() * f;
-                        if (!g.contiene(x, y)) todos = false;
+                        if (!g.mascara().contiene(x, y)) todos = false;
                         if (!c.contiene(x, y)) unidos = false;
                     }
                 }
@@ -343,6 +352,43 @@ public class ComposicionPruebas {
         c.render(t, tex, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
         comprueba("la composición se renderiza con solape TRAZO", datos(t) != null && !java.util.Arrays.equals(datos(t), datos(lienzo())), "");
         comprueba("opciones nulas: NullPointerException", lanza(NullPointerException.class, () -> c.render(lienzo(), (Opciones) null)), "");
+
+        colorYTextura(c, tex);
+    }
+
+    /** Color y textura en una sola pasada (ComposicionColor.Modo). */
+    static void colorYTextura(Composicion c, Texturas.Textura tex) {
+        Opciones op = Opciones.POR_DEFECTO;
+        BufferedImage r = lienzo(), t = lienzo();
+        c.render(r, tex, ComposicionColor.Modo.REPLACE, op);
+        c.render(t, tex, op);
+        comprueba("render(tex, REPLACE) == render(tex)", java.util.Arrays.equals(datos(r), datos(t)), "");
+
+        Texturas.Textura blanca = new Texturas.Textura() {
+            @Override public double aspecto() { return 0.5; }
+            @Override public int muestrea(double u, double v) { return 0xFFFFFFFF; }
+        };
+        BufferedImage m = lienzo(), solo = lienzo();
+        c.render(m, blanca, ComposicionColor.Modo.MODULATE, op);
+        c.render(solo, op);
+        int difs = 0;
+        for (int i = 0; i < datos(m).length; i++) if (datos(m)[i] != datos(solo)[i]) difs++;
+        comprueba("MODULATE con textura blanca == color solo", difs == 0, difs + " píxeles distintos");
+
+        Texturas.Textura clara = new Texturas.Textura() {
+            @Override public double aspecto() { return 0.5; }
+            @Override public int muestrea(double u, double v) { return 0x00FFFFFF; }
+        };
+        BufferedImage d = lienzo();
+        c.render(d, clara, ComposicionColor.Modo.DECAL, op);
+        difs = 0;
+        for (int i = 0; i < datos(d).length; i++) if (datos(d)[i] != datos(solo)[i]) difs++;
+        comprueba("DECAL con textura transparente == color solo", difs == 0, difs + " píxeles distintos");
+
+        BufferedImage mod = lienzo();
+        c.render(mod, tex, ComposicionColor.Modo.MODULATE, op);
+        comprueba("MODULATE con la referencia != REPLACE", !java.util.Arrays.equals(datos(mod), datos(r)), "");
+        comprueba("modo nulo: NullPointerException", lanza(NullPointerException.class, () -> c.render(lienzo(), tex, (ComposicionColor.Modo) null, op)), "");
     }
 
     public static void main(String[] args) throws Exception {

@@ -69,12 +69,10 @@ public class BallenaV1 {
         // Ojo
         Point2D.Double oe = new Point2D.Double(645, 278);
         Point2D.Double oe2 = new Point2D.Double(645.5, 278);
-        Gota.lineal(oe, 9.5, oe2, 9.5, Perfil.recto())
-            .render(im, Colores.cuatroColores(0xFFFFFFFF, 0xFFFFFFFF, OSCURO, OSCURO, Mezcla.RGB));
+        Plotter.raster(im).plot(Gota.lineal(oe, 9.5, oe2, 9.5, Perfil.recto()), Colores.cuatroColores(0xFFFFFFFF, 0xFFFFFFFF, OSCURO, OSCURO, Mezcla.RGB));
         Point2D.Double pu = new Point2D.Double(648, 276);
         Point2D.Double pu2 = new Point2D.Double(648.4, 276);
-        Gota.lineal(pu, 4.2, pu2, 4.2, Perfil.recto())
-            .render(im, Colores.cuatroColores(0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000, Mezcla.RGB));
+        Plotter.raster(im).plot(Gota.lineal(pu, 4.2, pu2, 4.2, Perfil.recto()), Colores.cuatroColores(0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000, Mezcla.RGB));
 
         // Boca
         Composicion boca = new Composicion().suavizado(1.0);
