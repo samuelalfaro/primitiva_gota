@@ -123,6 +123,15 @@ public class ComposicionPruebas {
             c.arista(a, b);
             c.gotas();
         }), "");
+        String msg = "";
+        try {
+            Composicion c = new Composicion();
+            var a = c.nodo(0, 0, 10).sectores(1, 2, 3); var b = c.nodo(100, 0, 10); var d = c.nodo(0, 100, 10);
+            c.arista(a, b); c.arista(a, d);
+            c.gotas();
+        } catch (IllegalStateException e) { msg = e.getMessage(); }
+        comprueba("el error de sectores dice cuántas ramas hay, en qué orden y hacia qué nodos", msg.contains("recibió 3 colores") && msg.contains("2 ramas")
+                && msg.contains("ángulo de salida creciente") && msg.contains("1.ª sale a -45° (arista hacia el nodo 1)") && msg.contains("2.ª sale a 135° (arista hacia el nodo 2)"), msg);
         comprueba("lados() en un nodo de grado 1 se rechaza", lanza(IllegalStateException.class, () -> {
             Composicion c = new Composicion();
             var a = c.nodo(0, 0, 10).lados(1, 2); var b = c.nodo(100, 0, 10);
