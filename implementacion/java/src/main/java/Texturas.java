@@ -196,7 +196,10 @@ public final class Texturas {
      * Sentido en que gira la textura de un disco al ir de un extremo al otro de la gota (ángulos en grados): es una
      * rotación, no un color, y para girar más de media vuelta hace falta poder elegir el sentido.
      * HORARIO = ángulo creciente, ANTIHORARIO = decreciente.
+     *
+     * @deprecated el mapeo en disco está en estudio: se conserva por ahora y puede eliminarse; si la usas, avisa antes de que desaparezca.
      */
+    @Deprecated
     public enum Giro {
         /** El arco más corto entre los dos ángulos (valor por defecto). */
         CORTO,
@@ -240,7 +243,10 @@ public final class Texturas {
      * Si el borde coincide con el centro el radio es 0: ese extremo muestrea siempre el texel (cu, cv) (color plano,
      * con ángulo 0) y la interpolación con el otro extremo sigue definida. No se rechaza: es un degenerado y se
      * resuelve de la forma más simple.
+     *
+     * @deprecated el mapeo en disco está en estudio: se conserva por ahora y puede eliminarse; si la usas, avisa antes de que desaparezca.
      */
+    @Deprecated
     public record Disco(double cu, double cv, double eu, double ev) {
         public Disco {
             if (!Double.isFinite(cu) || !Double.isFinite(cv) || !Double.isFinite(eu) || !Double.isFinite(ev))
@@ -260,7 +266,10 @@ public final class Texturas {
         public static Disco capsulaFin() { return new Disco(0.5, 0.75, 0.5, 1.0); }
     }
 
-    /** Orientación del sistema local del círculo al llevarlo a la textura. */
+    /** Orientación del sistema local del círculo al llevarlo a la textura. 
+     * @deprecated el mapeo en disco está en estudio: se conserva por ahora y puede eliminarse; si la usas, avisa antes de que desaparezca.
+     */
+    @Deprecated
     public enum Orientacion {
         /** Gira con el camino. */
         TANGENTE,
@@ -268,11 +277,17 @@ public final class Texturas {
         FIJA
     }
 
-    /** Todos los círculos al disco inscrito en la textura, orientado con el camino (una especie de proyección). */
+    /** Todos los círculos al disco inscrito en la textura, orientado con el camino (una especie de proyección). 
+     * @deprecated el mapeo en disco está en estudio: se conserva por ahora y puede eliminarse; si la usas, avisa antes de que desaparezca.
+     *
+     * @deprecated el mapeo en disco está en estudio: se conserva por ahora y puede eliminarse; si la usas, avisa antes de que desaparezca.
+     */
+    @Deprecated
     public static Relleno disco(Textura tex) {
         return disco(tex, Disco.inscrito(), Disco.inscrito(), Orientacion.TANGENTE, Giro.CORTO);
     }
 
+    @Deprecated
     public static Relleno disco(Textura tex, Disco primero, Disco segundo) {
         return disco(tex, primero, segundo, Orientacion.TANGENTE, Giro.CORTO);
     }
@@ -281,15 +296,24 @@ public final class Texturas {
      * Mapeo en disco pensado para la textura de referencia 1 x 2: el primer círculo es la tapa de arriba y el último
      * la de abajo, y los círculos intermedios se deslizan entre ellos. En una gota recta de radios iguales con los
      * centros a dos radios de distancia reproduce la textura idéntica.
+     *
+     * @deprecated el mapeo en disco está en estudio: se conserva por ahora y puede eliminarse; si la usas, avisa antes de que desaparezca.
+     *
+     * @deprecated el mapeo en disco está en estudio: se conserva por ahora y puede eliminarse; si la usas, avisa antes de que desaparezca.
      */
+    @Deprecated
     public static Relleno discoCapsula(Textura tex) {
         return disco(tex, Disco.capsulaInicio(), Disco.capsulaFin(), Orientacion.TANGENTE, Giro.CORTO);
     }
 
+    @Deprecated
     public static Relleno disco(Textura tex, Disco primero, Disco segundo, Orientacion orientacion) {
         return disco(tex, primero, segundo, orientacion, Giro.CORTO);
     }
 
+    /** Mapeo en disco con orientación y sentido de giro.
+     * @deprecated el mapeo en disco está en estudio: se conserva por ahora y puede eliminarse; si la usas, avisa antes de que desaparezca. */
+    @Deprecated
     public static Relleno disco(Textura tex, Disco primero, Disco segundo,
                                      Orientacion orientacion, Giro giro) {
         Objects.requireNonNull(tex, "textura");
