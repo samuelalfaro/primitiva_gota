@@ -154,6 +154,30 @@ public final class Gota implements Geometria {
 
     public Rectangle2D bounds() { return (Rectangle2D) bounds.clone(); }
 
+    private volatile double[] acumulada;
+
+    /** Fracción de la longitud de arco del camino hasta t: tabla de longitudes acumuladas (muestreo uniforme en t) interpolada linealmente. */
+    @Override public double fraccion(double t) {
+        double[] a = acumulada;
+        if (a == null) {
+            final int n = 512;
+            a = new double[n + 1];
+            double x0 = cx(0), y0 = cy(0);
+            for (int i = 1; i <= n; i++) {
+                double x = cx(i / (double) n), y = cy(i / (double) n);
+                a[i] = a[i - 1] + Math.hypot(x - x0, y - y0);
+                x0 = x; y0 = y;
+            }
+            if (a[n] > 0) for (int i = 1; i <= n; i++) a[i] /= a[n];
+            else for (int i = 0; i <= n; i++) a[i] = i / (double) n;      // camino sin longitud: se reparte por t
+            acumulada = a;
+        }
+        int n = a.length - 1;
+        double f = Utils.acota(t, 0, 1) * n;
+        int i = Math.min(n - 1, (int) f);
+        return a[i] + (a[i + 1] - a[i]) * (f - i);
+    }
+
     /** Radio efectivo en tm (tras recortar a >= 0). */
     public double rm() { return rm; }
 
