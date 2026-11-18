@@ -13,10 +13,7 @@ import java.util.Objects;
  * gamma > 1 conserva más tiempo el color del centro; gamma < 1 adelanta el del borde.
  *
  * Las dos interpolaciones son funciones intercambiables (Mezcla). Por defecto Mezcla.RGB; también
- * RGB_LINEAL, HSL y LCH (Oklch) con sentido de tono configurable, o cualquier lambda propia.
- * Si solo se da una Mezcla, se usa para las dos. Con tonos HORARIO / ANTIHORARIO / LARGO conviene
- * dar una segunda Mezcla de sentido CORTO para centroBorde: un sentido forzado en esa mezcla
- * puede dar vueltas completas por la rueda de color.
+ * RGB_LINEAL, HSL y LCH (Oklab), o cualquier lambda propia. Si solo se da una Mezcla, se usa para las dos.
  *
  * Aparte del modelo radial, la cadena axial (extremo1 -> centro1 -> centro2 -> extremo2 sobre la
  * coordenada de tira f) colorea a lo largo de la gota con un ajuste de transición por tramo.

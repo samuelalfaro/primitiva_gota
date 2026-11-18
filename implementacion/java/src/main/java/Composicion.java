@@ -64,7 +64,13 @@ public final class Composicion {
          */
         public Nodo lados(int contra, int normal) { this.contra = contra; this.normal = normal; sectores = null; return cambia(); }
 
-        /** Un color por sector, en orden de ángulo creciente (atan2, y hacia abajo) de las ramas del nodo. */
+        /**
+         * Un color por sector, en orden de ángulo creciente (atan2, y hacia abajo) de las ramas del nodo: el ángulo es el
+         * de la tangente con que sale cada rama, no la dirección al otro nodo. Hace falta un color por rama y la cuenta
+         * se comprueba al construir (gotas() o render), cuando ya se sabe qué aristas llegan al nodo: si no cuadra, el
+         * error lista las ramas con su ángulo y su nodo vecino. En un nodo de grado 2, {@link #lados(int, int)} evita
+         * contar ramas; con un solo color para todo el nodo, {@link #color(int)}.
+         */
         public Nodo sectores(int... colores) { sectores = colores.clone(); contra = normal = null; return cambia(); }
 
 
@@ -430,6 +436,25 @@ public final class Composicion {
         return creciente ? new int[] { sDec, sCre } : new int[] { sCre, sDec };
     }
 
+    /**
+     * Mensaje de sectores() con el número de colores que no cuadra: dice cuántos colores hacen falta y por qué (qué
+     * aristas llegan al nodo, con su ángulo y el nodo del otro extremo), en el orden en que se esperan los colores.
+     */
+    private String mensajeSectores(Nodo n, List<Brazo> br) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("nodo %d (x=%.1f, y=%.1f): sectores() recibió %d colores y el nodo tiene %d rama%s; hace falta un color por rama",
+                n.id, n.x, n.y, n.sectores.length, br.size(), br.size() == 1 ? "" : "s"));
+        sb.append(", en orden de ángulo de salida creciente, en (-180°, 180°] (atan2 con y hacia abajo: 0° = +x, 90° = hacia abajo en pantalla; es la tangente con que sale la rama del nodo, no la dirección al otro nodo). Ramas: ");
+        for (int k = 0; k < br.size(); k++) {
+            Brazo b = br.get(k);
+            Nodo otro = b.inicio() ? b.e().b : b.e().a;
+            if (k > 0) sb.append("; ");
+            sb.append(String.format("%d.ª sale a %.0f° (arista hacia el nodo %d)", k + 1, Math.toDegrees(b.ang()), otro.id));
+        }
+        sb.append(". Si la cuenta no es la esperada, quizá falta o sobra una arista (o se añadió otra después de dar los colores).");
+        return sb.toString();
+    }
+
     private Colores.Lateral lateralDe(Nodo n, Arista e, boolean inicio) {
         int centro = n.centro != null ? n.centro : (n.sectores != null && n.sectores.length > 0 ? n.sectores[0] : 0xFFCCCCCC);
         List<Brazo> br = brazos(n);
@@ -437,8 +462,7 @@ public final class Composicion {
         int[] col = new int[d];
         java.util.Arrays.fill(col, centro);
         if (n.sectores != null) {
-            if (n.sectores.length != d)
-                throw new IllegalStateException("nodo " + n.id + ": " + n.sectores.length + " sectores para " + d + " ramas");
+            if (n.sectores.length != d) throw new IllegalStateException(mensajeSectores(n, br));
             col = n.sectores;
         } else if (n.contra != null) {
             if (d != 2) throw new IllegalStateException("lados() solo en nodos de grado 2 (nodo " + n.id + ")");
