@@ -156,10 +156,9 @@ final class Zonas {
         return out;
     }
 
-    /** v en el cuerpo: lineal a trozos entre c1, c2 y c3, con el corte central en tm, en t o en la longitud de arco según los cortes. */
+    /** v en el cuerpo: lineal entre c1 y c3, en t o en la longitud de arco según los cortes. */
     private double vCuerpo(double t) {
-        double s = cortes.porLongitud() ? g.fraccion(t) : t, sm = cortes.porLongitud() ? g.fraccion(g.tm()) : g.tm();
-        return s < sm ? cortes.c1() + (cortes.c2() - cortes.c1()) * s / sm : cortes.c2() + (cortes.c3() - cortes.c2()) * (s - sm) / (1 - sm);
+        return cortes.c1() + (cortes.c3() - cortes.c1()) * (cortes.porLongitud() ? g.fraccion(t) : t);
     }
 
     private Coordenadas.Costurado enBanda(double t, double w, int s) {
