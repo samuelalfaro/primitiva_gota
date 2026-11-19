@@ -44,13 +44,33 @@ public class GotaRegresion {
 
     static void perfiles() {
         Perfil.Resuelto a = Perfil.recto().resuelve(50, 20);
-        comprueba("Perfil.recto: rm = (r1 + r2)/2, tm = 1/2, suavizado 1",
-                  a.rm() == 35 && a.tm() == 0.5 && a.suavizado() == 1, a.toString());
-        Perfil.Resuelto b = Perfil.radioMedio(-5, 0.99, 3).resuelve(10, 10);
-        comprueba("Perfil: rm >= 0, tm a [0.05, 0.95] y suavizado a [0, 1]", b.rm() == 0 && b.tm() == 0.95 && b.suavizado() == 1, b.toString());
+        comprueba("Perfil.recto = lineal: controles equiespaciados de r1 a r2", java.util.Arrays.equals(a.controles(), new double[] { 50, 40, 30, 20 }), java.util.Arrays.toString(a.controles()));
+        Perfil.Resuelto b = Perfil.tangentes(1000, -5).resuelve(10, 30);
+        comprueba("Perfil.tangentes recorta las pendientes a [0, 3·(r2 - r1)]", java.util.Arrays.equals(b.controles(), new double[] { 10, 30, 30, 30 }), java.util.Arrays.toString(b.controles()));
+        Perfil.Resuelto c = Perfil.tangentes(5, 5).resuelve(10, 10);
+        comprueba("Perfil.tangentes con r1 = r2: radio constante", java.util.Arrays.equals(c.controles(), new double[] { 10, 10, 10, 10 }), java.util.Arrays.toString(c.controles()));
+        // monótona y dentro de [r1, r2] para cualquier pareja de pendientes y radios, también decrecientes
+        java.util.Random rnd = new java.util.Random(7);
+        boolean mono = true;
+        String det = "";
+        for (int k = 0; k < 2000 && mono; k++) {
+            double r1 = rnd.nextDouble() * 50, r2 = rnd.nextInt(10) == 0 ? r1 : rnd.nextDouble() * 50;
+            Perfil.Resuelto r = Perfil.tangentes((rnd.nextDouble() - 0.3) * 400, (rnd.nextDouble() - 0.3) * 400).resuelve(r1, r2);
+            double lo = Math.min(r1, r2) - 1e-9, hi = Math.max(r1, r2) + 1e-9, prev = r.r(0);
+            for (int i = 1; i <= 100; i++) {
+                double v = r.r(i / 100.0), s = Math.signum(r2 - r1);
+                if (v < lo || v > hi || s * (v - prev) < -1e-9) { mono = false; det = String.format("r1=%.2f r2=%.2f t=%.2f v=%.4f", r1, r2, i / 100.0, v); break; }
+                prev = v;
+            }
+        }
+        comprueba("Perfil.tangentes: r(t) monótona y entre r1 y r2", mono, det);
+        Perfil.Resuelto d = Perfil.radioMedio(30).resuelve(50, 20);
+        comprueba("Perfil.radioMedio(rm) (deprecado): r(1/2) = rm", Math.abs(d.r(0.5) - 30) < 1e-12 && d.r(0) == 50 && d.r(1) == 20, "");
+        Perfil.Resuelto e = Perfil.radioMedio(-5, 0.99, 3).resuelve(10, 10);
+        comprueba("Perfil.radioMedio (deprecado): radios >= 0", e.r(0.5) >= 0 && e.r(0.25) >= 0 && e.r(0.75) >= 0, java.util.Arrays.toString(e.controles()));
         boolean lanza = true;
-        for (Perfil pf : new Perfil[] { Perfil.radioMedio(Double.NaN), Perfil.radioMedio(5, Double.NaN, 1) })
-            try { pf.resuelve(10, 10); lanza = false; } catch (IllegalArgumentException e) { }
+        for (Perfil pf : new Perfil[] { Perfil.tangentes(Double.NaN, 0), Perfil.tangentes(0, Double.POSITIVE_INFINITY), Perfil.radioMedio(Double.NaN), Perfil.radioMedio(5, Double.NaN, 1) })
+            try { pf.resuelve(10, 10); lanza = false; } catch (IllegalArgumentException ex) { }
         comprueba("Perfil.resuelve rechaza valores no finitos", lanza, "");
     }
 

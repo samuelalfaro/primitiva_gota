@@ -139,13 +139,13 @@ public class GotaCombina {
         Plotter.raster(d).plot(g, Texturas.tira(tx));
         comprueba("tira(tex) == textura(tex) con los cortes por defecto", Arrays.equals(datos(c), datos(d)), "");
 
-        // tira con cortes explícitos: el corte central sigue a tm
+        // tira con cortes explícitos: el cuerpo se reparte linealmente entre c1 y c3
         double[] ult = new double[2];
-        Gota gm = Gota.lineal(p(60.5, 150.5), 50, p(240.5, 150.5), 20, Perfil.radioMedio(30, 0.3, 1));
+        Gota gm = Gota.lineal(p(60.5, 150.5), 50, p(240.5, 150.5), 20, Perfil.recto());
         Relleno rt = Texturas.tira((u, v) -> { ult[0] = u; ult[1] = v; return 0xFFFFFFFF; }, 0, 0, 1, 1, 0.1, 0.9).para(gm);
-        Point2D cm = gm.centro(gm.tm());
+        Point2D cm = gm.centro(0.3);
         rt.argb(Coordenadas.parametros(gm, cm.getX(), cm.getY(), Opciones.POR_DEFECTO), Coordenadas.uv(gm, cm.getX(), cm.getY(), Opciones.POR_DEFECTO));
-        comprueba("tira(tex, ..., c1, c3): v en el centro de t = tm es c1 + (c3 - c1)·tm", Math.abs(ult[1] - (0.1 + 0.8 * 0.3)) < 2e-3, String.format("v = %.4f", ult[1]));
+        comprueba("tira(tex, ..., c1, c3): v en el centro de t = 0.3 es c1 + (c3 - c1)·0.3", Math.abs(ult[1] - (0.1 + 0.8 * 0.3)) < 2e-3, String.format("v = %.4f", ult[1]));
 
         // multitextura (combinaciones anidadas) en PLANO y en TRAZO: cada píxel sigue la fórmula encadenada
         Relleno multi = ComposicionColor.combinar(ComposicionColor.combinar(Relleno.solido(cc), Texturas.textura(tx), ComposicionColor.Modo.MODULATE),

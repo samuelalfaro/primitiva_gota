@@ -399,7 +399,7 @@ public final class Composicion {
             Nodo A = nodos.get(r.a), B = nodos.get(r.b);
             Perfil base = Double.isNaN(r.q)
                     ? Perfil.recto()
-                    : Perfil.radioMedio((A.radio + B.radio) / 4 + Math.max(0, r.q) / 2, 0.5, 1);
+                    : Perfil.cuadratico(r.q);
             Gota g = Gota.curva(new Point2D.Double(A.x, A.y), A.radio, r.va, new Point2D.Double(B.x, B.y), B.radio, r.vb, base);
             gotas.add(g);
             rellenos.add(Colores.cadenaLateral(lateralDe(A, aristas.get(i), true), lateralDe(B, aristas.get(i), false), mezcla));
