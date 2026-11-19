@@ -15,7 +15,7 @@
  * Un perfil es inmutable y no depende de ninguna gota: {@link #resuelve} lo aplica a los radios de los extremos.
  */
 public final class Perfil {
-    private enum Tipo { LINEAL, TANGENTES, MEDIO, CUADRATICO }
+    private enum Tipo { LINEAL, TANGENTES, MEDIO }
 
     private final Tipo tipo;
     private final double a, b, c;           // según el tipo: (m1, m2) | (rm, tm, relativo) | (q)
@@ -54,12 +54,6 @@ public final class Perfil {
     public static Perfil recto() { return lineal(); }
 
     /**
-     * Radio cuadrático de Bézier de control medio q (el radio en t = 1/2 es (r1 + 2q + r2)/4), elevado a cúbica. Es lo que usa
-     * {@link Composicion}; no se recorta a [r1, r2], solo a q >= 0.
-     */
-    static Perfil cuadratico(double q) { return new Perfil(Tipo.CUADRATICO, q, 0, 0, false); }
-
-    /**
      * Radio rm en la posición tm del camino: la cuadrática por (0, r1), (tm, rm), (1, r2) elevada a cúbica. rm >= 0, tm en [0.05, 0.95].
      *
      * @deprecated tm desaparece: el perfil es una cúbica monótona definida por sus tangentes ({@link #tangentes}).
@@ -96,16 +90,11 @@ public final class Perfil {
                 double m1 = s * Utils.acota(s * a, 0, lim), m2 = s * Utils.acota(s * b, 0, lim);
                 return new Resuelto(new double[] { r1, r1 + m1 / 3, r2 - m2 / 3, r2 });
             }
-            case MEDIO: case CUADRATICO: {
-                double q;
-                if (tipo == Tipo.CUADRATICO) q = a;
-                else {
-                    double rm = relativo ? a * (r1 + r2) / 2 : a;
-                    if (!Double.isFinite(rm)) throw new IllegalArgumentException("parámetros no finitos");
-                    double tm = Utils.acota(b, 0.05, 0.95), w = 1 - tm;
-                    q = (Math.max(0, rm) - w * w * r1 - tm * tm * r2) / (2 * tm * w);
-                }
-                q = Math.max(0, q);
+            case MEDIO: {
+                double rm = relativo ? a * (r1 + r2) / 2 : a;
+                if (!Double.isFinite(rm)) throw new IllegalArgumentException("parámetros no finitos");
+                double tm = Utils.acota(b, 0.05, 0.95), w = 1 - tm;
+                double q = Math.max(0, (Math.max(0, rm) - w * w * r1 - tm * tm * r2) / (2 * tm * w));
                 return new Resuelto(new double[] { r1, (r1 + 2 * q) / 3, (2 * q + r2) / 3, r2 });
             }
             default:
