@@ -29,6 +29,7 @@ public class GotaCadena {
         transicion();
         degradados();
         funciones();
+        cadenaFunciones();
         equivalencias();
         anclas();
         unificacion();
@@ -86,6 +87,40 @@ public class GotaCadena {
         try { new Colores.Funciones(null, f.contra1(), f.espina(), f.normal2(), f.contra2()); }
         catch (NullPointerException e) { nulo = true; }
         comprueba("Funciones: rechaza funciones nulas", nulo, "");
+    }
+
+    // ---------- cadenaLateral(Funciones) frente a la cadena lateral de siempre ----------
+
+    static void cadenaFunciones() throws Exception {
+        int c1 = 0xFFE9C46A, n1 = 0xFF2A9D8F, k1 = 0xFFE76F51, c2 = 0xFFF4A261, n2 = 0xFF264653, k2 = 0xFF8AB17D;
+        Relleno viejo = Colores.cadenaLateral(new Colores.Lateral(k1, c1, n1), new Colores.Lateral(k2, c2, n2), Mezcla.RGB);
+        Relleno nuevo = Colores.cadenaLateral(Colores.Funciones.de(c1, n1, k1, c2, n2, k2, Mezcla.RGB));
+        Gota g = Gota.lineal(new java.awt.geom.Point2D.Double(40, 60), 22, new java.awt.geom.Point2D.Double(200, 130), 14, Perfil.recto());
+        java.awt.image.BufferedImage a = new java.awt.image.BufferedImage(260, 200, 2), b = new java.awt.image.BufferedImage(260, 200, 2);
+        Plotter.raster(a).plot(g, viejo);
+        Plotter.raster(b).plot(g, nuevo);
+        int dif = 0, distintos = 0;
+        for (int y = 0; y < 200; y++) for (int x = 0; x < 260; x++) {
+            int p = a.getRGB(x, y), q = b.getRGB(x, y);
+            int dm = 0;
+            for (int sh = 0; sh <= 24; sh += 8) dm = Math.max(dm, Math.abs(((p >>> sh) & 255) - ((q >>> sh) & 255)));
+            if (dm > 0) distintos++;
+            dif = Math.max(dif, dm);
+        }
+        comprueba("cadenaLateral(Funciones) con la espina lineal da lo mismo que la cadena lateral de siempre",
+                dif <= 1, "dif. máx. " + dif + "/255 en " + distintos + " px");
+
+        // una espina no lineal solo cambia el color donde debe: en la espina (x = 0) vale exactamente esa función
+        Degradado onda = x -> Mezcla.RGB.mezclar(c1, c2, x * x);
+        Colores.Funciones q = new Colores.Funciones(Degradado.entre(c1, n1, Mezcla.RGB), Degradado.entre(c1, k1, Mezcla.RGB),
+                onda, Degradado.entre(c2, n2, Mezcla.RGB), Degradado.entre(c2, k2, Mezcla.RGB));
+        Relleno r = Colores.cadenaLateral(q);
+        double v = 0.5, vc = 0.25 + (0.75 - 0.25) * v;
+        int enEspina = r.argb(Punto.de(new Coordenadas.Muestra(0.5, 0, 0, 0), new Coordenadas.Uv(0.5, vc)));
+        int esperado = onda.en(v);
+        int dm = 0;
+        for (int sh = 0; sh <= 24; sh += 8) dm = Math.max(dm, Math.abs(((enEspina >>> sh) & 255) - ((esperado >>> sh) & 255)));
+        comprueba("con espina no lineal, el centro del cuerpo toma el color de la espina", dm <= 1, "dif. " + dm);
     }
 
     // ---------- u(t, s) ----------

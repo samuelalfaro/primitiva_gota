@@ -280,6 +280,88 @@ public final class Colores {
         }
     }
 
+    // ---------- Cadena con las cinco funciones ----------
+
+    /** Con las cinco funciones y la mezcla RGB. Ver {@link #cadenaLateral(Funciones, Mezcla)}. */
+    public static Relleno cadenaLateral(Funciones f) { return cadenaLateral(f, Mezcla.RGB); }
+
+    /**
+     * Relleno de dos nodos a partir de las cinco funciones. Cada mitad del cuerpo (contra y normal) es un cuadrilátero
+     * (x de la espina al contorno, v de un nodo al otro) con tres lados dados (los dos radios y la espina) y el borde
+     * exterior deducido como la mezcla lineal de sus dos esquinas; se rellena con un parche de Coons. Como el borde
+     * deducido es lineal, el parche se reduce a la mezcla de los dos radios a lo largo de v más una corrección en la
+     * espina, que es nula cuando la espina es la mezcla lineal de los centros. Las tapas mezclan normal(s) y contra(s)
+     * por el ángulo. La mezcla {@code m} rige la combinación entre radios y entre normal y contra; la corrección de la
+     * espina se suma en RGB con alfa premultiplicado.
+     */
+    public static Relleno cadenaLateral(Funciones f, Mezcla m) {
+        Objects.requireNonNull(f, "funciones");
+        Objects.requireNonNull(m, "mezcla");
+        return new CadenaFunciones(f, m, 0.25, 0.75);
+    }
+
+    private static final class CadenaFunciones implements Relleno {
+        private final Funciones f;
+        private final Mezcla m;
+        private final double a1, a3;
+        private final int centro1, centro2;
+        private final boolean espinaLineal;
+
+        CadenaFunciones(Funciones f, Mezcla m, double a1, double a3) {
+            if (!(0 < a1 && a1 < a3 && a3 < 1))
+                throw new IllegalArgumentException("los cortes deben cumplir 0 < c1 < c3 < 1");
+            this.f = f; this.m = m; this.a1 = a1; this.a3 = a3;
+            centro1 = f.espina().en(0);
+            centro2 = f.espina().en(1);
+            boolean lineal = true;
+            for (int i = 1; i < 16 && lineal; i++)
+                lineal = f.espina().en(i / 16.0) == m.mezclar(centro1, centro2, i / 16.0);
+            espinaLineal = lineal;
+        }
+
+        @Override public Relleno para(Gota g, Opciones op) {
+            Cortes c = op.tira().cortes(g);
+            return new CadenaFunciones(f, m, c.c1(), c.c3());
+        }
+
+        @Override public int argb(Punto p) {
+            Coordenadas.Uv uv = p.uv();
+            double[] d = Coordenadas.discoTapa(uv, a1, a3);
+            if (d != null) {
+                boolean primera = d[2] == 0;
+                double s = Math.min(1, Math.hypot(d[0], d[1]));
+                double th = Math.atan2(d[1], d[0]);
+                Degradado normal = primera ? f.normal1() : f.normal2(), contra = primera ? f.contra1() : f.contra2();
+                return m.mezclar(normal.en(s), contra.en(s), th / Math.PI);
+            }
+            double u = clamp01(uv.u());
+            double v = tramoLocal(uv.v(), a1, a3);
+            boolean haciaContra = u <= 0.5;
+            double x = haciaContra ? 1 - 2 * u : 2 * u - 1;
+            int base = m.mezclar((haciaContra ? f.contra1() : f.normal1()).en(x),
+                                 (haciaContra ? f.contra2() : f.normal2()).en(x), v);
+            if (espinaLineal) return base;
+            return conCorreccion(base, f.espina().en(v), m.mezclar(centro1, centro2, v), 1 - x);
+        }
+    }
+
+    /** base + peso (e - lineal), en RGB con alfa premultiplicado, recortado. */
+    private static int conCorreccion(int base, int e, int lineal, double peso) {
+        double[] b = premult(base), pe = premult(e), pl = premult(lineal);
+        for (int i = 0; i < 4; i++) b[i] = Math.max(0, Math.min(1, b[i] + peso * (pe[i] - pl[i])));
+        double a = b[0];
+        if (a <= 0) return 0;
+        int r = (int) Math.round(Math.min(1, b[1] / a) * 255);
+        int g = (int) Math.round(Math.min(1, b[2] / a) * 255);
+        int bl = (int) Math.round(Math.min(1, b[3] / a) * 255);
+        return (int) Math.round(a * 255) << 24 | r << 16 | g << 8 | bl;
+    }
+
+    private static double[] premult(int c) {
+        double a = (c >>> 24) / 255.0;
+        return new double[] { a, ((c >> 16) & 255) / 255.0 * a, ((c >> 8) & 255) / 255.0 * a, (c & 255) / 255.0 * a };
+    }
+
     // ---------- Transición y cadena (internos; visibles en el paquete para las pruebas) ----------
 
     /** u(t, s): posición efectiva en el tramo. v0.1; el contrato público es el ajuste s. */
