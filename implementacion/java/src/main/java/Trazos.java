@@ -72,7 +72,7 @@ final class Trazos {
         FLECHA("flecha", SUAVE, 1.3f, null, false),
         /** Nombres de los centros y de los radios (C1, C2, r1, r2). */
         NOMBRE("nombre", TINTA, 0f, null, true),
-        /** Solo con diagnóstico: la sección y el punto de tm. */
+        /** Solo con diagnóstico: la sección y el punto en t = 1/2. */
         DIAGNOSTICO("diagnostico", new Color(220, 150, 50), 1.3f, null, false),
         /** Halos: lo que se pinta debajo de otro rol para que se lea sobre cualquier fondo. */
         HALO_CAMINO("halo-camino", blanco(200), 3.2f, null, false),
@@ -122,7 +122,7 @@ final class Trazos {
      * @param secciones   número de secciones de la familia, extremos incluidos, repartidas uniformemente en t (mínimo 2:
      *                    solo los extremos)
      * @param muestras    puntos por rama del contorno
-     * @param diagnostico añade la sección y el punto de tm
+     * @param diagnostico añade la sección y el punto en t = 1/2
      * @param contactos   añade los puntos de contacto P1..P4 y los segmentos desde los centros
      * @param radios      añade los radios de los extremos: r1 sale del centro hacia atrás (contra la tangente) y r2 hacia delante
      * @param etiquetas   escribe los nombres (C1, C2, P1..P4, radios) de lo que se dibuje
@@ -172,7 +172,7 @@ final class Trazos {
             out.add(new Trazo(Rol.EXTREMO, seccion(geo, 0)));
             out.add(new Trazo(Rol.EXTREMO, seccion(geo, 1)));
         }
-        if (aj.diagnostico()) out.add(new Trazo(Rol.DIAGNOSTICO, seccion(geo, geo.tm())));
+        if (aj.diagnostico()) out.add(new Trazo(Rol.DIAGNOSTICO, seccion(geo, 0.5)));
 
         double x0 = geo.cx(0), y0 = geo.cy(0), x3 = geo.cx(1), y3 = geo.cy(1);
         double x1 = x0 + geo.dcx(0) / 3, y1 = y0 + geo.dcy(0) / 3;
@@ -202,7 +202,7 @@ final class Trazos {
         }
         centro(out, x0, y0);
         centro(out, x3, y3);
-        if (aj.diagnostico()) out.add(new Trazo(Rol.DIAGNOSTICO, punto(geo.cx(geo.tm()), geo.cy(geo.tm()), 3)));
+        if (aj.diagnostico()) out.add(new Trazo(Rol.DIAGNOSTICO, punto(geo.cx(0.5), geo.cy(0.5), 3)));
         return out;
     }
 

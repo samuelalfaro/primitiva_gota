@@ -579,10 +579,10 @@ final class Silueta {
     // ---------- Pertenencia a la envolvente de la familia de círculos ----------
 
     /**
-     * Pertenencia a la unión de la familia de círculos (c(t), r(t)), con c una cúbica de Bézier y r una cuadrática (o dos) de Bézier:
+     * Pertenencia a la unión de la familia de círculos (c(t), r(t)), con c y r cúbicas de Bézier:
      * un punto p está dentro si existe t con |p - c(t)|^2 - r(t)^2 <= 0. Ese polinomio (grado 6) se evalúa en base de Bernstein por
      * subdivisión, sin contornos ni tangentes explícitas. Es exacta y rápida mientras la silueta coincide con la envolvente
-     * (d >= r1 + r2); los tramos son los trozos del camino en los que el perfil del radio es una sola cuadrática.
+     * (d >= r1 + r2).
      */
     static final class Envolvente implements Mascara {
         static final double BANDA = 0.5;                  // semiancho del antialiasing, en píxeles
@@ -603,7 +603,7 @@ final class Silueta {
         private final boolean interiorValido;
         private final Geometria geo;                      // para la distancia (franja del borde) y las hebras
 
-        /** Un elemento por tramo: los controles de c(t) (cúbica) y los de r(t) (cuadrática) en ese tramo. */
+        /** Un elemento por tramo: los controles de c(t) y los de r(t) (ambas cúbicas) en ese tramo. */
         Envolvente(Geometria geo, double[][] pxs, double[][] pys, double[][] radios) {
             this.geo = geo;
             int n = pxs.length;
@@ -677,7 +677,8 @@ final class Silueta {
         private static void dividir(double[] b, double[] izq, double[] der) { dividirEn(b, 0.5, izq, der); }
 
         private static double[] k(double[] c2sum, double[] a, double d) {
-            double[] rd = { a[0] + d, a[1] + d, a[2] + d };
+            double[] rd = new double[a.length];
+            for (int i = 0; i < a.length; i++) rd[i] = a[i] + d;
             double[] rd2 = elevar(producto(rd, rd), GRADO);
             double[] out = new double[GRADO + 1];
             for (int i = 0; i <= GRADO; i++) out[i] = c2sum[i] - rd2[i];
