@@ -50,8 +50,12 @@ public final class Colores {
      * extremos (0 o 1) hay que distinguir las tapas, y eso se hace con la coordenada v de la tira:
      * usa la cadena y por tanto solo admite argb(Muestra, Uv), no argb(t, rho).
      */
+    /** @deprecated Se sustituirá por un {@link Degradado}; el ajuste es solo una deformación de x. */
+    @Deprecated
     public static Relleno dosColores(int a, int b, double ajusteCC) { return dosColores(a, b, ajusteCC, Mezcla.RGB); }
 
+    /** @deprecated Se sustituirá por un {@link Degradado}; el ajuste es solo una deformación de x. */
+    @Deprecated
     public static Relleno dosColores(int a, int b, double ajusteCC, Mezcla m) {
         // extremo1 = centro1 y extremo2 = centro2: las tapas quedan de color constante
         // y el único tramo con efecto es el central.
@@ -68,6 +72,7 @@ public final class Colores {
     }
 
     /** Configuración 4: la genérica, con los tres ajustes de transición. */
+    @Deprecated
     public static Relleno cadena(int extremo1, int centro1, int centro2, int extremo2,
                                       double ajusteEC1, double ajusteCC, double ajusteCE2) {
         return cadena(extremo1, centro1, centro2, extremo2, ajusteEC1, ajusteCC, ajusteCE2, Mezcla.RGB);
@@ -77,6 +82,7 @@ public final class Colores {
      * Cadena cuyas anclas son los cortes de la tira de la gota que la pinta (por defecto 1/4 y 3/4):
      * el color usa la misma coordenada v que las texturas, así que ambos alinean siempre.
      */
+    @Deprecated
     public static Relleno cadena(int extremo1, int centro1, int centro2, int extremo2,
                                       double ajusteEC1, double ajusteCC, double ajusteCE2, Mezcla m) {
         return new Cadena(extremo1, centro1, centro2, extremo2, ajusteEC1, ajusteCC, ajusteCE2, m, 0.25, 0.75);
@@ -141,24 +147,27 @@ public final class Colores {
          * Misma terna con otro ajuste de la transición centro -> lado ({@link #transicion}): 0.5 es lineal; por debajo
          * de 0.5 el punto medio de la mezcla queda más cerca del centro (el color del centro se estrecha y la
          * nervadura se marca), por encima se aleja.
+         *
+         * @deprecated Se sustituirá por un {@link Degradado}.
          */
+        @Deprecated
         public Lateral conAjuste(double s) { return new Lateral(contra, centro, normal, s, ajusteArco); }
 
         /**
          * Misma terna con otro ajuste de la mezcla polar normal -> contra en las tapas (a lo largo del arco, de 0 a pi):
          * 0.5 es lineal y la punta es la media; por debajo de 0.5 el punto medio de la mezcla se adelanta hacia el lado
          * normal (la punta queda más cerca del contra), por encima se retrasa. El cuerpo no usa este ajuste.
+         *
+         * @deprecated Se sustituirá por un {@link Degradado}.
          */
+        @Deprecated
         public Lateral conAjusteArco(double s) { return new Lateral(contra, centro, normal, ajuste, s); }
 
-        /** Peso del color contra a lo largo del arco (t = th / pi). */
-        private double pesoArco(double t) { return ajusteArco == 0.5 ? t : transicion(t, ajusteArco); }
-
-        /** Peso del color del lado a la distancia t (0 en el centro, 1 en el borde) del centro. */
-        private double peso(double t) { return ajuste == 0.5 ? t : transicion(t, ajuste); }
+        /** Degradado del centro hacia un lado (x = 0 en el centro, 1 en el borde), con el ajuste de la transición. */
+        private Degradado haciaLado(int lado, Mezcla m) { return Degradado.entre(centro, lado, m).ajustado(ajuste); }
 
         int en(double u, Mezcla m) {
-            return u <= 0.5 ? m.mezclar(contra, centro, 1 - peso(1 - 2 * u)) : m.mezclar(centro, normal, peso(2 * u - 1));
+            return u <= 0.5 ? haciaLado(contra, m).en(1 - 2 * u) : haciaLado(normal, m).en(2 * u - 1);
         }
 
         /**
@@ -171,7 +180,8 @@ public final class Colores {
         int enDisco(double l, double a, Mezcla m) {
             double s = Math.min(1, Math.hypot(l, a));
             double th = Math.atan2(a, l);
-            return m.mezclar(centro, m.mezclar(normal, contra, pesoArco(th / Math.PI)), peso(s));
+            int arco = Degradado.entre(normal, contra, m).ajustado(ajusteArco).en(th / Math.PI);
+            return haciaLado(arco, m).en(s);
         }
     }
 
@@ -185,6 +195,8 @@ public final class Colores {
     }
 
     /** Igual, con el ajuste de la transición entre los dos nodos (0.5 = lineal; ver {@link #transicion}). */
+    /** @deprecated Se sustituirá por un {@link Degradado}; el ajuste es solo una deformación de x. */
+    @Deprecated
     public static Relleno cadenaLateral(Lateral nodo1, Lateral nodo2, double ajusteCC, Mezcla m) {
         return new CadenaLateral(nodo1, nodo2, ajusteCC, m, 0.25, 0.75);
     }
@@ -252,16 +264,23 @@ public final class Colores {
         return conGamma(a, b, aBorde, bBorde, 1, 1, entreCirculos, centroBorde);
     }
 
-    /** Nivel 3: nivel 2 más una corrección gamma centro→borde en cada círculo. */
+    /**
+     * Nivel 3: nivel 2 más una corrección gamma centro→borde en cada círculo.
+     *
+     * @deprecated Primera forma de mover el punto medio; lo cubre el ajuste de {@link Lateral} (y pronto un {@link Degradado}).
+     */
+    @Deprecated
     public static Relleno conGamma(int a, int b, int aBorde, int bBorde, double gamma1, double gamma2) {
         return conGamma(a, b, aBorde, bBorde, gamma1, gamma2, Mezcla.RGB, Mezcla.RGB);
     }
 
+    @Deprecated
     public static Relleno conGamma(int a, int b, int aBorde, int bBorde,
                                         double gamma1, double gamma2, Mezcla m) {
         return conGamma(a, b, aBorde, bBorde, gamma1, gamma2, m, m);
     }
 
+    @Deprecated
     public static Relleno conGamma(int a, int b, int aBorde, int bBorde, double gamma1, double gamma2,
                                         Mezcla entreCirculos, Mezcla centroBorde) {
         Objects.requireNonNull(entreCirculos, "entreCirculos");

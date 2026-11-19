@@ -87,7 +87,10 @@ public final class Composicion {
         /**
          * Ajuste de la transición del color del centro al de los lados (0.5 lineal). Por debajo de 0.5 el punto medio de
          * la mezcla queda más cerca del centro y la nervadura se marca; ver {@link Colores.Lateral#conAjuste}.
+         *
+         * @deprecated Se sustituirá por un {@link Degradado}.
          */
+        @Deprecated
         public Nodo ajusteLateral(double s) {
             if (!(s >= 0 && s <= 1)) throw new IllegalArgumentException("ajusteLateral debe estar en [0, 1]");
             ajusteLateral = s;
@@ -97,7 +100,10 @@ public final class Composicion {
         /**
          * Ajuste de la mezcla polar normal -> contra en las tapas (0.5 lineal: la punta es la media). Ver
          * {@link Colores.Lateral#conAjusteArco}.
+         *
+         * @deprecated Se sustituirá por un {@link Degradado}.
          */
+        @Deprecated
         public Nodo ajusteArco(double s) {
             if (!(s >= 0 && s <= 1)) throw new IllegalArgumentException("ajusteArco debe estar en [0, 1]");
             ajusteArco = s;
