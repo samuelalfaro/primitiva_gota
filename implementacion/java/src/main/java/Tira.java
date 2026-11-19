@@ -20,6 +20,20 @@ public interface Tira {
     /** Reparto según la longitud real: tapas de longitud r1 y r2, cuerpo del largo del camino. La textura no se estira más en un tramo que en otro. */
     static Tira proporcional() { return Proporcional.INSTANCIA; }
 
+    /**
+     * La misma tira con v lineal en la longitud de arco del camino, no en t: la textura no se estira donde la curva
+     * acelera (t avanza más deprisa). El corte central cae en la fracción de longitud de tm.
+     */
+    static Tira porLongitud(Tira base) { return new PorLongitud(base); }
+
+    record PorLongitud(Tira base) implements Tira {
+        @Override public Cortes cortes(Geometria g) {
+            Cortes c = base.cortes(g);
+            double m = g.fraccion(g.tm());
+            return new Cortes(c.c1(), c.c1() + (c.c3() - c.c1()) * m, c.c3(), true);
+        }
+    }
+
     record Pesos(double wTapa1, double wCuerpo, double wTapa2) implements Tira {
         public Pesos {
             if (!(wTapa1 > 0) || !(wCuerpo > 0) || !(wTapa2 > 0) || !Double.isFinite(wTapa1 + wCuerpo + wTapa2))

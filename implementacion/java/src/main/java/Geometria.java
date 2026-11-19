@@ -44,6 +44,12 @@ public interface Geometria {
     /** Distancia de c(t) al contorno en la dirección (dx, dy): la escala con la que se normaliza rho. Por defecto, el radio. */
     default double escala(double t, double dx, double dy) { return rad(t); }
 
+    /**
+     * Fracción de la longitud de arco del camino recorrida hasta t, en [0, 1] y creciente (0 en t = 0, 1 en t = 1).
+     * Por defecto es t, es decir, se asume una parametrización por longitud de arco.
+     */
+    default double fraccion(double t) { return t; }
+
     /** Posición efectiva de rm sobre el camino: es también donde cae el corte central de la tira. */
     double tm();
 
