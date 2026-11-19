@@ -215,6 +215,23 @@ public class ComposicionPruebas {
         Composicion sin = cadena().ajustarPendientes(false);
         double s1 = sin.quiebro(sin.nodos().get(1));
         comprueba("cadena: sin el ajuste el quiebro de la unión 1 es mayor que con él", s1 > q1 + 1, String.format("%.2f° frente a %.2f°", s1, q1));
+        // el ajuste de pendientes es del radio: no mueve los centros (los tiradores siguen siendo d/3)
+        Composicion con = cadena(), sin2 = cadena().ajustarPendientes(false);
+        boolean igual = true;
+        for (int i = 0; i < con.gotas().size(); i++)
+            for (double t : new double[] { 0.2, 0.5, 0.8 })
+                igual &= con.gotas().get(i).centro(t).distance(sin2.gotas().get(i).centro(t)) < 1e-9;
+        comprueba("cadena: el ajuste de pendientes no mueve los centros de las gotas", igual, "");
+        // radio con un máximo en un nodo: cada gota es monótona y la pendiente en el nodo es 0
+        Composicion mx = new Composicion();
+        var m0 = mx.nodo(60, 200, 10); var m1 = mx.nodo(160, 200, 40); var m2 = mx.nodo(260, 200, 10);
+        mx.arista(m0, m1); mx.arista(m1, m2);
+        Gota ga = mx.gotas().get(0), gb = mx.gotas().get(1);
+        boolean mono = true;
+        for (int i = 0; i < 100; i++) { mono &= ga.rad((i + 1) / 100.0) >= ga.rad(i / 100.0) - 1e-9 && gb.rad((i + 1) / 100.0) <= gb.rad(i / 100.0) + 1e-9; }
+        comprueba("radio con máximo en el nodo central: gotas monótonas, r' = 0 y quiebro < 0.5°",
+                  mono && Math.abs(ga.drad(1)) < 1e-9 && Math.abs(gb.drad(0)) < 1e-9 && mx.quiebro(m1) < 0.5,
+                  String.format("r'=%.4f / %.4f, quiebro %.2f°", ga.drad(1), gb.drad(0), mx.quiebro(m1)));
         Composicion ci = ciclo();
         boolean ok = true;
         StringBuilder sb = new StringBuilder();

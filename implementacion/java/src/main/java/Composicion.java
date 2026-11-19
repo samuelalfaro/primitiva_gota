@@ -22,7 +22,7 @@ import java.util.Objects;
  *       dos vecinos (contorno G1); en los demás nodos, la dirección hacia el vecino. Longitud: un tercio de la
  *       distancia entre nodos.</li>
  *   <li><b>Pendiente del radio</b> (por defecto): en los nodos de grado 2 se igualan a ambos lados los k = r'/|c'|
- *       para que el contorno no se quiebre, dentro de lo que permite una cuadrática de radio.</li>
+ *       para que el contorno no se quiebre, dentro de lo que permite un radio cúbico monótono por arista.</li>
  *   <li><b>Unión</b>: cobertura por el mínimo (suave si {@link #suavizado(double)} &gt; 0) de las distancias de las
  *       gotas; el color lo da la gota con menor ρ (PLANO).</li>
  *   <li><b>Color</b>: cada nodo tiene un color central y colores por <i>sector</i> (cada hueco entre dos ramas); la
@@ -369,7 +369,8 @@ public final class Composicion {
     }
 
     /** Datos de una arista tras fijar tiradores y pendiente. */
-    private record Ar(int a, int b, Gota.Vec va, Gota.Vec vb, double q, boolean fija) {}
+    /** m1 y m2: pendientes dr/dt del radio en los extremos (NaN: sin dato, el radio va en recta). */
+    private record Ar(int a, int b, Gota.Vec va, Gota.Vec vb, double m1, double m2, boolean fija) {}
 
     private void construye() {
         if (gotas != null) return;
@@ -387,7 +388,7 @@ public final class Composicion {
             double[] ua = salida(e, true), ub = salida(e, false);
             Gota.Vec va = e.va != null ? e.va : new Gota.Vec(ua[0] * d / 3, ua[1] * d / 3);
             Gota.Vec vb = e.vb != null ? e.vb : new Gota.Vec(ub[0] * d / 3, ub[1] * d / 3);
-            ars.add(new Ar(e.a.id, e.b.id, va, vb, Double.NaN, e.va != null || e.vb != null));
+            ars.add(new Ar(e.a.id, e.b.id, va, vb, Double.NaN, Double.NaN, e.va != null || e.vb != null));
         }
         if (ajustaPendientes) ars = igualaK(ars);
 
@@ -397,9 +398,10 @@ public final class Composicion {
         for (int i = 0; i < ars.size(); i++) {
             Ar r = ars.get(i);
             Nodo A = nodos.get(r.a), B = nodos.get(r.b);
-            Perfil base = Double.isNaN(r.q)
-                    ? Perfil.recto()
-                    : Perfil.cuadratico(r.q);
+            double dr = B.radio - A.radio;
+            Perfil base = Double.isNaN(r.m1) && Double.isNaN(r.m2)
+                    ? Perfil.lineal()
+                    : Perfil.tangentes(Double.isNaN(r.m1) ? dr : r.m1, Double.isNaN(r.m2) ? dr : r.m2);
             Gota g = Gota.curva(new Point2D.Double(A.x, A.y), A.radio, r.va, new Point2D.Double(B.x, B.y), B.radio, r.vb, base);
             gotas.add(g);
             rellenos.add(Colores.cadenaLateral(lateralDe(A, aristas.get(i), true), lateralDe(B, aristas.get(i), false), mezcla));
@@ -487,12 +489,13 @@ public final class Composicion {
     // ---------- Pendiente del radio ----------
 
     /**
-     * Para que el contorno sea G1 en un nodo de grado 2 hay que igualar a ambos lados k = r'/|c'|. El perfil de radio
-     * de cada gota es una cuadrática con q libre: k0 = 2(q - r1)/(3 l1) y k1 = 2(r2 - q)/(3 l2), con l1 y l2 las
-     * longitudes de los tiradores, lo que deja una ecuación por arista: k0*·l1 + k1*·l2 = 2(r2 - r1)/3. Se busca el
-     * k de cada nodo (de grado 2) más cercano al de Catmull-Rom que cumpla esas ecuaciones con tiradores de d/3
-     * (mínimos cuadrados con una regularización pequeña) y después se corrigen lo mínimo las longitudes.
-     * Los nodos con alguna arista de tiradores explícitos, los de grado 1 y los de grado >= 3 no imponen k.
+     * Para que el contorno sea G1 en un nodo de grado 2 hay que igualar a ambos lados k = r'/|c'| (la pendiente del radio por
+     * longitud de camino). Como el radio de cada gota es una cúbica monótona definida por sus pendientes en los extremos
+     * ({@link Perfil#tangentes}), cada nodo fija su k y las dos aristas lo heredan: dr/dt = ±k·|c'| en ese extremo. No hace falta
+     * tocar los tiradores. El k de partida es el de Catmull-Rom, (r siguiente - r anterior) / (distancias a los dos vecinos), y se
+     * recorta a lo que permite la monotonía de las dos aristas: dr/dt entre 0 y 3·(r2 - r1). En un nodo donde el radio tiene un
+     * máximo o un mínimo, k = 0. Los nodos con alguna arista de tiradores explícitos, los de grado 1 y los de grado >= 3 no
+     * imponen k: su extremo va en recta (pendiente r2 - r1).
      */
     private List<Ar> igualaK(List<Ar> ars) {
         int n = nodos.size();
@@ -516,25 +519,30 @@ public final class Composicion {
             activo[N.id] = true;
             pq[N.id] = es;
         }
-        resuelveK(ars, kn, activo, pq);
+        for (Nodo N : nodos) {
+            if (!activo[N.id]) continue;
+            double lo = -0.8, hi = 0.8;                              // el contorno forma con el camino un ángulo asin(k)
+            for (int i : pq[N.id]) {
+                Ar r = ars.get(i);
+                boolean enA = r.a == N.id;
+                double v = enA ? Math.hypot(r.va.x(), r.va.y()) : Math.hypot(r.vb.x(), r.vb.y());
+                double dr = nodos.get(r.b).radio - nodos.get(r.a).radio;
+                double lim = v < 1e-12 ? 0 : dr / v;                // dr/ds máximo (en valor absoluto) de la arista en ese extremo: 3·|dr| / (3·|v|)
+                double b0 = Math.min(0, lim), b1 = Math.max(0, lim);
+                double s = signo(i, r, N.id, pq);
+                lo = Math.max(lo, s > 0 ? b0 : -b1);
+                hi = Math.min(hi, s > 0 ? b1 : -b0);
+            }
+            kn[N.id] = Math.max(lo, Math.min(hi, kn[N.id]));
+        }
 
         List<Ar> nuevas = new ArrayList<>();
         for (int i = 0; i < ars.size(); i++) {
             Ar r = ars.get(i);
             if (r.fija) { nuevas.add(r); continue; }
-            Nodo A = nodos.get(r.a), B = nodos.get(r.b);
-            double d = Math.hypot(B.x - A.x, B.y - A.y), L = d / 3, dr = B.radio - A.radio, c = 2 * dr / 3;
-            Double ka = objetivo(i, r, r.a, kn, activo, pq), kb = objetivo(i, r, r.b, kn, activo, pq);
-            if (ka == null && kb == null) { ka = c / (2 * L); kb = ka; }
-            else if (ka == null) ka = c / L - kb;
-            else if (kb == null) kb = c / L - ka;
-            double den = ka * ka + kb * kb, lam = den < 1e-12 ? 0 : (c - (ka + kb) * L) / den;
-            double l1 = Math.max(0.25 * L, Math.min(3 * L, L + lam * ka));
-            double l2 = Math.max(0.25 * L, Math.min(3 * L, L + lam * kb));
-            double q = A.radio + 1.5 * ka * l1;
-            double[] ua = unit(r.va.x(), r.va.y()), ub = unit(r.vb.x(), r.vb.y());
-            nuevas.add(new Ar(r.a, r.b, new Gota.Vec(ua[0] * l1, ua[1] * l1), new Gota.Vec(ub[0] * l2, ub[1] * l2),
-                    q, false));
+            double m1 = activo[r.a] ? signo(i, r, r.a, pq) * kn[r.a] * 3 * Math.hypot(r.va.x(), r.va.y()) : Double.NaN;
+            double m2 = activo[r.b] ? signo(i, r, r.b, pq) * kn[r.b] * 3 * Math.hypot(r.vb.x(), r.vb.y()) : Double.NaN;
+            nuevas.add(new Ar(r.a, r.b, r.va, r.vb, m1, m2, false));
         }
         return nuevas;
     }
@@ -544,47 +552,5 @@ public final class Composicion {
         boolean esQ = pq[n][1] == i;
         boolean sale = r.a == n;
         return (esQ == sale) ? 1 : -1;
-    }
-
-    private static Double objetivo(int i, Ar r, int n, double[] kn, boolean[] activo, int[][] pq) {
-        if (!activo[n]) return null;
-        double k = Math.max(-0.8, Math.min(0.8, kn[n]));
-        return signo(i, r, n, pq) * k;
-    }
-
-    /**
-     * Con tiradores de d/3 la cuadrática exige, en cada arista entre dos nodos activos, k_inicio + k_fin =
-     * 2(r2 - r1)/d. Mínimos cuadrados sobre los k de los nodos, regularizados hacia los de Catmull-Rom.
-     */
-    private void resuelveK(List<Ar> ars, double[] kn, boolean[] activo, int[][] pq) {
-        int n = nodos.size();
-        int[] idx = new int[n];
-        int m = 0;
-        for (int i = 0; i < n; i++) idx[i] = activo[i] ? m++ : -1;
-        if (m == 0) return;
-        double mu = 1e-3;
-        double[][] M = new double[m][m + 1];
-        for (int i = 0; i < n; i++) if (idx[i] >= 0) { M[idx[i]][idx[i]] += mu; M[idx[i]][m] += mu * kn[i]; }
-        for (int e = 0; e < ars.size(); e++) {
-            Ar r = ars.get(e);
-            if (!activo[r.a] || !activo[r.b]) continue;
-            Nodo A = nodos.get(r.a), B = nodos.get(r.b);
-            double s = 2 * (B.radio - A.radio) / Math.hypot(B.x - A.x, B.y - A.y);
-            double si = signo(e, r, r.a, pq), sj = signo(e, r, r.b, pq);
-            int a = idx[r.a], b = idx[r.b];
-            M[a][a] += 1; M[b][b] += 1; M[a][b] += si * sj; M[b][a] += si * sj;
-            M[a][m] += si * s; M[b][m] += sj * s;
-        }
-        for (int c = 0; c < m; c++) {
-            int piv = c;
-            for (int r = c + 1; r < m; r++) if (Math.abs(M[r][c]) > Math.abs(M[piv][c])) piv = r;
-            double[] tmp = M[c]; M[c] = M[piv]; M[piv] = tmp;
-            for (int r = 0; r < m; r++) {
-                if (r == c) continue;
-                double f = M[r][c] / M[c][c];
-                for (int k = c; k <= m; k++) M[r][k] -= f * M[c][k];
-            }
-        }
-        for (int i = 0; i < n; i++) if (idx[i] >= 0) kn[i] = M[idx[i]][m] / M[idx[i]][idx[i]];
     }
 }
