@@ -43,13 +43,15 @@ public class FuncionesGota {
             x -> mezcla(c2, n2, Math.abs(Math.sin(2.5 * Math.PI * x))),
             x -> mezcla(c2, k2, 0.5 - 0.5 * Math.cos(7 * Math.PI * x)));
 
-        // 3. escalones: cuatro funciones con saltos duros y una suave
+        // 3. escalones: cuatro funciones con saltos duros fuera del centro y una suave; todas arrancan del color del
+        // centro con una rampa continua (w), para que el entorno del centro sea de ese color
+        double w = 0.15;
         Colores.Funciones c = new Colores.Funciones(
-            x -> x < 0.01 ? c1 : mezcla(n1, k1, Math.floor(x * 4) / 3.0),
-            x -> x < 0.01 ? c1 : (x < 0.5 ? k1 : n2),
+            x -> x < w ? mezcla(c1, n1, x / w) : mezcla(n1, k1, Math.floor((x - w) / (1 - w) * 4) / 3.0),
+            x -> x < w ? mezcla(c1, k1, x / w) : (x < 0.55 ? k1 : n2),
             x -> mezcla(c1, c2, x),
-            x -> x < 0.01 ? c2 : (Math.floor(x * 5) % 2 == 0 ? n2 : k2),
-            x -> x < 0.01 ? c2 : mezcla(k2, n1, x));
+            x -> x < w ? mezcla(c2, n2, x / w) : (Math.floor((x - w) / (1 - w) * 5) % 2 == 0 ? n2 : k2),
+            x -> x < w ? mezcla(c2, k2, x / w) : mezcla(k2, n1, (x - w) / (1 - w)));
 
         BufferedImage hoja = new BufferedImage(W, H * 3, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = hoja.createGraphics();
