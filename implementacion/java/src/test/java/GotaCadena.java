@@ -28,6 +28,7 @@ public class GotaCadena {
     public static void main(String[] args) throws Exception {
         transicion();
         degradados();
+        funciones();
         equivalencias();
         anclas();
         unificacion();
@@ -56,6 +57,35 @@ public class GotaCadena {
         boolean lanza = false;
         try { d.ajustado(1.5); } catch (IllegalArgumentException e) { lanza = true; }
         comprueba("ajustado(s) rechaza s fuera de [0, 1]", lanza, "");
+    }
+
+    // ---------- Funciones: cinco funciones del esquema (•~~•) ----------
+
+    static void funciones() {
+        int c1 = 0xFFFF0000, c2 = 0xFF0000FF, n1 = 0xFF00FF00, k1 = 0xFFFFFF00, n2 = 0xFF00FFFF, k2 = 0xFFFF00FF;
+        Colores.Funciones f = Colores.Funciones.de(c1, n1, k1, c2, n2, k2, Mezcla.RGB);
+        comprueba("Funciones (6 colores): cada radio va del centro al contorno",
+                f.normal1().en(0) == c1 && f.normal1().en(1) == n1 && f.contra1().en(1) == k1
+                && f.normal2().en(0) == c2 && f.normal2().en(1) == n2 && f.contra2().en(1) == k2, "");
+        comprueba("Funciones (6 colores): la espina va de un centro al otro",
+                f.espina().en(0) == c1 && f.espina().en(1) == c2, "");
+        Colores.Funciones dos = Colores.Funciones.de(c1, c2, Mezcla.RGB);
+        comprueba("Funciones (2 colores): todo es de color constante en cada nodo",
+                dos.normal1().en(0.7) == c1 && dos.contra2().en(0.2) == c2
+                && dos.espina().en(0.5) == Mezcla.RGB.mezclar(c1, c2, 0.5), "");
+        boolean lanza = false; String msg = "";
+        try { new Colores.Funciones(f.normal1(), f.contra1(), f.espina(), Degradado.constante(k2), f.contra2()); }
+        catch (IllegalArgumentException e) { lanza = true; msg = e.getMessage(); }
+        comprueba("Funciones: un radio que no sale del color del centro lanza IllegalArgumentException", lanza, msg);
+        comprueba("Funciones: el mensaje dice qué esquina falla", msg.contains("centro 2") && msg.contains("normal2(0)"), msg);
+        boolean casi = true;
+        try { new Colores.Funciones(f.normal1(), f.contra1(), f.espina(), x -> c2 - 1, f.contra2()); }
+        catch (IllegalArgumentException e) { casi = false; }
+        comprueba("Funciones: tolera 1/255 por canal", casi, "");
+        boolean nulo = false;
+        try { new Colores.Funciones(null, f.contra1(), f.espina(), f.normal2(), f.contra2()); }
+        catch (NullPointerException e) { nulo = true; }
+        comprueba("Funciones: rechaza funciones nulas", nulo, "");
     }
 
     // ---------- u(t, s) ----------

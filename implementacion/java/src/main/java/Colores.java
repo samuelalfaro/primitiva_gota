@@ -124,6 +124,55 @@ public final class Colores {
         }
     }
 
+    // ---------- Funciones: el esquema (•~~•) ----------
+
+    /**
+     * Las cinco funciones de color de una gota, sobre el esquema
+     * <pre>
+     *   \  /
+     *  (•~~•)
+     *   /  \
+     * </pre>
+     * Los cuatro radios van del centro (x = 0) al punto de contorno (x = 1), y la espina del centro 1 (x = 0) al
+     * centro 2 (x = 1). Deben coincidir en los centros (tolerancia de 1/255 por canal).
+     */
+    public record Funciones(Degradado normal1, Degradado contra1, Degradado espina,
+                            Degradado normal2, Degradado contra2) {
+        public Funciones {
+            Objects.requireNonNull(normal1, "normal1");
+            Objects.requireNonNull(contra1, "contra1");
+            Objects.requireNonNull(espina, "espina");
+            Objects.requireNonNull(normal2, "normal2");
+            Objects.requireNonNull(contra2, "contra2");
+            int c1 = espina.en(0), c2 = espina.en(1);
+            coincide("centro 1", "normal1(0)", normal1.en(0), "espina(0)", c1);
+            coincide("centro 1", "contra1(0)", contra1.en(0), "espina(0)", c1);
+            coincide("centro 2", "normal2(0)", normal2.en(0), "espina(1)", c2);
+            coincide("centro 2", "contra2(0)", contra2.en(0), "espina(1)", c2);
+        }
+
+        /** Nivel 1: dos colores, uno por centro; todo es un degradado entre ellos. */
+        public static Funciones de(int centro1, int centro2, Mezcla m) {
+            return de(centro1, centro1, centro1, centro2, centro2, centro2, m);
+        }
+
+        /** Nivel 2: seis colores, los centros y los cuatro puntos de contorno; cada función es lineal con la mezcla dada. */
+        public static Funciones de(int centro1, int normal1, int contra1,
+                                   int centro2, int normal2, int contra2, Mezcla m) {
+            Objects.requireNonNull(m, "mezcla");
+            return new Funciones(Degradado.entre(centro1, normal1, m), Degradado.entre(centro1, contra1, m),
+                                 Degradado.entre(centro1, centro2, m),
+                                 Degradado.entre(centro2, normal2, m), Degradado.entre(centro2, contra2, m));
+        }
+
+        private static void coincide(String donde, String a, int ca, String b, int cb) {
+            for (int sh = 0; sh <= 24; sh += 8)
+                if (Math.abs(((ca >>> sh) & 255) - ((cb >>> sh) & 255)) > 1)
+                    throw new IllegalArgumentException(String.format(
+                        "%s: %s = #%08X no coincide con %s = #%08X", donde, a, ca, b, cb));
+        }
+    }
+
     // ---------- Cadena con color lateral ----------
 
     /**
