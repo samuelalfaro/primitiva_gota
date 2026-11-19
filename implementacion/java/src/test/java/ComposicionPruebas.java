@@ -252,6 +252,28 @@ public class ComposicionPruebas {
         int sj = Math.max(saltoV(imT, ch.gotas().get(0), ch.gotas().get(1)), saltoV(imT, ch.gotas().get(1), ch.gotas().get(2)));
         comprueba("tira: la v pintada no salta en los nodos (máx. salto <= 6/255)", sj <= 6, "salto " + sj);
 
+        // Reparto POR_GOTA: cada gota vuelve a usar su tira, v se reinicia en cada arista y el orden no cambia
+        Composicion pg = cadena().reparto(Composicion.Reparto.POR_GOTA);
+        boolean tiras = true;
+        for (int i = 0; i < 3; i++) {
+            Cortes kk = pg.cortes(pg.aristas().get(i), op);
+            tiras &= Math.abs(kk.c1() - 0.25) < 1e-9 && Math.abs(kk.c3() - 0.75) < 1e-9 && !kk.porLongitud();
+        }
+        comprueba("reparto POR_GOTA: cada gota usa los cortes de su tira (1/4, 3/4) y la v por t", tiras, "");
+        BufferedImage imG = conV(pg, op);
+        int sg = Math.min(saltoV(imG, pg.gotas().get(0), pg.gotas().get(1)), saltoV(imG, pg.gotas().get(1), pg.gotas().get(2)));
+        comprueba("reparto POR_GOTA: la v pintada salta en los nodos (se reinicia en cada arista)", sg > 60, "salto " + sg);
+        comprueba("reparto POR_GOTA: el orden (s) es el mismo", Math.abs(pg.orden(pg.nodos().get(3)) - ch.orden(ch.nodos().get(3))) < 1e-9, "");
+        BufferedImage imGc = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB), imG0 = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
+        pg.render(imGc);
+        ch.render(imG0);
+        int difMax = 0;
+        for (int py = 0; py < H; py++) for (int px = 0; px < W; px++) {
+            int c1 = imGc.getRGB(px, py), c2 = imG0.getRGB(px, py);
+            for (int sh = 0; sh <= 24; sh += 8) difMax = Math.max(difMax, Math.abs(((c1 >> sh) & 255) - ((c2 >> sh) & 255)));
+        }
+        comprueba("el reparto apenas cambia el color sin textura (el degradado va por longitud en GLOBAL y por t en POR_GOTA)", difMax <= 6, "dif. máx. " + difMax + "/255");
+
         // La misma tira con las aristas escritas al revés: mismo orden, mismos cortes, las gotas van en el sentido del recorrido
         Composicion rv = new Composicion();
         var r0 = rv.nodo(60, 330, 14).color(0xFFE8523A);

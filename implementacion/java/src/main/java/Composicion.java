@@ -28,7 +28,8 @@ import java.util.Objects;
  *       escribió al revés, su gota va de b a a). Las topografías son: tira (0 .. N), círculo (0 .. Z0), Y (0 .. M y varias M .. N),
  *       Y lobulada (M .. Zn) y el 8 (dos pétalos con el nodo 0 en común, o un círculo que se cruza). Un cierre Zn es la arista que
  *       termina en un nodo ya recorrido ({@link #cierra}). La textura corre por toda la composición ({@link #cortes}): v va de la s de
- *       un extremo de cada gota a la del otro, y cada rama de una Y sigue desde la s del cruce. Con {@link Solape#TRAZO} manda, entre
+ *       un extremo de cada gota a la del otro, y cada rama de una Y sigue desde la s del cruce (con {@link Reparto#POR_GOTA} cada gota
+ *       usa su propia tira, como antes). Con {@link Solape#TRAZO} manda, entre
  *       gotas, la de cuerpo en el píxel y mayor s; con empate, la arista escrita después.</li>
  *   <li><b>Pendiente del radio</b> (por defecto): en los nodos de grado 2 se igualan a ambos lados los k = r'/|c'|
  *       para que el contorno no se quiebre, dentro de lo que permite un radio cúbico monótono por arista.</li>
@@ -131,6 +132,7 @@ public final class Composicion {
     private double suaviza = 0;
     private Mezcla mezcla = Mezcla.LCH;
     private boolean ajustaPendientes = true;
+    private Reparto reparto = Reparto.GLOBAL;
 
     // Resultado de construir (se rehace tras cualquier cambio).
     private List<Gota> gotas;
@@ -178,6 +180,20 @@ public final class Composicion {
     /** Igualar la pendiente del radio en las uniones (por defecto sí). */
 
     public Composicion ajustarPendientes(boolean si) { ajustaPendientes = si; invalida(); return this; }
+
+    /** Cómo se reparte la textura (el eje v de la tira) entre las gotas de la composición. */
+    public enum Reparto {
+        /** Cada gota usa su propia tira de las {@link Opciones} (por defecto 1 : 2 : 1): v empieza de nuevo en cada arista. */
+        POR_GOTA,
+        /** v corre por toda la composición según la s de cada gota ({@link Composicion#cortes}): la textura continúa de una gota a la siguiente. */
+        GLOBAL
+    }
+
+    /**
+     * Reparto de la textura entre las gotas (por defecto {@link Reparto#GLOBAL}). Solo afecta a la v de textura y color lateral: la forma, el
+     * orden del recorrido y el solape por s de TRAZO no dependen de él.
+     */
+    public Composicion reparto(Reparto r) { reparto = Objects.requireNonNull(r, "reparto"); invalida(); return this; }
 
     public int grado(Nodo n) {
         int g = 0;
@@ -301,7 +317,7 @@ public final class Composicion {
         final Opciones[] ops = new Opciones[gotas.size()];
         for (int i = 0; i < gotas.size(); i++) {
             Cortes k = cortesDe(i, op);
-            ops[i] = op.conTira(Tira.fija(k.c1(), k.c3()));        // v corre por toda la composición
+            ops[i] = reparto == Reparto.GLOBAL ? op.conTira(Tira.fija(k.c1(), k.c3())) : op;    // GLOBAL: v corre por toda la composición
             rel.add(rellenos.get(i).para(gotas.get(i), ops[i]));
         }
         raster.recorre(z, (i, j) -> {
@@ -394,7 +410,12 @@ public final class Composicion {
         return cortesDe(e.id, op);
     }
 
+    /** Cortes de v con que se pinta la gota i: los globales o, con {@link Reparto#POR_GOTA}, los de la tira de las opciones aplicada a esa gota. */
     private Cortes cortesDe(int i, Opciones op) {
+        return reparto == Reparto.GLOBAL ? cortesGlobales(i, op) : op.tira().cortes(gotas.get(i));
+    }
+
+    private Cortes cortesGlobales(int i, Opciones op) {
         int c = componente[i];
         Cortes b = op.tira().cortes(gotas.get(0));
         double c1 = b.c1(), c3 = b.c3();
