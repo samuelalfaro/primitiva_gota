@@ -79,6 +79,19 @@ public class GotaCadena {
         catch (IllegalArgumentException e) { lanza = true; msg = e.getMessage(); }
         comprueba("Funciones: un radio que no sale del color del centro lanza IllegalArgumentException", lanza, msg);
         comprueba("Funciones: el mensaje dice qué esquina falla", msg.contains("centro 2") && msg.contains("normal2(0)"), msg);
+        // cada uno de los cuatro radios, normal y contra, debe salir del color de su centro
+        Degradado malo = Degradado.constante(0xFF123456);
+        String[] radio = {"normal1", "contra1", "normal2", "contra2"};
+        String[] centroDe = {"centro 1", "centro 1", "centro 2", "centro 2"};
+        for (int i = 0; i < 4; i++) {
+            Degradado[] d = {f.normal1(), f.contra1(), f.normal2(), f.contra2()};
+            d[i] = malo;
+            String m = "";
+            try { new Colores.Funciones(d[0], d[1], f.espina(), d[2], d[3]); }
+            catch (IllegalArgumentException e) { m = e.getMessage(); }
+            comprueba("Funciones: " + radio[i] + " fuera del color del centro se rechaza y se nombra",
+                    m.startsWith(centroDe[i]) && m.contains(radio[i] + "(0)"), m);
+        }
         boolean casi = true;
         try { new Colores.Funciones(f.normal1(), f.contra1(), f.espina(), x -> c2 - 1, f.contra2()); }
         catch (IllegalArgumentException e) { casi = false; }
