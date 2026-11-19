@@ -104,6 +104,10 @@ public final class Gota implements Geometria {
     public Rectangle2D bounds() { return (Rectangle2D) bounds.clone(); }
 
     private volatile double[] acumulada;
+    private volatile double largoTotal;
+
+    /** Longitud del camino entre los centros (la recta si la gota es rígida), sin contar las tapas. */
+    public double longitud() { fraccion(0); return largoTotal; }
 
     /** Fracción de la longitud de arco del camino hasta t: tabla de longitudes acumuladas (muestreo uniforme en t) interpolada linealmente. */
     @Override public double fraccion(double t) {
@@ -117,6 +121,7 @@ public final class Gota implements Geometria {
                 a[i] = a[i - 1] + Math.hypot(x - x0, y - y0);
                 x0 = x; y0 = y;
             }
+            largoTotal = a[n];
             if (a[n] > 0) for (int i = 1; i <= n; i++) a[i] /= a[n];
             else for (int i = 0; i <= n; i++) a[i] = i / (double) n;      // camino sin longitud: se reparte por t
             acumulada = a;
