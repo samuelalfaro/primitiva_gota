@@ -135,6 +135,8 @@ public final class Colores {
      * </pre>
      * Los cuatro radios van del centro (x = 0) al punto de contorno (x = 1), y la espina del centro 1 (x = 0) al
      * centro 2 (x = 1). Deben coincidir en los centros (tolerancia de 1/255 por canal).
+     * La validación solo comprueba esos valores en los centros, a modo orientativo: que las funciones sean continuas
+     * cerca de ellos (y que haya o no saltos duros cerca de los bordes) es responsabilidad de quien las escribe.
      */
     public record Funciones(Degradado normal1, Degradado contra1, Degradado espina,
                             Degradado normal2, Degradado contra2) {
