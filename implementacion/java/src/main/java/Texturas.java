@@ -128,8 +128,8 @@ public final class Texturas {
 
     /**
      * Mapeo de textura en tira: v corre a lo largo de la gota y u a lo ancho. Es la misma coordenada
-     * Uv que usa la cadena de color, así que ambas alinean. La textura se divide en cuatro bandas de alto
-     * (por defecto cuartos): tapa del primer círculo, cuerpo hasta tm, cuerpo desde tm y tapa del segundo.
+     * Uv que usa la cadena de color, así que ambas alinean. La textura se divide en tres bandas de alto
+     * (por defecto 1 : 2 : 1): tapa del primer círculo, cuerpo y tapa del segundo.
      * Las tapas son semidiscos ({@link Coordenadas#discoTapa}): con la textura de referencia 1 x 2 una gota recta de radios
      * iguales reproduce la textura idéntica.
      */
@@ -140,8 +140,8 @@ public final class Texturas {
 
     /**
      * Igual que tira(tex), sobre el subrectángulo (u0, v0)-(u1, v1) de la textura (por ejemplo, un atlas)
-     * y con los cortes de las tapas como fracciones de su alto, 0 <= c1 <= c3 <= 1. El corte central sigue
-     * a tm: el cuerpo de la gota se reparte entre c1 y c3 en la misma proporción que en la propia gota.
+     * y con los cortes de las tapas como fracciones de su alto, 0 <= c1 <= c3 <= 1. El cuerpo de la gota
+     * se reparte linealmente entre c1 y c3.
      */
     public static Relleno tira(Textura tex, double u0, double v0, double u1, double v1,
                                     double corte1, double corte3) {
@@ -163,12 +163,10 @@ public final class Texturas {
 
         @Override public Relleno para(Gota g, Opciones op) {
             Cortes k = op.tira().cortes(g);
-            double[] d = { 0, k.c1(), k.c2(), k.c3(), 1 };
+            double[] d = { 0, k.c1(), k.c3(), 1 };
             if (hasta == null) return new TiraRelleno(tex, u0, v0, u1, v1, d, d);
             double c1 = hasta[0], c3 = hasta[1];
-            double den = k.c3() - k.c1();
-            double c2 = den > 0 ? c1 + (c3 - c1) * (k.c2() - k.c1()) / den : c1;
-            return new TiraRelleno(tex, u0, v0, u1, v1, d, new double[] { 0, c1, c2, c3, 1 });
+            return new TiraRelleno(tex, u0, v0, u1, v1, d, new double[] { 0, c1, c3, 1 });
         }
 
         @Override public int argb(Punto p) {
@@ -176,10 +174,10 @@ public final class Texturas {
             if (desde == null)   // sin enlazar con una gota: v tal cual
                 return tex.muestrea(u0 + (u1 - u0) * clamp(uv.u()), v0 + (v1 - v0) * clamp(uv.v()));
             double v = uv.v(), f = 1;
-            double[] d = Coordenadas.discoTapa(uv, desde[1], desde[3]);   // la tapa es el semidisco: v = c1·(1 - a) o c3 + (1 - c3)·a
-            if (d != null) v = d[2] == 0 ? desde[1] * (1 - d[1]) : desde[3] + (1 - desde[3]) * d[1];
-            for (int i = 0; i < 4; i++) {
-                if (v <= desde[i + 1] || i == 3) {
+            double[] d = Coordenadas.discoTapa(uv, desde[1], desde[2]);   // la tapa es el semidisco: v = c1·(1 - a) o c3 + (1 - c3)·a
+            if (d != null) v = d[2] == 0 ? desde[1] * (1 - d[1]) : desde[2] + (1 - desde[2]) * d[1];
+            for (int i = 0; i < 3; i++) {
+                if (v <= desde[i + 1] || i == 2) {
                     double w = desde[i + 1] - desde[i];
                     f = w <= 0 ? hasta[i + 1] : hasta[i] + (hasta[i + 1] - hasta[i]) * clamp((v - desde[i]) / w);
                     break;

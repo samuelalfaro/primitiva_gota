@@ -13,7 +13,7 @@ public interface Tira {
 
     /**
      * Reparto por pesos: la parte de v que ocupan la tapa trasera, el cuerpo y la tapa delantera. Dentro del cuerpo v
-     * es lineal en t y el corte central cae donde t = tm: tm manda sobre el corte central.
+     * es lineal en t.
      */
     static Tira pesos(double wTapa1, double wCuerpo, double wTapa2) { return new Pesos(wTapa1, wCuerpo, wTapa2); }
 
@@ -22,15 +22,14 @@ public interface Tira {
 
     /**
      * La misma tira con v lineal en la longitud de arco del camino, no en t: la textura no se estira donde la curva
-     * acelera (t avanza más deprisa). El corte central cae en la fracción de longitud de tm.
+     * acelera (t avanza más deprisa).
      */
     static Tira porLongitud(Tira base) { return new PorLongitud(base); }
 
     record PorLongitud(Tira base) implements Tira {
         @Override public Cortes cortes(Geometria g) {
             Cortes c = base.cortes(g);
-            double m = g.fraccion(g.tm());
-            return new Cortes(c.c1(), c.c1() + (c.c3() - c.c1()) * m, c.c3(), true);
+            return new Cortes(c.c1(), c.c3(), true);
         }
     }
 
@@ -42,7 +41,7 @@ public interface Tira {
 
         @Override public Cortes cortes(Geometria g) {
             double s = wTapa1 + wCuerpo + wTapa2, c1 = wTapa1 / s, c3 = (wTapa1 + wCuerpo) / s;
-            return new Cortes(c1, c1 + (c3 - c1) * g.tm(), c3);
+            return new Cortes(c1, c3);
         }
     }
 
