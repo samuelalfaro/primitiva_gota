@@ -27,6 +27,7 @@ public class GotaCadena {
 
     public static void main(String[] args) throws Exception {
         transicion();
+        degradados();
         equivalencias();
         anclas();
         unificacion();
@@ -35,6 +36,26 @@ public class GotaCadena {
         csv();
         System.out.printf("%d pruebas, %d fallos%n", pruebas, fallos);
         if (fallos > 0) System.exit(1);
+    }
+
+    // ---------- Degradado: f(x) -> ARGB ----------
+
+    static void degradados() {
+        int a = 0xFFFF0000, b = 0xFF0000FF;
+        Degradado d = Degradado.entre(a, b, Mezcla.RGB);
+        comprueba("Degradado.entre: extremos y recorte fuera de [0, 1]",
+                d.en(0) == a && d.en(1) == b && d.en(-3) == a && d.en(7) == b, "");
+        comprueba("Degradado.entre = Mezcla en cada x",
+                d.en(0.3) == Mezcla.RGB.mezclar(a, b, 0.3) && d.en(0.77) == Mezcla.RGB.mezclar(a, b, 0.77), "");
+        boolean ok = true;
+        for (double s : new double[]{0, 0.2, 0.5, 0.8, 1})
+            for (double x = 0; x <= 1; x += 0.125)
+                ok &= d.ajustado(s).en(x) == Mezcla.RGB.mezclar(a, b, s == 0.5 ? x : Colores.transicion(x, s));
+        comprueba("ajustado(s) = deformar x con la transición de siempre", ok, "");
+        comprueba("una lambda propia es un Degradado", ((Degradado) x -> x < 0.5 ? a : b).en(0.9) == b, "");
+        boolean lanza = false;
+        try { d.ajustado(1.5); } catch (IllegalArgumentException e) { lanza = true; }
+        comprueba("ajustado(s) rechaza s fuera de [0, 1]", lanza, "");
     }
 
     // ---------- u(t, s) ----------

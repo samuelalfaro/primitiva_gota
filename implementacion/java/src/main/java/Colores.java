@@ -87,6 +87,7 @@ public final class Colores {
         private final double sEC1, sCC, sCE2;
         private final Mezcla m;
         private final double a1, a3;
+        private final Degradado dEC1, dCC, dCE2;
 
         Cadena(int e1, int c1, int c2, int e2, double sEC1, double sCC, double sCE2, Mezcla m,
                double a1, double a3) {
@@ -99,6 +100,9 @@ public final class Colores {
             this.e1 = e1; this.c1 = c1; this.c2 = c2; this.e2 = e2;
             this.sEC1 = sEC1; this.sCC = sCC; this.sCE2 = sCE2;
             this.m = m; this.a1 = a1; this.a3 = a3;
+            this.dEC1 = Degradado.entre(e1, c1, m).ajustado(sEC1);
+            this.dCC = Degradado.entre(c1, c2, m).ajustado(sCC);
+            this.dCE2 = Degradado.entre(c2, e2, m).ajustado(sCE2);
         }
 
         @Override public Relleno para(Gota g, Opciones op) {
@@ -107,7 +111,10 @@ public final class Colores {
         }
 
         @Override public int argb(Punto p) {
-            return colorCadena(e1, c1, c2, e2, sEC1, sCC, sCE2, m, p.uv().v(), a1, a3);
+            double f = p.uv().v();
+            if (f <= a1) return dEC1.en(tramoLocal(f, 0, a1));
+            if (f >= a3) return dCE2.en(tramoLocal(f, a3, 1));
+            return dCC.en(tramoLocal(f, a1, a3));
         }
     }
 
@@ -208,7 +215,7 @@ public final class Colores {
             double[] d = Coordenadas.discoTapa(uv, a1, a3);
             if (d != null) return (d[2] == 0 ? n1 : n2).enDisco(d[0], d[1], m);
             double u = clamp01(uv.u());
-            return m.mezclar(n1.en(u, m), n2.en(u, m), transicion(tramoLocal(uv.v(), a1, a3), sCC));
+            return Degradado.entre(n1.en(u, m), n2.en(u, m), m).ajustado(sCC).en(tramoLocal(uv.v(), a1, a3));
         }
     }
 
@@ -224,17 +231,6 @@ public final class Colores {
     private static void checkAjuste(double s, String nombre) {
         if (!(s >= 0 && s <= 1))
             throw new IllegalArgumentException(nombre + " debe estar en [0, 1]");
-    }
-
-    /** Color de la cadena en f, con anclas en 0, ancla1, ancla2 y 1. */
-    private static int colorCadena(int e1, int cA, int cB, int e2,
-                                   double sEC1, double sCC, double sCE2, Mezcla mez,
-                                   double f, double ancla1, double ancla2) {
-        if (f <= ancla1)
-            return mez.mezclar(e1, cA, transicion(tramoLocal(f, 0, ancla1), sEC1));
-        if (f >= ancla2)
-            return mez.mezclar(cB, e2, transicion(tramoLocal(f, ancla2, 1), sCE2));
-        return mez.mezclar(cA, cB, transicion(tramoLocal(f, ancla1, ancla2), sCC));
     }
 
     /** Coordenada local del tramo [fa, fb], recortada a [0, 1]. */
