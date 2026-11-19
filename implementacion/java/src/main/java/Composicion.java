@@ -1,9 +1,11 @@
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
 
@@ -21,6 +23,14 @@ import java.util.Objects;
  *   <li><b>Tiradores automáticos</b> (si no se dan): en un nodo de grado 2 la tangente es la de Catmull-Rom entre sus
  *       dos vecinos (contorno G1); en los demás nodos, la dirección hacia el vecino. Longitud: un tercio de la
  *       distancia entre nodos.</li>
+ *   <li><b>Orden</b>: el recorrido en profundidad desde el nodo de menor número, tomando las aristas en el orden en que se
+ *       escribieron, da a cada nodo su s (longitud de camino desde el 0) y a cada gota el sentido del recorrido (si una arista se
+ *       escribió al revés, su gota va de b a a). Las topografías son: tira (0 .. N), círculo (0 .. Z0), Y (0 .. M y varias M .. N),
+ *       Y lobulada (M .. Zn) y el 8 (dos pétalos con el nodo 0 en común, o un círculo que se cruza). Un cierre Zn es la arista que
+ *       termina en un nodo ya recorrido ({@link #cierra}). La textura corre por toda la composición ({@link #cortes}): v va de la s de
+ *       un extremo de cada gota a la del otro, y cada rama de una Y sigue desde la s del cruce (con {@link Reparto#POR_GOTA} cada gota
+ *       usa su propia tira, como antes). Con {@link Solape#TRAZO} manda, entre
+ *       gotas, la de cuerpo en el píxel y mayor s; con empate, la arista escrita después.</li>
  *   <li><b>Pendiente del radio</b> (por defecto): en los nodos de grado 2 se igualan a ambos lados los k = r'/|c'|
  *       para que el contorno no se quiebre, dentro de lo que permite un radio cúbico monótono por arista.</li>
  *   <li><b>Unión</b>: cobertura por el mínimo (suave si {@link #suavizado(double)} &gt; 0) de las distancias de las
@@ -122,9 +132,16 @@ public final class Composicion {
     private double suaviza = 0;
     private Mezcla mezcla = Mezcla.LCH;
     private boolean ajustaPendientes = true;
+    private Reparto reparto = Reparto.GLOBAL;
 
     // Resultado de construir (se rehace tras cualquier cambio).
     private List<Gota> gotas;
+    private boolean[] invertida;          // la gota va de b a a: el recorrido desde el nodo 0 llega a la arista por su extremo b
+    private boolean[] cierre;             // la arista termina en un nodo ya recorrido (un cierre Zn)
+    private int[] componente;             // componente conexa de cada arista
+    private double[] sInicio, sFin;       // s (longitud de camino desde el nodo 0) al principio y al final de cada gota
+    private double[] sNodo;               // s de cada nodo
+    private double[] sTotal;              // s máxima de cada componente
     private List<Relleno> rellenos;
     private Rectangle2D.Double bounds;
 
@@ -164,6 +181,20 @@ public final class Composicion {
 
     public Composicion ajustarPendientes(boolean si) { ajustaPendientes = si; invalida(); return this; }
 
+    /** Cómo se reparte la textura (el eje v de la tira) entre las gotas de la composición. */
+    public enum Reparto {
+        /** Cada gota usa su propia tira de las {@link Opciones} (por defecto 1 : 2 : 1): v empieza de nuevo en cada arista. */
+        POR_GOTA,
+        /** v corre por toda la composición según la s de cada gota ({@link Composicion#cortes}): la textura continúa de una gota a la siguiente. */
+        GLOBAL
+    }
+
+    /**
+     * Reparto de la textura entre las gotas (por defecto {@link Reparto#GLOBAL}). Solo afecta a la v de textura y color lateral: la forma, el
+     * orden del recorrido y el solape por s de TRAZO no dependen de él.
+     */
+    public Composicion reparto(Reparto r) { reparto = Objects.requireNonNull(r, "reparto"); invalida(); return this; }
+
     public int grado(Nodo n) {
         int g = 0;
         for (Arista e : aristas) { if (e.a == n) g++; if (e.b == n) g++; }
@@ -173,7 +204,7 @@ public final class Composicion {
     public List<Nodo> nodos() { return Collections.unmodifiableList(nodos); }
     public List<Arista> aristas() { return Collections.unmodifiableList(aristas); }
 
-    private void invalida() { gotas = null; rellenos = null; bounds = null; }
+    private void invalida() { gotas = null; rellenos = null; bounds = null; invertida = null; }
 
     // ---------- Consulta ----------
 
@@ -212,7 +243,8 @@ public final class Composicion {
         for (Arista e : aristas) for (boolean inicio : new boolean[] { true, false }) {
             if ((inicio ? e.a : e.b) != n) continue;
             Gota g = gotas.get(e.id);
-            double t0 = inicio ? 0 : 1, t1 = inicio ? 1e-4 : 1 - 1e-4;
+            boolean alPrincipio = inicio != invertida[e.id];          // la gota de una arista invertida va de b a a
+            double t0 = alPrincipio ? 0 : 1, t1 = alPrincipio ? 1e-4 : 1 - 1e-4;
             Point2D p0 = g.centro(t0), p1 = g.centro(t1);
             double ds = Math.hypot(p1.getX() - p0.getX(), p1.getY() - p0.getY());
             double k = (g.radio(t1) - g.radio(t0)) / ds;          // alejándose del nodo
@@ -282,15 +314,117 @@ public final class Composicion {
         final Plotter.Raster.Zona z = raster.zona(bounds.getMinX(), bounds.getMaxX(), bounds.getMinY(), bounds.getMaxY(), marg);
         if (z == null) return;
         final List<Relleno> rel = new ArrayList<>();
-        for (int i = 0; i < gotas.size(); i++) rel.add(rellenos.get(i).para(gotas.get(i), op));
+        final Opciones[] ops = new Opciones[gotas.size()];
+        for (int i = 0; i < gotas.size(); i++) {
+            Cortes k = cortesDe(i, op);
+            ops[i] = reparto == Reparto.GLOBAL ? op.conTira(Tira.fija(k.c1(), k.c3())) : op;    // GLOBAL: v corre por toda la composición
+            rel.add(rellenos.get(i).para(gotas.get(i), ops[i]));
+        }
         raster.recorre(z, (i, j) -> {
             double x = i + 0.5, y = j + 0.5;
-            double[] ev = evalua(x, y, op);
+            double[] ev = evalua(x, y, op, ops);
             if (ev[1] < 0) return;
             Gota g = gotas.get((int) ev[1]);
-            int c = rel.get((int) ev[1]).argb(Coordenadas.punto(g, x, y, op));
+            int c = rel.get((int) ev[1]).argb(Coordenadas.punto(g, x, y, ops[(int) ev[1]]));
             raster.set(i, j, sobre(raster.get(i, j), c, ev[0]));
         });
+    }
+
+    // ---------- Orden del recorrido ----------
+
+    /** Un paso del recorrido: la arista se recorre desde un nodo hasta otro; es de árbol si llega a un nodo nuevo y de cierre si llega a uno ya recorrido. */
+    private record Paso(int arista, int desde, int hasta, boolean arbol, int componente) {}
+
+    /**
+     * Recorrido en profundidad desde el nodo de menor número de cada componente, tomando las aristas en el orden en que se
+     * escribieron. Es el orden del dibujo: tira (0 .. N), círculo (0 .. Z0), Y (0 .. M y varias M .. N), Y lobulada (M .. Zn)...
+     */
+    private List<Paso> recorrido() {
+        int n = nodos.size(), m = aristas.size(), comp = 0;
+        boolean[] vis = new boolean[n], usada = new boolean[m];
+        List<Paso> out = new ArrayList<>();
+        for (Nodo raiz : nodos) {
+            if (vis[raiz.id]) continue;
+            vis[raiz.id] = true;
+            Deque<int[]> pila = new ArrayDeque<>();                // {nodo, siguiente arista a mirar}
+            pila.push(new int[] { raiz.id, 0 });
+            while (!pila.isEmpty()) {
+                int[] f = pila.peek();
+                int u = f[0], k = f[1];
+                while (k < m && (usada[k] || (aristas.get(k).a.id != u && aristas.get(k).b.id != u))) k++;
+                if (k >= m) { pila.pop(); continue; }
+                f[1] = k + 1;
+                usada[k] = true;
+                Arista e = aristas.get(k);
+                int w = e.a.id == u ? e.b.id : e.a.id;             // en un lazo w == u
+                boolean arbol = !vis[w];
+                out.add(new Paso(k, u, w, arbol, comp));
+                if (arbol) { vis[w] = true; pila.push(new int[] { w, 0 }); }
+            }
+            comp++;
+        }
+        return out;
+    }
+
+    /** s de cada nodo y de cada extremo de gota: la longitud de camino desde el nodo 0, que sigue desde el nodo en cada rama. */
+    private void ordena(List<Paso> pasos, boolean[] inv) {
+        int n = nodos.size(), m = aristas.size(), nc = 0;
+        for (Paso p : pasos) nc = Math.max(nc, p.componente + 1);
+        invertida = inv;
+        cierre = new boolean[m]; componente = new int[m];
+        sInicio = new double[m]; sFin = new double[m]; sNodo = new double[n];
+        sTotal = new double[nc];
+        for (Paso p : pasos) {
+            double largo = gotas.get(p.arista).longitud();
+            sInicio[p.arista] = sNodo[p.desde];
+            sFin[p.arista] = sNodo[p.desde] + largo;
+            if (p.arbol) sNodo[p.hasta] = sFin[p.arista];
+            cierre[p.arista] = !p.arbol;
+            componente[p.arista] = p.componente;
+            sTotal[p.componente] = Math.max(sTotal[p.componente], sFin[p.arista]);
+        }
+    }
+
+    /**
+     * s del nodo: la longitud de camino desde el nodo de menor número de su componente (el 0 en una composición conexa), siguiendo
+     * las aristas en el orden en que se escribieron (recorrido en profundidad). En una Y, cada rama sigue contando desde la s del cruce.
+     */
+    public double orden(Nodo n) {
+        construye();
+        if (n.dueña != this) throw new IllegalArgumentException("nodo de otra composición");
+        return sNodo[n.id];
+    }
+
+    /** true si la arista cierra un ciclo: en el recorrido desde el nodo 0 termina en un nodo ya recorrido (en la notación, Zn). */
+    public boolean cierra(Arista e) { construye(); return cierre[e.id]; }
+
+    /**
+     * Cortes de v con que se pinta la gota de la arista: toda la composición comparte el reparto de la textura, y v va de la s de
+     * un extremo de la gota a la del otro (lineal en la longitud de camino). Las tapas (v por debajo de c1 y por encima de c3)
+     * son las de la tira de la primera gota de las opciones, 1 : 2 : 1 por defecto, y solo aparecen en los extremos libres; el cuerpo
+     * usa siempre la banda [c1, c3] de la textura, también en un círculo. La v de un cierre acaba en la s del final del ciclo, que no
+     * coincide con la del nodo en que cierra: ahí queda una costura.
+     */
+    public Cortes cortes(Arista e, Opciones op) {
+        construye();
+        return cortesDe(e.id, op);
+    }
+
+    /** Cortes de v con que se pinta la gota i: los globales o, con {@link Reparto#POR_GOTA}, los de la tira de las opciones aplicada a esa gota. */
+    private Cortes cortesDe(int i, Opciones op) {
+        return reparto == Reparto.GLOBAL ? cortesGlobales(i, op) : op.tira().cortes(gotas.get(i));
+    }
+
+    private Cortes cortesGlobales(int i, Opciones op) {
+        int c = componente[i];
+        Cortes b = op.tira().cortes(gotas.get(0));
+        double c1 = b.c1(), c3 = b.c3();
+        double total = sTotal[c];
+        double v0 = total > 0 ? c1 + (c3 - c1) * sInicio[i] / total : c1, v1 = total > 0 ? c1 + (c3 - c1) * sFin[i] / total : c1;
+        final double eps = 1e-6;                                   // los rellenos exigen 0 < c1 < c3 < 1: sin tapas o con una gota de longitud 0 se acotan
+        double w0 = Math.max(eps, Math.min(v0, 1 - 2 * eps));
+        double w1 = Math.max(w0 + eps, Math.min(v1, 1 - eps));
+        return new Cortes(w0, w1, true);
     }
 
     // ---------- Internos ----------
@@ -302,7 +436,7 @@ public final class Composicion {
     }
 
     /** {cobertura, gota que manda (o -1)} en (x, y): sdf = unión suave de las sdf, color de la gota de menor ρ. */
-    private double[] evalua(double x, double y, Opciones op) {
+    private double[] evalua(double x, double y, Opciones op, Opciones[] ops) {
         double marg = 2 + suaviza;
         double smin = Double.MAX_VALUE, rmin = Double.MAX_VALUE;
         int mejor = -1;
@@ -318,6 +452,23 @@ public final class Composicion {
         if (smin == Double.MAX_VALUE) return new double[] { 0, -1 };
         double cob = Math.max(0, Math.min(1, 0.5 - smin));
         if (cob <= 0) return new double[] { 0, -1 };
+        if (op.solape() == Solape.TRAZO) {
+            // Entre las gotas que contienen el píxel manda, primero, la que lo tiene en su cuerpo (las tapas de los nodos compartidos
+            // no tapan a los cuerpos vecinos); después, la que va más tarde en el recorrido (mayor s); con empate, la arista escrita después.
+            boolean cuerpoTop = false;
+            double sTop = Double.NEGATIVE_INFINITY;
+            for (int k = 0; k < gotas.size(); k++) {
+                if (!(s[k] <= 0)) continue;
+                Gota g = gotas.get(k);
+                Cortes ck = ops[k].tira().cortes(g);
+                double v = Coordenadas.uv(g, x, y, ops[k]).v();
+                boolean cuerpo = v >= ck.c1() && v <= ck.c3();
+                double t = Coordenadas.porRho(g, x, y, Solape.TRAZO).t();
+                double sg = sInicio[k] + (sFin[k] - sInicio[k]) * g.fraccion(t);
+                if ((cuerpo && !cuerpoTop) || (cuerpo == cuerpoTop && sg >= sTop)) { cuerpoTop = cuerpo; sTop = sg; mejor = k; }
+            }
+            if (mejor >= 0) return new double[] { cob, mejor };
+        }
         for (int k = 0; k < gotas.size(); k++) {
             if (s[k] >= 0.75 + suaviza) continue;
             double rho = Coordenadas.porRho(gotas.get(k), x, y, op.solape()).rho();
@@ -391,25 +542,32 @@ public final class Composicion {
             ars.add(new Ar(e.a.id, e.b.id, va, vb, Double.NaN, Double.NaN, e.va != null || e.vb != null));
         }
         if (ajustaPendientes) ars = igualaK(ars);
+        List<Paso> pasos = recorrido();
+        boolean[] inv = new boolean[aristas.size()];
+        for (Paso p : pasos) inv[p.arista] = p.desde != aristas.get(p.arista).a.id;
 
         gotas = new ArrayList<>();
         rellenos = new ArrayList<>();
         Rectangle2D.Double bb = null;
         for (int i = 0; i < ars.size(); i++) {
             Ar r = ars.get(i);
-            Nodo A = nodos.get(r.a), B = nodos.get(r.b);
+            boolean v = inv[i];                                     // la gota va en el sentido del recorrido, no del orden en que se escribió la arista
+            Nodo A = nodos.get(v ? r.b : r.a), B = nodos.get(v ? r.a : r.b);
+            Gota.Vec va = v ? r.vb : r.va, vb = v ? r.va : r.vb;
+            double m1 = v ? r.m2 : r.m1, m2 = v ? r.m1 : r.m2;
             double dr = B.radio - A.radio;
-            Perfil base = Double.isNaN(r.m1) && Double.isNaN(r.m2)
+            Perfil base = Double.isNaN(m1) && Double.isNaN(m2)
                     ? Perfil.lineal()
-                    : Perfil.tangentes(Double.isNaN(r.m1) ? dr : r.m1, Double.isNaN(r.m2) ? dr : r.m2);
-            Gota g = Gota.curva(new Point2D.Double(A.x, A.y), A.radio, r.va, new Point2D.Double(B.x, B.y), B.radio, r.vb, base);
+                    : Perfil.tangentes(Double.isNaN(m1) ? dr : m1, Double.isNaN(m2) ? dr : m2);
+            Gota g = Gota.curva(new Point2D.Double(A.x, A.y), A.radio, va, new Point2D.Double(B.x, B.y), B.radio, vb, base);
             gotas.add(g);
-            rellenos.add(Colores.cadenaLateral(lateralDe(A, aristas.get(i), true), lateralDe(B, aristas.get(i), false), mezcla));
+            rellenos.add(Colores.cadenaLateral(lateralDe(A, aristas.get(i), !v, v), lateralDe(B, aristas.get(i), v, v), mezcla));
             Rectangle2D gb = g.bounds();
             if (bb == null) bb = new Rectangle2D.Double(gb.getX(), gb.getY(), gb.getWidth(), gb.getHeight());
             else bb.add(gb);
         }
         bounds = bb;
+        ordena(pasos, inv);
     }
 
     // ---------- Color lateral por sectores ----------
@@ -457,7 +615,7 @@ public final class Composicion {
         return sb.toString();
     }
 
-    private Colores.Lateral lateralDe(Nodo n, Arista e, boolean inicio) {
+    private Colores.Lateral lateralDe(Nodo n, Arista e, boolean inicio, boolean invertida) {
         int centro = n.centro != null ? n.centro : (n.sectores != null && n.sectores.length > 0 ? n.sectores[0] : 0xFFCCCCCC);
         List<Brazo> br = brazos(n);
         int d = br.size();
@@ -481,7 +639,8 @@ public final class Composicion {
         for (int k = 0; k < d; k++)
             if (br.get(k).e == e && br.get(k).inicio == inicio) {
                 int[] sc = sectoresDe(br, k);
-                return new Colores.Lateral(col[sc[0]], centro, col[sc[1]], n.ajusteLateral, n.ajusteArco);
+                return invertida ? new Colores.Lateral(col[sc[1]], centro, col[sc[0]], n.ajusteLateral, n.ajusteArco)   // la gota va al revés: normal y contra se cambian
+                                 : new Colores.Lateral(col[sc[0]], centro, col[sc[1]], n.ajusteLateral, n.ajusteArco);
             }
         return Colores.Lateral.uniforme(centro);
     }
