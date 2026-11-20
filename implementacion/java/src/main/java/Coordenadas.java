@@ -138,10 +138,9 @@ public final class Coordenadas {
 
     // ---------- Tira de textura ----------
     //
-    // v recorre la gota en cuatro tramos (por defecto cuartos):
+    // v recorre la gota en tres tramos (por defecto 1 : 2 : 1):
     //   [0, v1]   tapa trasera (semicírculo exterior del primer círculo)
-    //   [v1, v2]  primera mitad del cuerpo, t en [0, tm]
-    //   [v2, v3]  segunda mitad del cuerpo, t en [tm, 1]
+    //   [v1, v3]  cuerpo, v lineal en t (o en la longitud de arco, con Tira.porLongitud)
     //   [v3, 1]   tapa delantera
     // u cruza de lado a lado: 1/2 sobre el camino, 0 y 1 en los bordes. Es una coordenada con signo,
     // lineal en la distancia lateral, así que no tiene arista en el eje (a diferencia de rho).
