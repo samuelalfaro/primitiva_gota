@@ -697,11 +697,12 @@ public final class Composicion {
         if (smin == Double.MAX_VALUE) return new double[] { 0, -1 };
         double cob = Math.max(0, Math.min(1, 0.5 - smin));
         if (cob <= 0) return new double[] { 0, -1 };
-        if (op.solape() == Solape.TRAZO && !enNodoDeCruce(x, y)) {
-            // Entre las gotas que contienen el píxel manda, primero, la que lo tiene en su cuerpo (las tapas de los nodos compartidos
-            // no tapan a los cuerpos vecinos); después, la que va más tarde en el recorrido (mayor s); con empate, la arista escrita después.
-            boolean cuerpoTop = false, altTop = false;
-            double sTop = Double.NEGATIVE_INFINITY, sGan = Double.NEGATIVE_INFINITY;
+        if (op.solape() == Solape.TRAZO && expMezcla > 0) {
+            Nodo nm = null; double dm = Double.MAX_VALUE;
+            for (Nodo n : nodos) if (grado(n) >= 3) { double d = Math.hypot(x - n.x, y - n.y) / n.radio; if (d < dm) { dm = d; nm = n; } }
+            double lam = 0;
+            if (nm != null) { double u = Math.min(1, dm / expMezcla); lam = 1 - u * u * (3 - 2 * u); }
+            double bestScore = Double.NEGATIVE_INFINITY; int mj = -1;
             for (int k = 0; k < gotas.size(); k++) {
                 if (!(s[k] <= 0)) continue;
                 Gota g = gotas.get(k);
@@ -710,14 +711,43 @@ public final class Composicion {
                 boolean cuerpo = v >= ck.c1() && v <= ck.c3();
                 double t = Coordenadas.porRho(g, x, y, Solape.TRAZO).t();
                 double sg = sInicio[k] + (sFin[k] - sInicio[k]) * g.fraccion(t);
-                DoubleUnaryOperator fa = aristas.get(k).altura;
-                double h = sg;                                           // sin altura declarada manda s; con ella, la altura (por encima de s)
-                if (fa != null) { double x0 = g.fraccion(t); h = fa.applyAsDouble(invertida[k] ? 1 - x0 : x0); }
-                boolean dec = fa != null;
-                boolean gana = mejor < 0 || (cuerpo != cuerpoTop ? cuerpo
-                        : dec != altTop ? dec
-                        : h > sTop || (h == sTop && sg >= sGan));
-                if (gana) { cuerpoTop = cuerpo; altTop = dec; sTop = h; sGan = sg; mejor = k; }
+                double r = nm == null ? 1 : nm.radio;
+                double s0 = nm == null ? 0 : sNodo[nm.id];
+                if (nm != null && expSalto) {
+                    Arista e = aristas.get(k);
+                    Nodo ni = invertida[k] ? e.b : e.a, nf = invertida[k] ? e.a : e.b;
+                    boolean cercaIni = Math.abs(sg - sInicio[k]) <= Math.abs(sg - sFin[k]);
+                    Nodo ne = cercaIni ? ni : nf;
+                    if (ne == nm) sg -= ((cercaIni ? sInicio[k] : sFin[k]) - s0) * (lam > 0 ? 1 : 0);
+                }
+                double sc;
+                if (lam <= 0) sc = (cuerpo ? 1e9 : 0) + sg;
+                else {
+                    double rhoK = Coordenadas.porRho(g, x, y, Solape.PLANO).rho();
+                    sc = (1 - lam) * ((cuerpo ? expCuerpo : 0) + (sg - s0) / r) - lam * rhoK;
+                }
+                if (sc >= bestScore) { bestScore = sc; mj = k; }
+            }
+            if (mj >= 0) return new double[] { cob, mj };
+        } else if (op.solape() == Solape.TRAZO && !enNodoDeCruce(x, y)) {
+            // Entre las gotas que contienen el píxel manda, primero, la que lo tiene en su cuerpo (las tapas de los nodos compartidos
+            // no tapan a los cuerpos vecinos); después, la que va más tarde en el recorrido (mayor s); con empate, la arista escrita después.
+            boolean cuerpoTop = false;
+            double sTop = Double.NEGATIVE_INFINITY, rhoTop = Double.MAX_VALUE;
+            for (int k = 0; k < gotas.size(); k++) {
+                if (!(s[k] <= 0)) continue;
+                Gota g = gotas.get(k);
+                Cortes ck = ops[k].tira().cortes(g);
+                double v = Coordenadas.uv(g, x, y, ops[k]).v();
+                boolean cuerpo = v >= ck.c1() && v <= ck.c3();
+                double t = Coordenadas.porRho(g, x, y, Solape.TRAZO).t();
+                double sg = sEfectiva(k, sInicio[k] + (sFin[k] - sInicio[k]) * g.fraccion(t), x, y);
+                double rhoK = expEmpate > 0 ? Coordenadas.porRho(g, x, y, Solape.PLANO).rho() : 0;
+                boolean gana;
+                if (cuerpo != cuerpoTop) gana = cuerpo;
+                else if (expEmpate > 0 && Math.abs(sg - sTop) < expEmpate) gana = rhoK < rhoTop;
+                else gana = sg >= sTop;
+                if (gana) { cuerpoTop = cuerpo; sTop = sg; rhoTop = rhoK; mejor = k; }
             }
             if (mejor >= 0) return new double[] { cob, mejor };
         }
@@ -733,10 +763,51 @@ public final class Composicion {
      * ¿Está el píxel dentro del disco de un nodo de grado 3 o más? Ahí convergen varias gotas en el mismo punto del recorrido, sin
      * orden de encima y debajo entre ellas (todas comparten s); el TRAZO no tiene nada que decidir y manda el criterio PLANO.
      */
+    // ---- EXPERIMENTO (rama experimento_union): s de entrada suavizada cerca de los nodos a los que vuelven gotas ----
+    /** Factor sobre el radio del nodo; 0 desactiva el experimento. */
+    public static double expRadioUnion = 0;
+    /** 0 = smoothstep, 1 = lineal, 2 = corte duro. */
+    public static int expSuavizado = 0;
+    /** true = la zona PLANO de los nodos de cruce (comportamiento actual). */
+    public static boolean expNodoPlano = true;
+    /** Si > 0: entre dos gotas con s efectivas a menos de esta distancia (empate), manda la de menor rho (PLANO). */
+    public static double expEmpate = 0;
+
+    /** s efectiva de la gota k en (x, y): cerca del nodo al que vuelve (cierre), tiende a la s con la que ese nodo se alcanzó. */
+    public static boolean expTodos = false;
+    /** Radio (en radios de nodo) de la mezcla continua TRAZO→PLANO; 0 = desactivada. */
+    public static double expMezcla = 0;
+    public static double expCuerpo = 2;
+    public static boolean expSalto = false;
+
+    private double sEfectiva(int k, double sg, double x, double y) {
+        if (expRadioUnion > 0 && expTodos) {
+            Arista e = aristas.get(k);
+            Nodo ni = invertida[k] ? e.b : e.a, nf = invertida[k] ? e.a : e.b;
+            Nodo n = Math.hypot(x - ni.x, y - ni.y) <= Math.hypot(x - nf.x, y - nf.y) ? ni : nf;
+            if (grado(n) < 3) return sg;
+            double extremo = n == ni ? sInicio[k] : sFin[k];
+            double s0 = sNodo[n.id];
+            double rho = expRadioUnion * n.radio;
+            double u = rho > 0 ? Math.min(1, Math.hypot(x - n.x, y - n.y) / rho) : 1;
+            double w = expSuavizado == 0 ? u * u * (3 - 2 * u) : expSuavizado == 1 ? u : (u < 1 ? 0 : 1);
+            return s0 + (sg - (extremo - s0) * (1 - w) - s0) * w;
+        }
+        if (expRadioUnion <= 0 || !cierre[k]) return sg;
+        Arista e = aristas.get(k);
+        Nodo n = invertida[k] ? e.a : e.b;
+        if (grado(n) < 3) return sg;
+        double rho = expRadioUnion * n.radio;
+        double u = rho > 0 ? Math.min(1, Math.hypot(x - n.x, y - n.y) / rho) : 1;
+        double w = expSuavizado == 0 ? u * u * (3 - 2 * u) : expSuavizado == 1 ? u : (u < 1 ? 0 : 1);
+        return sg - (sFin[k] - sNodo[n.id]) * (1 - w);
+    }
+
     /** Alcance de la zona de cruce, en radios del nodo. Valor empírico (con 1.0 quedan puntas fuera del disco en el trébol). */
     private static final double MARGEN_NODO_CRUCE = 1.6;
 
     private boolean enNodoDeCruce(double x, double y) {
+        if (!expNodoPlano) return false;
         for (Nodo n : nodos)
             if (grado(n) >= 3 && Math.hypot(x - n.x, y - n.y) <= MARGEN_NODO_CRUCE * n.radio) return true;
         return false;
