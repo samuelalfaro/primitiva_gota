@@ -697,7 +697,7 @@ public final class Composicion {
         if (smin == Double.MAX_VALUE) return new double[] { 0, -1 };
         double cob = Math.max(0, Math.min(1, 0.5 - smin));
         if (cob <= 0) return new double[] { 0, -1 };
-        if (op.solape() == Solape.TRAZO) {
+        if (op.solape() == Solape.TRAZO && !enNodoDeCruce(x, y)) {
             // Entre las gotas que contienen el píxel manda, primero, la que lo tiene en su cuerpo (las tapas de los nodos compartidos
             // no tapan a los cuerpos vecinos); después, la que va más tarde en el recorrido (mayor s); con empate, la arista escrita después.
             boolean cuerpoTop = false, altTop = false;
@@ -727,6 +727,19 @@ public final class Composicion {
             if (rho < rmin) { rmin = rho; mejor = k; }
         }
         return new double[] { cob, mejor };
+    }
+
+    /**
+     * ¿Está el píxel dentro del disco de un nodo de grado 3 o más? Ahí convergen varias gotas en el mismo punto del recorrido, sin
+     * orden de encima y debajo entre ellas (todas comparten s); el TRAZO no tiene nada que decidir y manda el criterio PLANO.
+     */
+    /** Alcance de la zona de cruce, en radios del nodo. Valor empírico (con 1.0 quedan puntas fuera del disco en el trébol). */
+    private static final double MARGEN_NODO_CRUCE = 1.6;
+
+    private boolean enNodoDeCruce(double x, double y) {
+        for (Nodo n : nodos)
+            if (grado(n) >= 3 && Math.hypot(x - n.x, y - n.y) <= MARGEN_NODO_CRUCE * n.radio) return true;
+        return false;
     }
 
     /** fg con cobertura a sobre dst (ARGB no premultiplicado). */
