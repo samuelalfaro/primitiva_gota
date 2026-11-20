@@ -5,8 +5,7 @@ import java.awt.image.BufferedImage;
 /**
  * Primitiva 2D "gota": envolvente de la familia de círculos (c(t), r(t)), t en [0,1].
  *  - c(t): Bézier cúbica; sus extremos son los centros de los círculos.
- *  - r(t): cuadrática de Bézier por r1, r(tm) = rm, r2 (rm = radio medio, tm desplazable) o, con
- *    suavizado < 1, dos cuadráticas unidas en tm con pendientes interpoladas (véase Perfil).
+ *  - r(t): cúbica de Bézier monótona de r1 a r2, definida por sus tangentes en los extremos (véase {@link Perfil}).
  * Un punto p pertenece a la envolvente si existe t con |p - c(t)|^2 - r(t)^2 <= 0. Ese polinomio (grado 6) se evalúa en base
  * de Bernstein en {@link Silueta.Envolvente}; la minimización de |p - c(t)| - r(t) está en {@link Geometria} y las coordenadas en {@link Coordenadas}.
  */
@@ -17,31 +16,9 @@ public final class Gota implements Geometria {
 
     private static final double BANDA = Silueta.Envolvente.BANDA;   // semiancho del antialiasing, en píxeles
 
-    /** Un trozo del perfil del radio en [t0, t1]: la cuadrática de Bézier de controles a. */
-    static final class Tramo {
-        final double t0, t1;
-        final double[] a;                          // controles de la cuadrática del radio en el tramo
-
-        Tramo(double t0, double t1, double[] a) { this.t0 = t0; this.t1 = t1; this.a = a; }
-
-        double rad(double t) {
-            double u = (t - t0) / (t1 - t0), w = 1 - u;
-            return w * w * a[0] + 2 * w * u * a[1] + u * u * a[2];
-        }
-
-        double drad(double t) {
-            double u = (t - t0) / (t1 - t0), w = 1 - u;
-            return 2 * (w * (a[1] - a[0]) + u * (a[2] - a[1])) / (t1 - t0);
-        }
-
-        double minControl() { return Math.min(a[0], Math.min(a[1], a[2])); }
-        double maxControl() { return Math.max(a[0], Math.max(a[1], a[2])); }
-    }
-
     private final double[] px, py;        // puntos de control de c(t), cúbica
     private final double r1, r2;          // radios de los extremos
-    final double rm, tm, suav;    // perfil efectivo (tras recortar)
-    final Tramo[] tramos;         // 1 tramo (cuadrática) o 2 (partido en tm)
+    private final Perfil.Resuelto radio;  // perfil del radio r(t): cúbica de Bézier
     private final Rectangle2D.Double bounds;
     final int muestras;
     /**
@@ -77,10 +54,7 @@ public final class Gota implements Geometria {
             if (!Double.isFinite(v)) throw new IllegalArgumentException("parámetros no finitos");
         this.r1 = Math.max(0, ra);
         this.r2 = Math.max(0, rb);
-        Perfil.Resuelto pr = perfil.resuelve(this.r1, this.r2);
-        this.rm = pr.rm();
-        this.tm = pr.tm();
-        this.suav = pr.suavizado();
+        this.radio = perfil.resuelve(this.r1, this.r2);
 
         double[] qx = { c1.getX(), c1.getX() + v1.x(), c2.getX() + v2.x(), c2.getX() };
         double[] qy = { c1.getY(), c1.getY() + v1.y(), c2.getY() + v2.y(), c2.getY() };
@@ -103,44 +77,19 @@ public final class Gota implements Geometria {
         px = qx;
         py = qy;
 
-        // Perfil del radio. Cuadrática única si es suave y sus controles son >= 0; si no, dos
-        // cuadráticas unidas en tm con pendientes interpoladas entre la secante y la suave.
-        double[][] pxs, pys;                         // controles de c(t) en cada tramo del perfil
-        double w = 1 - tm;
-        double q = (rm - w * w * this.r1 - tm * tm * this.r2) / (2 * tm * w);
-        if (suav >= 1 && q >= -1e-12) {
-            tramos = new Tramo[] { new Tramo(0, 1, new double[] { this.r1, Math.max(0, q), this.r2 }) };
-            pxs = new double[][] { px };
-            pys = new double[][] { py };
-        } else {
-            double d1 = (rm - this.r1) / tm, d2 = (this.r2 - rm) / w, mS = w * d1 + tm * d2;
-            double mL = (1 - suav) * d1 + suav * mS, mR = (1 - suav) * d2 + suav * mS;
-            mL = Math.min(mL, 2 * rm / tm);          // controles >= 0: r(t) >= 0 siempre
-            mR = Math.max(mR, -2 * rm / w);
-            double[] ax = new double[4], bx = new double[4], ay = new double[4], by = new double[4];
-            Silueta.Envolvente.dividirEn(px, tm, ax, bx);
-            Silueta.Envolvente.dividirEn(py, tm, ay, by);
-            tramos = new Tramo[] {
-                new Tramo(0, tm, new double[] { this.r1, rm - mL * tm / 2, rm }),
-                new Tramo(tm, 1, new double[] { rm, rm + mR * w / 2, this.r2 }) };
-            pxs = new double[][] { ax, bx };
-            pys = new double[][] { ay, by };
-        }
-
         double minX = px[0], maxX = px[0], minY = py[0], maxY = py[0], largo = 0, rc = 0;
+        for (double v : radio.controles()) rc = Math.max(rc, v);
         for (int i = 0; i < 4; i++) {
             minX = Math.min(minX, px[i]); maxX = Math.max(maxX, px[i]);
             minY = Math.min(minY, py[i]); maxY = Math.max(maxY, py[i]);
             if (i > 0) largo += Math.hypot(px[i] - px[i - 1], py[i] - py[i - 1]);
         }
-        double[][] controles = new double[tramos.length][];
-        for (int i = 0; i < tramos.length; i++) { rc = Math.max(rc, tramos[i].maxControl()); controles[i] = tramos[i].a; }
         if (!(this.r1 + this.r2 > 0)) { mascara = VACIA; silueta = null; }
         else if (rigida) {
             silueta = Silueta.de(new Point2D.Double(px[0], py[0]), this.r1, new Point2D.Double(px[3], py[3]), this.r2);
             mascara = silueta.mascara();
         }
-        else { mascara = new Silueta.Envolvente(this, pxs, pys, controles); silueta = null; }
+        else { mascara = new Silueta.Envolvente(this, new double[][] { px }, new double[][] { py }, new double[][] { radio.controles() }); silueta = null; }
         double rmax = rc + 1;
         bounds = new Rectangle2D.Double(minX - rmax, minY - rmax, maxX - minX + 2 * rmax, maxY - minY + 2 * rmax);
         if (silueta != null) {                                          // la silueta rígida sobresale de los círculos: sus límites mandan
@@ -154,14 +103,34 @@ public final class Gota implements Geometria {
 
     public Rectangle2D bounds() { return (Rectangle2D) bounds.clone(); }
 
-    /** Radio efectivo en tm (tras recortar a >= 0). */
-    public double rm() { return rm; }
+    private volatile double[] acumulada;
+    private volatile double largoTotal;
 
-    /** Posición efectiva de rm sobre el camino (tras recortar a [0.05, 0.95]); es también el corte central de la tira. */
-    @Override public double tm() { return tm; }
+    /** Longitud del camino entre los centros (la recta si la gota es rígida), sin contar las tapas. */
+    public double longitud() { fraccion(0); return largoTotal; }
 
-    /** Suavizado efectivo del perfil, en [0, 1]. */
-    public double suavizado() { return suav; }
+    /** Fracción de la longitud de arco del camino hasta t: tabla de longitudes acumuladas (muestreo uniforme en t) interpolada linealmente. */
+    @Override public double fraccion(double t) {
+        double[] a = acumulada;
+        if (a == null) {
+            final int n = 512;
+            a = new double[n + 1];
+            double x0 = cx(0), y0 = cy(0);
+            for (int i = 1; i <= n; i++) {
+                double x = cx(i / (double) n), y = cy(i / (double) n);
+                a[i] = a[i - 1] + Math.hypot(x - x0, y - y0);
+                x0 = x; y0 = y;
+            }
+            largoTotal = a[n];
+            if (a[n] > 0) for (int i = 1; i <= n; i++) a[i] /= a[n];
+            else for (int i = 0; i <= n; i++) a[i] = i / (double) n;      // camino sin longitud: se reparte por t
+            acumulada = a;
+        }
+        int n = a.length - 1;
+        double f = Utils.acota(t, 0, 1) * n;
+        int i = Math.min(n - 1, (int) f);
+        return a[i] + (a[i + 1] - a[i]) * (f - i);
+    }
 
     public Point2D centro(double t) { return new Point2D.Double(cx(t), cy(t)); }
 
@@ -265,8 +234,6 @@ public final class Gota implements Geometria {
 
     @Override public int muestras() { return muestras; }
 
-    @Override public boolean tieneCodo() { return tramos.length == 2; }
-
     /** Tangente unitaria del camino en t; si la derivada es nula usa la secante, y si no, el eje x. */
     @Override public double[] tangente(double t) {
         double u = 1 - t;
@@ -292,14 +259,11 @@ public final class Gota implements Geometria {
 
     @Override public double dcx(double t) { double u = 1 - t; return 3 * (u*u*(px[1]-px[0]) + 2*u*t*(px[2]-px[1]) + t*t*(px[3]-px[2])); }
     @Override public double dcy(double t) { double u = 1 - t; return 3 * (u*u*(py[1]-py[0]) + 2*u*t*(py[2]-py[1]) + t*t*(py[3]-py[2])); }
-    @Override public double drad(double t) { return tramoDe(t).drad(t); }
+    @Override public double drad(double t) { return radio.dr(t); }
 
     // ---------- Evaluación directa ----------
 
     @Override public double cx(double t) { double u = 1 - t; return u*u*u*px[0] + 3*u*u*t*px[1] + 3*u*t*t*px[2] + t*t*t*px[3]; }
     @Override public double cy(double t) { double u = 1 - t; return u*u*u*py[0] + 3*u*u*t*py[1] + 3*u*t*t*py[2] + t*t*t*py[3]; }
-    @Override public double rad(double t) { return tramoDe(t).rad(t); }
-
-    /** Tramo del perfil que contiene t (en el codo, el izquierdo). */
-    Tramo tramoDe(double t) { return tramos.length == 1 || t <= tm ? tramos[0] : tramos[1]; }
+    @Override public double rad(double t) { return radio.r(t); }
 }

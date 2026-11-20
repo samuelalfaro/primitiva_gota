@@ -13,12 +13,35 @@ public interface Tira {
 
     /**
      * Reparto por pesos: la parte de v que ocupan la tapa trasera, el cuerpo y la tapa delantera. Dentro del cuerpo v
-     * es lineal en t y el corte central cae donde t = tm: tm manda sobre el corte central.
+     * es lineal en t.
      */
     static Tira pesos(double wTapa1, double wCuerpo, double wTapa2) { return new Pesos(wTapa1, wCuerpo, wTapa2); }
 
     /** Reparto según la longitud real: tapas de longitud r1 y r2, cuerpo del largo del camino. La textura no se estira más en un tramo que en otro. */
     static Tira proporcional() { return Proporcional.INSTANCIA; }
+
+    /**
+     * La misma tira con v lineal en la longitud de arco del camino, no en t: la textura no se estira donde la curva
+     * acelera (t avanza más deprisa).
+     */
+    static Tira porLongitud(Tira base) { return new PorLongitud(base); }
+
+    /**
+     * Cortes dados, independientes de la geometría, con v lineal en la longitud de arco dentro del cuerpo. Los usa
+     * {@link Composicion} para que v corra por toda la composición y no se reinicie en cada gota.
+     */
+    static Tira fija(double c1, double c3) { return new Fija(new Cortes(c1, c3, true)); }
+
+    record Fija(Cortes cortes) implements Tira {
+        @Override public Cortes cortes(Geometria g) { return cortes; }
+    }
+
+    record PorLongitud(Tira base) implements Tira {
+        @Override public Cortes cortes(Geometria g) {
+            Cortes c = base.cortes(g);
+            return new Cortes(c.c1(), c.c3(), true);
+        }
+    }
 
     record Pesos(double wTapa1, double wCuerpo, double wTapa2) implements Tira {
         public Pesos {
@@ -28,7 +51,7 @@ public interface Tira {
 
         @Override public Cortes cortes(Geometria g) {
             double s = wTapa1 + wCuerpo + wTapa2, c1 = wTapa1 / s, c3 = (wTapa1 + wCuerpo) / s;
-            return new Cortes(c1, c1 + (c3 - c1) * g.tm(), c3);
+            return new Cortes(c1, c3);
         }
     }
 

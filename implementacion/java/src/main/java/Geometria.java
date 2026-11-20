@@ -44,8 +44,12 @@ public interface Geometria {
     /** Distancia de c(t) al contorno en la dirección (dx, dy): la escala con la que se normaliza rho. Por defecto, el radio. */
     default double escala(double t, double dx, double dy) { return rad(t); }
 
-    /** Posición efectiva de rm sobre el camino: es también donde cae el corte central de la tira. */
-    double tm();
+    /**
+     * Fracción de la longitud de arco del camino recorrida hasta t, en [0, 1] y creciente (0 en t = 0, 1 en t = 1).
+     * Por defecto es t, es decir, se asume una parametrización por longitud de arco.
+     */
+    default double fraccion(double t) { return t; }
+
 
     /** Una pasada del camino sobre un punto: su parámetro t y la distancia con signo al borde de esa pasada. */
     record Hebra(double t, double distancia) {
@@ -61,8 +65,6 @@ public interface Geometria {
     /** Muestras del barrido grueso de la minimización (crece con el largo del camino). */
     default int muestras() { return 64; }
 
-    /** true si el perfil del radio tiene un codo en tm (dos cuadráticas): un mínimo que cae a un error numérico de tm se fija en tm. */
-    default boolean tieneCodo() { return false; }
 
     /**
      * Distancia con signo al borde de la unión de la familia de círculos. Exacta fuera; dentro es la profundidad respecto al
@@ -86,7 +88,7 @@ public interface Geometria {
             if (m[1] < tv) { tt = m[0]; tv = m[1]; }
             if (tv < bestV) { bestV = tv; bestT = tt; }
         }
-        return new double[] { ajusta(bestT), bestV };
+        return new double[] { bestT, bestV };
     }
 
     /**
@@ -106,7 +108,7 @@ public interface Geometria {
             double[] m = dorada(x, y, a, b, false);
             double t = i / (double) n, v = g[i];
             if (m[1] < v) { t = m[0]; v = m[1]; }
-            if (v < limite) out.add(new Hebra(ajusta(t), v));
+            if (v < limite) out.add(new Hebra(t, v));
         }
         return out;
     }
@@ -128,7 +130,4 @@ public interface Geometria {
         double t = 0.5 * (a + b);
         return new double[] { t, f(x, y, t, porRho) };
     }
-
-    /** Si el mínimo cae a un error numérico de tm (codo del perfil), lo fija en tm exactamente. */
-    private double ajusta(double t) { return tieneCodo() && Math.abs(t - tm()) < 1e-7 ? tm() : t; }
 }
