@@ -58,7 +58,7 @@ public class EsquemaPruebas {
         Gota rigida = SuiteMatriz_01_Alambre.gota("suave", 3, 2, 2, 90, 150);      // trayectoria <= r1 + r2: el camino se ignora
         Gota recta = SuiteMatriz_01_Alambre.gota("recta", 5, 1, 1, 90, 150);       // recta con trayectoria > r1 + r2
         Gota curva = SuiteMatriz_01_Alambre.gota("suave", 5, 1, 1, 90, 150);       // curva con trayectoria > r1 + r2
-        Trazos.Ajustes aj = Trazos.Ajustes.POR_DEFECTO.conRadios(true);
+        Trazos.Ajustes aj = Trazos.Ajustes.POR_DEFECTO.conRadios(true).conEtiquetas(Fuentes.hay());
         comprueba("rigida: se ignora el camino", Trazos.rectoOIgnorado(rigida), "");
         comprueba("recta: sin curva", Trazos.rectoOIgnorado(recta), "");
         comprueba("curva: hay curva", !Trazos.rectoOIgnorado(curva), "");
@@ -147,13 +147,15 @@ public class EsquemaPruebas {
                 gg.drawImage(celda, 70 + c * CW, 30 + f * CH, null);
                 gg.setColor(new Color(0xCCCCCC));
                 gg.drawRect(70 + c * CW, 30 + f * CH, CW - 1, CH - 1);
-                if (f == 0) {
-                    gg.setColor(Color.DARK_GRAY);
-                    gg.drawString(String.format("r1 = %.1f   r2 = %.1f", r1, r2), 70 + c * CW + 8, 18);
-                }
-                if (c == 0) {
-                    gg.setColor(Color.DARK_GRAY);
-                    gg.drawString(FORMAS[f], 6, 30 + f * CH + 16);
+                if (Fuentes.hay()) {
+                    if (f == 0) {
+                        gg.setColor(Color.DARK_GRAY);
+                        gg.drawString(String.format("r1 = %.1f   r2 = %.1f", r1, r2), 70 + c * CW + 8, 18);
+                    }
+                    if (c == 0) {
+                        gg.setColor(Color.DARK_GRAY);
+                        gg.drawString(FORMAS[f], 6, 30 + f * CH + 16);
+                    }
                 }
                 gg.dispose();
             }

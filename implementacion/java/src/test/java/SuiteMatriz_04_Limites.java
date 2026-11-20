@@ -106,6 +106,7 @@ public class SuiteMatriz_04_Limites {
     }
 
     static void texto(Graphics2D g, String s, int x, int y) {
+        if (!Fuentes.hay()) return;
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         g.setColor(Color.DARK_GRAY);
         g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
