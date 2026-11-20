@@ -370,6 +370,73 @@ public class ComposicionPruebas {
                   pruebas > 20 && aciertos == pruebas, String.format("%d de %d píxeles solapados; PLANO difiere en %d", aciertos, pruebas, distintos));
     }
 
+    // ---------- funciones de color: Nodo.radio/radios y Arista.espina ----------
+
+    static final int FA = 0xFFE8523A, FB = 0xFF2D6CDF, FC = 0xFF4FA36B;
+
+    /** Cadena de tres nodos con un color por nodo; el nodo 0 de más, y la arista (n1, n2) escrita al derecho o al revés. */
+    static Composicion trio(boolean alReves, java.util.function.Consumer<Composicion.Arista> sobreArista01) {
+        Composicion c = new Composicion();
+        var n0 = c.nodo(70, 300, 20).color(FA);
+        var n1 = c.nodo(200, 170, 30).color(FB);
+        var n2 = c.nodo(340, 90, 18).color(FC);
+        var e = alReves ? c.arista(n1, n0) : c.arista(n0, n1);
+        sobreArista01.accept(e);
+        c.arista(n1, n2);
+        return c;
+    }
+
+    static int difMax(BufferedImage a, BufferedImage b) {
+        int[] p = datos(a), q = datos(b);
+        int m = 0;
+        for (int i = 0; i < p.length; i++)
+            for (int sh = 0; sh <= 24; sh += 8) m = Math.max(m, Math.abs(((p[i] >>> sh) & 255) - ((q[i] >>> sh) & 255)));
+        return m;
+    }
+
+    static void funcionesColor() {
+        Mezcla m = Mezcla.LCH;                                  // la de Composicion por defecto
+        BufferedImage base = pinta(trio(false, e -> {}));
+        BufferedImage conFunciones = pinta(trio(false, e -> e.espina(Degradado.entre(FA, FB, m))));
+        comprueba("la espina lineal explícita da lo mismo que sin ella", difMax(base, conFunciones) <= 1,
+                "dif. máx. " + difMax(base, conFunciones));
+
+        // una espina no lineal escrita al revés (b -> a) debe verse igual que al derecho
+        Degradado onda = x -> m.mezclar(FA, FB, x * x);
+        Degradado ondaAlReves = x -> onda.en(1 - x);
+        BufferedImage recto = pinta(trio(false, e -> e.espina(onda)));
+        BufferedImage revés = pinta(trio(true, e -> e.espina(ondaAlReves)));
+        int d = difMax(recto, revés);
+        comprueba("una espina no lineal escrita al revés se ve igual", d <= 2, "dif. máx. " + d);
+        comprueba("una espina no lineal cambia la imagen", difMax(base, recto) > 8, "dif. máx. " + difMax(base, recto));
+
+        // radio(f) simétrico: un anillo de color en cada nodo, sin tocar el color del centro
+        Composicion c = new Composicion();
+        var a = c.nodo(100, 210, 40).centro(FA).radio(x -> m.mezclar(FA, FB, Math.abs(Math.sin(x * Math.PI * 3))));
+        var b = c.nodo(320, 210, 40).color(FC);
+        c.arista(a, b);
+        boolean construye = true;
+        try { c.gotas(); } catch (RuntimeException e) { construye = false; }
+        comprueba("radio(f) construye sin error", construye, "");
+        BufferedImage anillos = pinta(c);
+        comprueba("radio(f) pinta algo distinto del color plano",
+                (datos(anillos)[210 * W + 100 + 20] != datos(anillos)[210 * W + 100]), "");
+
+        // errores: función que no sale del color del centro; radios() fuera del grado 2
+        Composicion mal = new Composicion();
+        var n0 = mal.nodo(100, 200, 30).centro(FA).radio(x -> 0xFF000000);
+        var n1 = mal.nodo(300, 200, 30).color(FB);
+        mal.arista(n0, n1);
+        comprueba("una función que no empieza en el color del centro lanza IllegalArgumentException",
+                lanza(IllegalArgumentException.class, mal::gotas), "");
+        Composicion y = new Composicion();
+        var c0 = y.nodo(200, 200, 20).color(FA).radios(Degradado.constante(FA), Degradado.constante(FA));
+        y.arista(c0, y.nodo(300, 200, 10).color(FB));
+        y.arista(c0, y.nodo(100, 200, 10).color(FB));
+        y.arista(c0, y.nodo(200, 100, 10).color(FB));
+        comprueba("radios() en un nodo de grado 3 lanza IllegalStateException", lanza(IllegalStateException.class, y::gotas), "");
+    }
+
     static void quiebros() {
         Composicion ch = cadena();
         double q1 = ch.quiebro(ch.nodos().get(1)), q2 = ch.quiebro(ch.nodos().get(2));
@@ -575,6 +642,7 @@ public class ComposicionPruebas {
         anillo();
         quiebros();
         topografias();
+        funcionesColor();
         discos("cadena", cadena());
         discos("ciclo O", ciclo());
         discos("estrella Y", estrella(18));
