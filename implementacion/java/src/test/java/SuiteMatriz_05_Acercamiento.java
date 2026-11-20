@@ -100,18 +100,22 @@ public class SuiteMatriz_05_Acercamiento {
                 gg.drawRect(x0, y0, CW - 1, CH - 1);
                 if (salto) gg.drawRect(x0 + 1, y0 + 1, CW - 3, CH - 3);
                 gg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-                gg.setColor(Color.DARK_GRAY);
-                gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
-                gg.drawString(String.format("s=%s  d=%.2f  %s", ETIQUETAS[c], d, rigida ? "rígida" : "envolvente"), x0 + 8, y0 + 14);
-                gg.drawString(String.format("área %.2f%s", area, c == 0 ? "" : String.format("  Δ %+.2f", dif)), x0 + 8, y0 + 28);
+                if (Fuentes.hay()) {
+                    gg.setColor(Color.DARK_GRAY);
+                    gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
+                    gg.drawString(String.format("s=%s  d=%.2f  %s", ETIQUETAS[c], d, rigida ? "rígida" : "envolvente"), x0 + 8, y0 + 14);
+                    gg.drawString(String.format("área %.2f%s", area, c == 0 ? "" : String.format("  Δ %+.2f", dif)), x0 + 8, y0 + 28);
+                }
                 gg.dispose();
             }
             Graphics2D gg = img.createGraphics();
             gg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-            gg.setColor(Color.DARK_GRAY);
-            gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
-            gg.drawString(String.format("r1 = %.1f", r1), 6, MARGEN_Y + f * CH + 16);
-            gg.drawString(String.format("r2 = %.1f", r2), 6, MARGEN_Y + f * CH + 32);
+            if (Fuentes.hay()) {
+                gg.setColor(Color.DARK_GRAY);
+                gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+                gg.drawString(String.format("r1 = %.1f", r1), 6, MARGEN_Y + f * CH + 16);
+                gg.drawString(String.format("r2 = %.1f", r2), 6, MARGEN_Y + f * CH + 32);
+            }
             gg.dispose();
         }
         ImageIO.write(img, "png", new File("suite_matriz_05_acercamiento.png"));

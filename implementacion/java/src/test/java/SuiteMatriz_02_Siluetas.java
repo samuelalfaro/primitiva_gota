@@ -233,54 +233,62 @@ public class SuiteMatriz_02_Siluetas {
                 Graphics2D gg = img.createGraphics();
                 gg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
                 gg.setColor(Color.DARK_GRAY);
-                gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
-                gg.drawString(forma, 6, MARGEN_Y + fila * CH + 16);
-                gg.drawString("d = " + (int) d, 6, MARGEN_Y + fila * CH + 32);
+                if (Fuentes.hay()) {
+                    gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+                    gg.drawString(forma, 6, MARGEN_Y + fila * CH + 16);
+                    gg.drawString("d = " + (int) d, 6, MARGEN_Y + fila * CH + 32);
+                }
                 gg.dispose();
                 gg = res.createGraphics();
                 gg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
                 gg.setColor(Color.DARK_GRAY);
-                gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
-                gg.drawString(forma, 6, MARGEN_Y + fila * CH + 16);
-                gg.drawString("d = " + (int) d, 6, MARGEN_Y + fila * CH + 32);
+                if (Fuentes.hay()) {
+                    gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+                    gg.drawString(forma, 6, MARGEN_Y + fila * CH + 16);
+                    gg.drawString("d = " + (int) d, 6, MARGEN_Y + fila * CH + 32);
+                }
                 gg.dispose();
                 fila++;
             }
         }
         Graphics2D gg = img.createGraphics();
         gg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        gg.setColor(Color.DARK_GRAY);
-        gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
-        for (int c = 0; c < cols; c++)
-            gg.drawString(String.format("r1 = %.1f   r2 = %.1f", RADIOS[c][0], RADIOS[c][1]), MARGEN_X + c * CW + 8, 18);
+        if (Fuentes.hay()) {
+            gg.setColor(Color.DARK_GRAY);
+            gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+            for (int c = 0; c < cols; c++)
+                gg.drawString(String.format("r1 = %.1f   r2 = %.1f", RADIOS[c][0], RADIOS[c][1]), MARGEN_X + c * CW + 8, 18);
+        }
         gg.dispose();
         ImageIO.write(img, "png", new File("suite_matriz_02_siluetas.png"));
 
         gg = res.createGraphics();
         gg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        gg.setColor(Color.DARK_GRAY);
-        gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
-        for (int c = 0; c < cols; c++)
-            gg.drawString(String.format("r1 = %.1f   r2 = %.1f", RADIOS[c][0], RADIOS[c][1]), MARGEN_X + c * CW + 8, 18);
-        int ly = h + 22;
-        gg.drawString("Borde = |r'|/|c'| del círculo que lo forma:", MARGEN_X, ly);
-        for (int i = 0; i <= 40; i++) {
-            gg.setColor(new Color(colorRatio(i / 40.0 * 1.1)));
-            gg.fillRect(MARGEN_X + 280 + i * 6, ly - 11, 6, 14);
+        if (Fuentes.hay()) {
+            gg.setColor(Color.DARK_GRAY);
+            gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+            for (int c = 0; c < cols; c++)
+                gg.drawString(String.format("r1 = %.1f   r2 = %.1f", RADIOS[c][0], RADIOS[c][1]), MARGEN_X + c * CW + 8, 18);
+            int ly = h + 22;
+            gg.drawString("Borde = |r'|/|c'| del círculo que lo forma:", MARGEN_X, ly);
+            for (int i = 0; i <= 40; i++) {
+                gg.setColor(new Color(colorRatio(i / 40.0 * 1.1)));
+                gg.fillRect(MARGEN_X + 280 + i * 6, ly - 11, 6, 14);
+            }
+            gg.setColor(Color.DARK_GRAY);
+            gg.drawString("0", MARGEN_X + 280, ly + 16);
+            gg.drawString("0.5", MARGEN_X + 280 + 21 * 6 - 8, ly + 16);
+            gg.drawString("1 o más", MARGEN_X + 280 + 36 * 6, ly + 16);
+            gg.setColor(new Color(0xFF2E7D32));
+            gg.fillRect(MARGEN_X + 620, ly - 11, 14, 14);
+            gg.setColor(Color.DARK_GRAY);
+            gg.drawString("forma rígida (d <= r1 + r2)", MARGEN_X + 640, ly);
+            gg.setColor(new Color(0xD32F2F));
+            gg.setStroke(new BasicStroke(3));
+            gg.drawRect(MARGEN_X + 880, ly - 11, 14, 14);
+            gg.setColor(Color.DARK_GRAY);
+            gg.drawString("marco: espina curva con ratio máximo >= 0.99 (envolvente casi degenerada)", MARGEN_X + 900, ly);
         }
-        gg.setColor(Color.DARK_GRAY);
-        gg.drawString("0", MARGEN_X + 280, ly + 16);
-        gg.drawString("0.5", MARGEN_X + 280 + 21 * 6 - 8, ly + 16);
-        gg.drawString("1 o más", MARGEN_X + 280 + 36 * 6, ly + 16);
-        gg.setColor(new Color(0xFF2E7D32));
-        gg.fillRect(MARGEN_X + 620, ly - 11, 14, 14);
-        gg.setColor(Color.DARK_GRAY);
-        gg.drawString("forma rígida (d <= r1 + r2)", MARGEN_X + 640, ly);
-        gg.setColor(new Color(0xD32F2F));
-        gg.setStroke(new BasicStroke(3));
-        gg.drawRect(MARGEN_X + 880, ly - 11, 14, 14);
-        gg.setColor(Color.DARK_GRAY);
-        gg.drawString("marco: espina curva con ratio máximo >= 0.99 (envolvente casi degenerada)", MARGEN_X + 900, ly);
         gg.dispose();
         ImageIO.write(res, "png", new File("suite_matriz_02_siluetas_resalte.png"));
         System.out.printf("Resalte: %d celdas con ratio >= 0.99 sobre espina curva%n", marcados.size());

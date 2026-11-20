@@ -180,21 +180,25 @@ public class SuiteMatriz_01_Alambre {
                 }
                 Graphics2D gg = img.createGraphics();
                 gg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-                gg.setColor(Color.DARK_GRAY);
-                gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
-                gg.drawString(forma, 6, MARGEN_Y + fila * CH + 16);
-                gg.drawString("d = " + (int) d, 6, MARGEN_Y + fila * CH + 32);
+                if (Fuentes.hay()) {
+                    gg.setColor(Color.DARK_GRAY);
+                    gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+                    gg.drawString(forma, 6, MARGEN_Y + fila * CH + 16);
+                    gg.drawString("d = " + (int) d, 6, MARGEN_Y + fila * CH + 32);
+                }
                 gg.dispose();
                 fila++;
             }
         }
         Graphics2D gg = img.createGraphics();
         gg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        gg.setColor(Color.DARK_GRAY);
-        gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
-        for (int c = 0; c < cols; c++)
-            gg.drawString(String.format("r1 = %.1f   r2 = %.1f", RADIOS[c][0], RADIOS[c][1]),
-                    MARGEN_X + c * CW + 8, 18);
+        if (Fuentes.hay()) {
+            gg.setColor(Color.DARK_GRAY);
+            gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+            for (int c = 0; c < cols; c++)
+                gg.drawString(String.format("r1 = %.1f   r2 = %.1f", RADIOS[c][0], RADIOS[c][1]),
+                        MARGEN_X + c * CW + 8, 18);
+        }
         gg.dispose();
 
         ImageIO.write(img, "png", new File("suite_matriz_01_alambre.png"));
