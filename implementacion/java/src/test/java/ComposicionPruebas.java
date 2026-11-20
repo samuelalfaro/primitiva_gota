@@ -208,6 +208,168 @@ public class ComposicionPruebas {
         comprueba("anillo: quiebro del contorno < 1° en los dos nodos", qa < 1 && qb < 1, String.format("%.2f° / %.2f°", qa, qb));
     }
 
+    // ---------- Topografías: orden del recorrido, v global y solape por s ----------
+
+    /** Textura que codifica v en el canal rojo: permite leer la v con que se pinta cada píxel. */
+    static final Texturas.Textura V_ROJO = (u, v) -> 0xFF000000 | ((int) Math.round(Math.max(0, Math.min(1, v)) * 255) << 16);
+
+    /** Rojo (v · 255) del píxel bajo el punto, o -1 si no está pintado. */
+    static int rojo(BufferedImage img, java.awt.geom.Point2D p) {
+        int x = (int) Math.floor(p.getX()), y = (int) Math.floor(p.getY());
+        int c = img.getRGB(x, y);
+        return (c >>> 24) < 200 ? -1 : (c >> 16) & 255;
+    }
+
+    static BufferedImage conV(Composicion c, Opciones op) {
+        BufferedImage img = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
+        c.render(img, V_ROJO, op);
+        return img;
+    }
+
+    /** Salto de v (en rojo) entre el final de la gota a y el principio de la gota b, medidos a 3 px del nodo sobre la espina. */
+    static int saltoV(BufferedImage img, Gota a, Gota b) {
+        double da = 3 / a.longitud(), db = 3 / b.longitud();
+        int ra = rojo(img, a.centro(1 - da)), rb = rojo(img, b.centro(db));
+        return ra < 0 || rb < 0 ? 999 : Math.abs(ra - rb);
+    }
+
+    static void topografias() {
+        Opciones op = Opciones.POR_DEFECTO;
+        // Tira: 0 1 2 3
+        Composicion ch = cadena();
+        List<Composicion.Arista> es = ch.aristas();
+        double acum = 0;
+        boolean ord = ch.orden(ch.nodos().get(0)) == 0;
+        for (int i = 0; i < es.size(); i++) {
+            acum += ch.gota(es.get(i)).longitud();
+            ord &= Math.abs(ch.orden(ch.nodos().get(i + 1)) - acum) < 1e-9 && !ch.cierra(es.get(i));
+        }
+        comprueba("tira: s de cada nodo = longitud acumulada desde el 0 y ningún cierre", ord, "");
+        boolean cont = Math.abs(ch.cortes(es.get(0), op).c1() - 0.25) < 1e-9 && Math.abs(ch.cortes(es.get(2), op).c3() - 0.75) < 1e-9;
+        for (int i = 0; i + 1 < es.size(); i++) cont &= Math.abs(ch.cortes(es.get(i), op).c3() - ch.cortes(es.get(i + 1), op).c1()) < 1e-9;
+        comprueba("tira: la v global va de 1/4 a 3/4 y cada gota empieza donde acaba la anterior", cont, "");
+        BufferedImage imT = conV(ch, op);
+        int sj = Math.max(saltoV(imT, ch.gotas().get(0), ch.gotas().get(1)), saltoV(imT, ch.gotas().get(1), ch.gotas().get(2)));
+        comprueba("tira: la v pintada no salta en los nodos (máx. salto <= 6/255)", sj <= 6, "salto " + sj);
+
+        // Reparto POR_GOTA: cada gota vuelve a usar su tira, v se reinicia en cada arista y el orden no cambia
+        Composicion pg = cadena().reparto(Composicion.Reparto.POR_GOTA);
+        boolean tiras = true;
+        for (int i = 0; i < 3; i++) {
+            Cortes kk = pg.cortes(pg.aristas().get(i), op);
+            tiras &= Math.abs(kk.c1() - 0.25) < 1e-9 && Math.abs(kk.c3() - 0.75) < 1e-9 && !kk.porLongitud();
+        }
+        comprueba("reparto POR_GOTA: cada gota usa los cortes de su tira (1/4, 3/4) y la v por t", tiras, "");
+        BufferedImage imG = conV(pg, op);
+        int sg = Math.min(saltoV(imG, pg.gotas().get(0), pg.gotas().get(1)), saltoV(imG, pg.gotas().get(1), pg.gotas().get(2)));
+        comprueba("reparto POR_GOTA: la v pintada salta en los nodos (se reinicia en cada arista)", sg > 60, "salto " + sg);
+        comprueba("reparto POR_GOTA: el orden (s) es el mismo", Math.abs(pg.orden(pg.nodos().get(3)) - ch.orden(ch.nodos().get(3))) < 1e-9, "");
+        BufferedImage imGc = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB), imG0 = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
+        pg.render(imGc);
+        ch.render(imG0);
+        int difMax = 0;
+        for (int py = 0; py < H; py++) for (int px = 0; px < W; px++) {
+            int c1 = imGc.getRGB(px, py), c2 = imG0.getRGB(px, py);
+            for (int sh = 0; sh <= 24; sh += 8) difMax = Math.max(difMax, Math.abs(((c1 >> sh) & 255) - ((c2 >> sh) & 255)));
+        }
+        comprueba("el reparto apenas cambia el color sin textura (el degradado va por longitud en GLOBAL y por t en POR_GOTA)", difMax <= 6, "dif. máx. " + difMax + "/255");
+
+        // La misma tira con las aristas escritas al revés: mismo orden, mismos cortes, las gotas van en el sentido del recorrido
+        Composicion rv = new Composicion();
+        var r0 = rv.nodo(60, 330, 14).color(0xFFE8523A);
+        var r1 = rv.nodo(150, 210, 30).color(0xFFF2A33A);
+        var r2 = rv.nodo(260, 190, 24).color(0xFF4FA36B);
+        var r3 = rv.nodo(360, 80, 12).color(0xFF3A7FD6);
+        rv.arista(r1, r0); rv.arista(r2, r1); rv.arista(r3, r2);
+        boolean mismo = true;
+        for (int i = 0; i < 3; i++) {
+            mismo &= Math.abs(rv.cortes(rv.aristas().get(i), op).c1() - ch.cortes(es.get(i), op).c1()) < 1e-9;
+            mismo &= rv.gota(rv.aristas().get(i)).centro(0).distance(ch.nodos().get(i).x(), ch.nodos().get(i).y()) < 1e-9;
+        }
+        comprueba("tira escrita al revés: misma v global y la gota va del nodo 0 hacia fuera", mismo, "");
+        comprueba("tira escrita al revés: el contorno sigue sin quebrarse (< 0.5°)", rv.quiebro(r1) < 0.5 && rv.quiebro(r2) < 0.5,
+                  String.format("%.2f° / %.2f°", rv.quiebro(r1), rv.quiebro(r2)));
+        BufferedImage imR = conV(rv, op);
+        int sr = Math.max(saltoV(imR, rv.gotas().get(0), rv.gotas().get(1)), saltoV(imR, rv.gotas().get(1), rv.gotas().get(2)));
+        comprueba("tira escrita al revés: la v pintada no salta en los nodos", sr <= 6, "salto " + sr);
+
+        // Círculo: 0 1 2 Z0
+        Composicion ci = ciclo();
+        List<Composicion.Arista> ce = ci.aristas();
+        comprueba("círculo: solo la última arista es un cierre (Z0)", !ci.cierra(ce.get(0)) && !ci.cierra(ce.get(1)) && ci.cierra(ce.get(2)), "");
+        Cortes c0 = ci.cortes(ce.get(0), op), c2 = ci.cortes(ce.get(2), op);
+        comprueba("círculo: el cuerpo usa la banda [1/4, 3/4] de la textura y la v queda en una costura al cerrar", Math.abs(c0.c1() - 0.25) < 1e-9 && Math.abs(c2.c3() - 0.75) < 1e-9, String.format("%.4f %.4f", c0.c1(), c2.c3()));
+        BufferedImage imC = conV(ci, op);
+        int sc = Math.max(saltoV(imC, ci.gotas().get(0), ci.gotas().get(1)), saltoV(imC, ci.gotas().get(1), ci.gotas().get(2)));
+        comprueba("círculo: la v pintada no salta en los nodos que no son el cierre", sc <= 6, "salto " + sc);
+
+        // Y: tronco 0 M y dos ramas M N1, M N2
+        Composicion y = new Composicion();
+        var y0 = y.nodo(60, 330, 14).color(0xFFE8523A);
+        var ym = y.nodo(180, 220, 28).centro(0xFFF2A33A).sectores(0xFFD7263D, 0xFF2D6CDF, 0xFFF2C14E);
+        var y1 = y.nodo(330, 90, 12).color(0xFF3A7FD6);
+        var y2 = y.nodo(340, 330, 14).color(0xFF4FA36B);
+        var tronco = y.arista(y0, ym);
+        var rama1 = y.arista(ym, y1);
+        var rama2 = y.arista(ym, y2);
+        double sM = y.orden(ym);
+        boolean mismaS = Math.abs(sM - y.gota(tronco).longitud()) < 1e-9
+                && Math.abs(y.orden(y1) - (sM + y.gota(rama1).longitud())) < 1e-9 && Math.abs(y.orden(y2) - (sM + y.gota(rama2).longitud())) < 1e-9;
+        comprueba("Y: cada rama sigue contando desde la s del cruce", mismaS, "");
+        comprueba("Y: las dos ramas empiezan en la v con que acaba el tronco",
+                  Math.abs(y.cortes(rama1, op).c1() - y.cortes(tronco, op).c3()) < 1e-9 && Math.abs(y.cortes(rama2, op).c1() - y.cortes(tronco, op).c3()) < 1e-9, "");
+        BufferedImage imY = conV(y, op);
+        int sy = Math.max(saltoV(imY, y.gota(tronco), y.gota(rama1)), saltoV(imY, y.gota(tronco), y.gota(rama2)));
+        comprueba("Y: la v pintada no salta del tronco a ninguna rama", sy <= 8, "salto " + sy);
+
+        // Y lobulada sin palo (el 8): dos pétalos 0 a b Z0 y 0 c d Z0 con el nodo 0 de grado 4
+        Composicion o = new Composicion();
+        var n0 = o.nodo(210, 200, 16).centro(0xFFF2A33A).sectores(0xFFD7263D, 0xFF2D6CDF, 0xFFF2C14E, 0xFF4FA36B);
+        var pa = o.nodo(110, 100, 16).color(0xFFE8523A);
+        var pb = o.nodo(110, 300, 16).color(0xFF8E44AD);
+        var pc = o.nodo(310, 300, 16).color(0xFF3A7FD6);
+        var pd = o.nodo(310, 100, 16).color(0xFF1FA39A);
+        o.arista(n0, pa); o.arista(pa, pb); var cierra1 = o.arista(pb, n0);
+        o.arista(n0, pc); o.arista(pc, pd); var cierra2 = o.arista(pd, n0);
+        boolean cierres = true;
+        for (Composicion.Arista e : o.aristas()) cierres &= o.cierra(e) == (e == cierra1 || e == cierra2);
+        comprueba("8 (dos pétalos en el nodo 0): los dos pétalos terminan con un cierre Z0", cierres && o.orden(n0) == 0, "");
+        boolean sinError = true;
+        try {
+            for (Solape sl : Solape.values()) { BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB); o.render(im, V_ROJO, op.conSolape(sl)); }
+        } catch (RuntimeException ex) { sinError = false; }
+        comprueba("8: se pinta con PLANO y con TRAZO", sinError, "");
+
+        // Solape por s: dos gotas que se cruzan sin nodo en el cruce (círculo que se cruza) y TRAZO deja encima la de mayor s
+        Composicion x = new Composicion();
+        var x0 = x.nodo(80, 100, 20).color(0xFFE8523A);
+        var x1 = x.nodo(340, 300, 20).color(0xFF2D6CDF);
+        var x2 = x.nodo(340, 100, 20).color(0xFF4FA36B);
+        var x3 = x.nodo(80, 300, 20).color(0xFFF2A33A);
+        x.arista(x0, x1); x.arista(x1, x2); x.arista(x2, x3);
+        Gota gx0 = x.gotas().get(0), gx2 = x.gotas().get(2);
+        Composicion.Arista ex0 = x.aristas().get(0), ex2 = x.aristas().get(2);
+        Cortes kx0 = x.cortes(ex0, op), kx2 = x.cortes(ex2, op);
+        Opciones ox0 = op.conTira(Tira.fija(kx0.c1(), kx0.c3())), ox2 = op.conTira(Tira.fija(kx2.c1(), kx2.c3()));
+        BufferedImage ixT = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB), ixP = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
+        x.render(ixT, V_ROJO, op.conSolape(Solape.TRAZO));
+        x.render(ixP, V_ROJO, op.conSolape(Solape.PLANO));
+        int pruebas = 0, aciertos = 0, distintos = 0;
+        for (int py = 0; py < H; py += 3)
+            for (int px = 0; px < W; px += 3) {
+                double qx = px + 0.5, qy = py + 0.5;
+                if (gx0.distancia(qx, qy) > -4 || gx2.distancia(qx, qy) > -4) continue;       // dentro de las dos gotas
+                double v0 = Coordenadas.uv(gx0, qx, qy, ox0.conSolape(Solape.TRAZO)).v(), v2 = Coordenadas.uv(gx2, qx, qy, ox2.conSolape(Solape.TRAZO)).v();
+                if (Math.abs(v0 - v2) < 0.05) continue;
+                pruebas++;
+                int r = (ixT.getRGB(px, py) >> 16) & 255;
+                if (Math.abs(r - Math.max(v0, v2) * 255) <= 4) aciertos++;
+                if (Math.abs(((ixP.getRGB(px, py) >> 16) & 255) - r) > 4) distintos++;
+            }
+        comprueba("cruce de dos tramos sin nodo: con TRAZO manda siempre el de mayor s (mayor v) en el solape",
+                  pruebas > 20 && aciertos == pruebas, String.format("%d de %d píxeles solapados; PLANO difiere en %d", aciertos, pruebas, distintos));
+    }
+
     static void quiebros() {
         Composicion ch = cadena();
         double q1 = ch.quiebro(ch.nodos().get(1)), q2 = ch.quiebro(ch.nodos().get(2));
@@ -215,6 +377,23 @@ public class ComposicionPruebas {
         Composicion sin = cadena().ajustarPendientes(false);
         double s1 = sin.quiebro(sin.nodos().get(1));
         comprueba("cadena: sin el ajuste el quiebro de la unión 1 es mayor que con él", s1 > q1 + 1, String.format("%.2f° frente a %.2f°", s1, q1));
+        // el ajuste de pendientes es del radio: no mueve los centros (los tiradores siguen siendo d/3)
+        Composicion con = cadena(), sin2 = cadena().ajustarPendientes(false);
+        boolean igual = true;
+        for (int i = 0; i < con.gotas().size(); i++)
+            for (double t : new double[] { 0.2, 0.5, 0.8 })
+                igual &= con.gotas().get(i).centro(t).distance(sin2.gotas().get(i).centro(t)) < 1e-9;
+        comprueba("cadena: el ajuste de pendientes no mueve los centros de las gotas", igual, "");
+        // radio con un máximo en un nodo: cada gota es monótona y la pendiente en el nodo es 0
+        Composicion mx = new Composicion();
+        var m0 = mx.nodo(60, 200, 10); var m1 = mx.nodo(160, 200, 40); var m2 = mx.nodo(260, 200, 10);
+        mx.arista(m0, m1); mx.arista(m1, m2);
+        Gota ga = mx.gotas().get(0), gb = mx.gotas().get(1);
+        boolean mono = true;
+        for (int i = 0; i < 100; i++) { mono &= ga.rad((i + 1) / 100.0) >= ga.rad(i / 100.0) - 1e-9 && gb.rad((i + 1) / 100.0) <= gb.rad(i / 100.0) + 1e-9; }
+        comprueba("radio con máximo en el nodo central: gotas monótonas, r' = 0 y quiebro < 0.5°",
+                  mono && Math.abs(ga.drad(1)) < 1e-9 && Math.abs(gb.drad(0)) < 1e-9 && mx.quiebro(m1) < 0.5,
+                  String.format("r'=%.4f / %.4f, quiebro %.2f°", ga.drad(1), gb.drad(0), mx.quiebro(m1)));
         Composicion ci = ciclo();
         boolean ok = true;
         StringBuilder sb = new StringBuilder();
@@ -395,6 +574,7 @@ public class ComposicionPruebas {
         reglas();
         anillo();
         quiebros();
+        topografias();
         discos("cadena", cadena());
         discos("ciclo O", ciclo());
         discos("estrella Y", estrella(18));

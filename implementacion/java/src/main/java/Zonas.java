@@ -156,8 +156,13 @@ final class Zonas {
         return out;
     }
 
+    /** v en el cuerpo: lineal entre c1 y c3, en t o en la longitud de arco según los cortes. */
+    private double vCuerpo(double t) {
+        return cortes.c1() + (cortes.c3() - cortes.c1()) * (cortes.porLongitud() ? g.fraccion(t) : t);
+    }
+
     private Coordenadas.Costurado enBanda(double t, double w, int s) {
-        double v = t < g.tm() ? cortes.c1() + (cortes.c2() - cortes.c1()) * t / g.tm() : cortes.c2() + (cortes.c3() - cortes.c2()) * (t - g.tm()) / (1 - g.tm());
+        double v = vCuerpo(t);
         return new Coordenadas.Costurado(t, new Coordenadas.Uv(0.5 + 0.5 * s * Utils.acota(w, 0, 1), Utils.acota(v, 0, 1)));
     }
 
@@ -346,7 +351,7 @@ final class Zonas {
             double fr = fi - i0, h = hw[side][i0] * (1 - fr) + hw[side][i0 + 1] * fr;
             if (estricto && Math.abs(Sp) > h * 1.02) return null;
             double q = Utils.acota(Sp / h, -1, 1);
-            double v = t < g.tm() ? cortes.c1() + (cortes.c2() - cortes.c1()) * t / g.tm() : cortes.c2() + (cortes.c3() - cortes.c2()) * (t - g.tm()) / (1 - g.tm());
+            double v = vCuerpo(t);
             return new Candidato(t, new Coordenadas.Costurado(t, new Coordenadas.Uv(0.5 + 0.5 * q, Utils.acota(v, 0, 1))));
         }
     }
