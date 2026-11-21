@@ -59,7 +59,8 @@ public final class Gota implements Geometria {
         double[] qx = { c1.getX(), c1.getX() + v1.x(), c2.getX() + v2.x(), c2.getX() };
         double[] qy = { c1.getY(), c1.getY() + v1.y(), c2.getY() + v2.y(), c2.getY() };
         // Con una trayectoria d <= r1 + r2 la forma no admite deformación: se descarta la curva y el camino es la recta de los centros.
-        final boolean rigida = this.r1 + this.r2 > 0 && longitudCamino(qx, qy) <= (this.r1 + this.r2) * (1 + 1e-9);
+        final boolean rigida = this.r1 + this.r2 > 0 && longitudCamino(qx, qy) <= (this.r1 + this.r2) * (1 + 1e-9)
+                && !(RIGIDA_CURVA && sinPliegue(qx, qy, this.radio));      // EXPERIMENTO (-Dgota.rigidaCurva=true): ver sinPliegue
         if (rigida) {
             double ex = qx[3] - qx[0], ey = qy[3] - qy[0];
             if (Math.hypot(ex, ey) <= 1e-9 * (this.r1 + this.r2)) {    // centros coincidentes: la tangente inicial del camino orienta la forma
@@ -142,6 +143,32 @@ public final class Gota implements Geometria {
     @Override public Mascara mascara() { return mascara; }
 
     /** Longitud de arco de la cúbica de Bézier de controles (px, py), por muestreo. */
+    /**
+     * EXPERIMENTO opt-in (-Dgota.rigidaCurva=true, margen -Dgota.rigidaCurvaMargen, 0,9 por defecto): una gota de trayectoria
+     * d <= r1 + r2 se trata como la envolvente de la curva (sin forma rígida) cuando no hay pliegue: en todo el camino el
+     * radio de curvatura supera el radio del círculo (kappa * r < margen), la pendiente del radio es menor que la
+     * velocidad (|r'| / |c'| < margen) y los centros no coinciden. Si no, sigue siendo rígida, como siempre.
+     */
+    static final boolean RIGIDA_CURVA = Boolean.getBoolean("gota.rigidaCurva");
+    private static final double MARGEN_CURVA = Double.parseDouble(System.getProperty("gota.rigidaCurvaMargen", "0.9"));
+
+    private static boolean sinPliegue(double[] px, double[] py, Perfil.Resuelto radio) {
+        if (Math.hypot(px[3] - px[0], py[3] - py[0]) < 1e-9) return false;
+        final int n = 64;
+        for (int i = 0; i <= n; i++) {
+            double t = i / (double) n, u = 1 - t;
+            double dx = 3 * (u * u * (px[1] - px[0]) + 2 * u * t * (px[2] - px[1]) + t * t * (px[3] - px[2]));
+            double dy = 3 * (u * u * (py[1] - py[0]) + 2 * u * t * (py[2] - py[1]) + t * t * (py[3] - py[2]));
+            double ddx = 6 * (u * (px[2] - 2 * px[1] + px[0]) + t * (px[3] - 2 * px[2] + px[1]));
+            double ddy = 6 * (u * (py[2] - 2 * py[1] + py[0]) + t * (py[3] - 2 * py[2] + py[1]));
+            double v = Math.hypot(dx, dy);
+            if (v < 1e-9) return false;
+            double kappa = Math.abs(dx * ddy - dy * ddx) / (v * v * v);
+            if (kappa * radio.r(t) >= MARGEN_CURVA || Math.abs(radio.dr(t)) / v >= MARGEN_CURVA) return false;
+        }
+        return true;
+    }
+
     private static double longitudCamino(double[] px, double[] py) {
         final int n = 256;
         double l = 0, x0 = px[0], y0 = py[0];
