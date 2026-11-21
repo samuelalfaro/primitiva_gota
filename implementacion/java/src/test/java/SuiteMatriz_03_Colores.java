@@ -171,50 +171,60 @@ public class SuiteMatriz_03_Colores {
                     gg.drawImage(celdaDis, x0, y0, null);
                     gg.setColor(new Color(0xCCCCCC));
                     gg.drawRect(x0, y0, CW - 1, CH - 1);
-                    gg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-                    gg.setColor(Color.DARK_GRAY);
-                    gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
-                    gg.drawString(String.format("%.1f %%", 100 * f), x0 + 8, y0 + 14);
+                    if (Fuentes.hay()) {
+                        gg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                        gg.setColor(Color.DARK_GRAY);
+                        gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
+                        gg.drawString(String.format("%.1f %%", 100 * f), x0 + 8, y0 + 14);
+                    }
                     gg.dispose();
                     discrepantes.add(new Discrepancia(nombre, f));
                 }
                 Graphics2D gg = img.createGraphics();
                 gg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-                gg.setColor(Color.DARK_GRAY);
-                gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
-                gg.drawString(forma, 6, MARGEN_Y + fila * CH + 16);
-                gg.drawString("d = " + (int) d, 6, MARGEN_Y + fila * CH + 32);
+                if (Fuentes.hay()) {
+                    gg.setColor(Color.DARK_GRAY);
+                    gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+                    gg.drawString(forma, 6, MARGEN_Y + fila * CH + 16);
+                    gg.drawString("d = " + (int) d, 6, MARGEN_Y + fila * CH + 32);
+                }
                 gg.dispose();
                 gg = dis.createGraphics();
                 gg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-                gg.setColor(Color.DARK_GRAY);
-                gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
-                gg.drawString(forma, 6, MARGEN_Y + fila * CH + 16);
-                gg.drawString("d = " + (int) d, 6, MARGEN_Y + fila * CH + 32);
+                if (Fuentes.hay()) {
+                    gg.setColor(Color.DARK_GRAY);
+                    gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+                    gg.drawString(forma, 6, MARGEN_Y + fila * CH + 16);
+                    gg.drawString("d = " + (int) d, 6, MARGEN_Y + fila * CH + 32);
+                }
                 gg.dispose();
                 fila++;
             }
         }
         Graphics2D gg = img.createGraphics();
         gg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        gg.setColor(Color.DARK_GRAY);
-        gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
-        for (int c = 0; c < cols; c++)
-            gg.drawString(String.format("r1 = %.1f   r2 = %.1f", RADIOS[c][0], RADIOS[c][1]),
-                    MARGEN_X + c * CW + 8, 18);
+        if (Fuentes.hay()) {
+            gg.setColor(Color.DARK_GRAY);
+            gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+            for (int c = 0; c < cols; c++)
+                gg.drawString(String.format("r1 = %.1f   r2 = %.1f", RADIOS[c][0], RADIOS[c][1]),
+                        MARGEN_X + c * CW + 8, 18);
+        }
         gg.dispose();
 
         ImageIO.write(img, "png", new File("suite_matriz_03_colores.png"));
 
         gg = dis.createGraphics();
         gg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        gg.setColor(Color.DARK_GRAY);
-        gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
-        for (int c = 0; c < cols; c++)
-            gg.drawString(String.format("r1 = %.1f   r2 = %.1f", RADIOS[c][0], RADIOS[c][1]), MARGEN_X + c * CW + 8, 18);
-        gg.drawString("Rojo: el color de PLANO y el de TRAZO difieren en más de " + UMBRAL_DISCREPANCIA
-                + " (de 255) en algún canal: pliegue o solape donde hay que decidir qué píxel manda. Porcentaje: píxeles discrepantes sobre los cubiertos.",
-                MARGEN_X, h + 20);
+        if (Fuentes.hay()) {
+            gg.setColor(Color.DARK_GRAY);
+            gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+            for (int c = 0; c < cols; c++)
+                gg.drawString(String.format("r1 = %.1f   r2 = %.1f", RADIOS[c][0], RADIOS[c][1]), MARGEN_X + c * CW + 8, 18);
+            gg.drawString("Rojo: el color de PLANO y el de TRAZO difieren en más de " + UMBRAL_DISCREPANCIA
+                    + " (de 255) en algún canal: pliegue o solape donde hay que decidir qué píxel manda. Porcentaje: píxeles discrepantes sobre los cubiertos.",
+                    MARGEN_X, h + 20);
+        }
         gg.dispose();
         ImageIO.write(dis, "png", new File("suite_matriz_03_colores_discrepancias.png"));
         System.out.println("Discrepancias PLANO/TRAZO (resalte, no cuentan como fallo), solo celdas con más del 1 %:");

@@ -27,6 +27,9 @@ public class GotaCadena {
 
     public static void main(String[] args) throws Exception {
         transicion();
+        degradados();
+        funciones();
+        cadenaFunciones();
         equivalencias();
         anclas();
         unificacion();
@@ -35,6 +38,102 @@ public class GotaCadena {
         csv();
         System.out.printf("%d pruebas, %d fallos%n", pruebas, fallos);
         if (fallos > 0) System.exit(1);
+    }
+
+    // ---------- Degradado: f(x) -> ARGB ----------
+
+    static void degradados() {
+        int a = 0xFFFF0000, b = 0xFF0000FF;
+        Degradado d = Degradado.entre(a, b, Mezcla.RGB);
+        comprueba("Degradado.entre: extremos y recorte fuera de [0, 1]",
+                d.en(0) == a && d.en(1) == b && d.en(-3) == a && d.en(7) == b, "");
+        comprueba("Degradado.entre = Mezcla en cada x",
+                d.en(0.3) == Mezcla.RGB.mezclar(a, b, 0.3) && d.en(0.77) == Mezcla.RGB.mezclar(a, b, 0.77), "");
+        boolean ok = true;
+        for (double s : new double[]{0, 0.2, 0.5, 0.8, 1})
+            for (double x = 0; x <= 1; x += 0.125)
+                ok &= d.ajustado(s).en(x) == Mezcla.RGB.mezclar(a, b, s == 0.5 ? x : Colores.transicion(x, s));
+        comprueba("ajustado(s) = deformar x con la transición de siempre", ok, "");
+        comprueba("una lambda propia es un Degradado", ((Degradado) x -> x < 0.5 ? a : b).en(0.9) == b, "");
+        boolean lanza = false;
+        try { d.ajustado(1.5); } catch (IllegalArgumentException e) { lanza = true; }
+        comprueba("ajustado(s) rechaza s fuera de [0, 1]", lanza, "");
+    }
+
+    // ---------- Funciones: cinco funciones del esquema (•~~•) ----------
+
+    static void funciones() {
+        int c1 = 0xFFFF0000, c2 = 0xFF0000FF, n1 = 0xFF00FF00, k1 = 0xFFFFFF00, n2 = 0xFF00FFFF, k2 = 0xFFFF00FF;
+        Colores.Funciones f = Colores.Funciones.de(c1, n1, k1, c2, n2, k2, Mezcla.RGB);
+        comprueba("Funciones (6 colores): cada radio va del centro al contorno",
+                f.normal1().en(0) == c1 && f.normal1().en(1) == n1 && f.contra1().en(1) == k1
+                && f.normal2().en(0) == c2 && f.normal2().en(1) == n2 && f.contra2().en(1) == k2, "");
+        comprueba("Funciones (6 colores): la espina va de un centro al otro",
+                f.espina().en(0) == c1 && f.espina().en(1) == c2, "");
+        Colores.Funciones dos = Colores.Funciones.de(c1, c2, Mezcla.RGB);
+        comprueba("Funciones (2 colores): todo es de color constante en cada nodo",
+                dos.normal1().en(0.7) == c1 && dos.contra2().en(0.2) == c2
+                && dos.espina().en(0.5) == Mezcla.RGB.mezclar(c1, c2, 0.5), "");
+        boolean lanza = false; String msg = "";
+        try { new Colores.Funciones(f.normal1(), f.contra1(), f.espina(), Degradado.constante(k2), f.contra2()); }
+        catch (IllegalArgumentException e) { lanza = true; msg = e.getMessage(); }
+        comprueba("Funciones: un radio que no sale del color del centro lanza IllegalArgumentException", lanza, msg);
+        comprueba("Funciones: el mensaje dice qué esquina falla", msg.contains("centro 2") && msg.contains("normal2(0)"), msg);
+        // cada uno de los cuatro radios, normal y contra, debe salir del color de su centro
+        Degradado malo = Degradado.constante(0xFF123456);
+        String[] radio = {"normal1", "contra1", "normal2", "contra2"};
+        String[] centroDe = {"centro 1", "centro 1", "centro 2", "centro 2"};
+        for (int i = 0; i < 4; i++) {
+            Degradado[] d = {f.normal1(), f.contra1(), f.normal2(), f.contra2()};
+            d[i] = malo;
+            String m = "";
+            try { new Colores.Funciones(d[0], d[1], f.espina(), d[2], d[3]); }
+            catch (IllegalArgumentException e) { m = e.getMessage(); }
+            comprueba("Funciones: " + radio[i] + " fuera del color del centro se rechaza y se nombra",
+                    m.startsWith(centroDe[i]) && m.contains(radio[i] + "(0)"), m);
+        }
+        boolean casi = true;
+        try { new Colores.Funciones(f.normal1(), f.contra1(), f.espina(), x -> c2 - 1, f.contra2()); }
+        catch (IllegalArgumentException e) { casi = false; }
+        comprueba("Funciones: tolera 1/255 por canal", casi, "");
+        boolean nulo = false;
+        try { new Colores.Funciones(null, f.contra1(), f.espina(), f.normal2(), f.contra2()); }
+        catch (NullPointerException e) { nulo = true; }
+        comprueba("Funciones: rechaza funciones nulas", nulo, "");
+    }
+
+    // ---------- cadenaLateral(Funciones) frente a la cadena lateral de siempre ----------
+
+    static void cadenaFunciones() throws Exception {
+        int c1 = 0xFFE9C46A, n1 = 0xFF2A9D8F, k1 = 0xFFE76F51, c2 = 0xFFF4A261, n2 = 0xFF264653, k2 = 0xFF8AB17D;
+        Relleno viejo = Colores.cadenaLateral(new Colores.Lateral(k1, c1, n1), new Colores.Lateral(k2, c2, n2), Mezcla.RGB);
+        Relleno nuevo = Colores.cadenaLateral(Colores.Funciones.de(c1, n1, k1, c2, n2, k2, Mezcla.RGB));
+        Gota g = Gota.lineal(new java.awt.geom.Point2D.Double(40, 60), 22, new java.awt.geom.Point2D.Double(200, 130), 14, Perfil.recto());
+        java.awt.image.BufferedImage a = new java.awt.image.BufferedImage(260, 200, 2), b = new java.awt.image.BufferedImage(260, 200, 2);
+        Plotter.raster(a).plot(g, viejo);
+        Plotter.raster(b).plot(g, nuevo);
+        int dif = 0, distintos = 0;
+        for (int y = 0; y < 200; y++) for (int x = 0; x < 260; x++) {
+            int p = a.getRGB(x, y), q = b.getRGB(x, y);
+            int dm = 0;
+            for (int sh = 0; sh <= 24; sh += 8) dm = Math.max(dm, Math.abs(((p >>> sh) & 255) - ((q >>> sh) & 255)));
+            if (dm > 0) distintos++;
+            dif = Math.max(dif, dm);
+        }
+        comprueba("cadenaLateral(Funciones) con la espina lineal da lo mismo que la cadena lateral de siempre",
+                dif <= 1, "dif. máx. " + dif + "/255 en " + distintos + " px");
+
+        // una espina no lineal solo cambia el color donde debe: en la espina (x = 0) vale exactamente esa función
+        Degradado onda = x -> Mezcla.RGB.mezclar(c1, c2, x * x);
+        Colores.Funciones q = new Colores.Funciones(Degradado.entre(c1, n1, Mezcla.RGB), Degradado.entre(c1, k1, Mezcla.RGB),
+                onda, Degradado.entre(c2, n2, Mezcla.RGB), Degradado.entre(c2, k2, Mezcla.RGB));
+        Relleno r = Colores.cadenaLateral(q);
+        double v = 0.5, vc = 0.25 + (0.75 - 0.25) * v;
+        int enEspina = r.argb(Punto.de(new Coordenadas.Muestra(0.5, 0, 0, 0), new Coordenadas.Uv(0.5, vc)));
+        int esperado = onda.en(v);
+        int dm = 0;
+        for (int sh = 0; sh <= 24; sh += 8) dm = Math.max(dm, Math.abs(((enEspina >>> sh) & 255) - ((esperado >>> sh) & 255)));
+        comprueba("con espina no lineal, el centro del cuerpo toma el color de la espina", dm <= 1, "dif. " + dm);
     }
 
     // ---------- u(t, s) ----------

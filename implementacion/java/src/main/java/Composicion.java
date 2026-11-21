@@ -53,6 +53,7 @@ public final class Composicion {
         private int[] sectores;
         private Integer contra, normal;
         private double ajusteLateral = 0.5, ajusteArco = 0.5;
+        private Degradado fNormal, fContra;
 
         private Nodo(Composicion dueña, int id, double x, double y, double radio) {
             this.dueña = dueña; this.id = id; this.x = x; this.y = y; this.radio = radio;
@@ -85,9 +86,28 @@ public final class Composicion {
 
 
         /**
+         * Misma función de color a los dos lados: va del centro (x = 0) al contorno (x = 1), en cualquier nodo. Sustituye
+         * a la mezcla lineal entre el color del centro y el de los lados; en el centro debe valer lo mismo que el color del
+         * nodo ({@link #centro(int)}; si no se dio, se toma de la función).
+         */
+        public Nodo radio(Degradado f) { fNormal = fContra = Objects.requireNonNull(f, "radio"); return cambia(); }
+
+        /**
+         * Una función de color para cada lado, de x = 0 (centro) a x = 1 (contorno), con el mismo criterio de normal y
+         * contra que {@link #lados(int, int)}. Solo en nodos de grado 2.
+         */
+        public Nodo radios(Degradado normal, Degradado contra) {
+            fNormal = Objects.requireNonNull(normal, "normal"); fContra = Objects.requireNonNull(contra, "contra");
+            return cambia();
+        }
+
+        /**
          * Ajuste de la transición del color del centro al de los lados (0.5 lineal). Por debajo de 0.5 el punto medio de
          * la mezcla queda más cerca del centro y la nervadura se marca; ver {@link Colores.Lateral#conAjuste}.
+         *
+         * @deprecated Se sustituirá por un {@link Degradado}.
          */
+        @Deprecated
         public Nodo ajusteLateral(double s) {
             if (!(s >= 0 && s <= 1)) throw new IllegalArgumentException("ajusteLateral debe estar en [0, 1]");
             ajusteLateral = s;
@@ -97,7 +117,10 @@ public final class Composicion {
         /**
          * Ajuste de la mezcla polar normal -> contra en las tapas (0.5 lineal: la punta es la media). Ver
          * {@link Colores.Lateral#conAjusteArco}.
+         *
+         * @deprecated Se sustituirá por un {@link Degradado}.
          */
+        @Deprecated
         public Nodo ajusteArco(double s) {
             if (!(s >= 0 && s <= 1)) throw new IllegalArgumentException("ajusteArco debe estar en [0, 1]");
             ajusteArco = s;
@@ -113,6 +136,7 @@ public final class Composicion {
         private final int id;
         private final Nodo a, b;
         private Gota.Vec va, vb;
+        private Degradado espina;
 
         private Arista(Composicion dueña, int id, Nodo a, Nodo b) { this.dueña = dueña; this.id = id; this.a = a; this.b = b; }
 
@@ -125,6 +149,12 @@ public final class Composicion {
          * exige los dos: no hay vecino del que deducir la tangente.
          */
         public Arista tiradores(Gota.Vec enA, Gota.Vec enB) { va = enA; vb = enB; dueña.invalida(); return this; }
+
+        /**
+         * Función de color a lo largo del eje de la gota, del color del centro de {@link #a()} (x = 0) al de {@link #b()}
+         * (x = 1); por defecto, la mezcla lineal entre los dos. Debe coincidir con los colores de los centros.
+         */
+        public Arista espina(Degradado f) { espina = Objects.requireNonNull(f, "espina"); dueña.invalida(); return this; }
     }
 
     private final List<Nodo> nodos = new ArrayList<>();
@@ -561,7 +591,11 @@ public final class Composicion {
                     : Perfil.tangentes(Double.isNaN(m1) ? dr : m1, Double.isNaN(m2) ? dr : m2);
             Gota g = Gota.curva(new Point2D.Double(A.x, A.y), A.radio, va, new Point2D.Double(B.x, B.y), B.radio, vb, base);
             gotas.add(g);
-            rellenos.add(Colores.cadenaLateral(lateralDe(A, aristas.get(i), !v, v), lateralDe(B, aristas.get(i), v, v), mezcla));
+            Arista ea = aristas.get(i);
+            Lado la = lateralDe(A, ea, !v, v), lb = lateralDe(B, ea, v, v);
+            if (la.normal == null && la.contra == null && lb.normal == null && lb.contra == null && ea.espina == null)
+                rellenos.add(Colores.cadenaLateral(la.lat, lb.lat, mezcla));
+            else rellenos.add(Colores.cadenaLateral(funcionesDe(la, lb, ea, v), mezcla));
             Rectangle2D gb = g.bounds();
             if (bb == null) bb = new Rectangle2D.Double(gb.getX(), gb.getY(), gb.getWidth(), gb.getHeight());
             else bb.add(gb);
@@ -615,15 +649,36 @@ public final class Composicion {
         return sb.toString();
     }
 
-    private Colores.Lateral lateralDe(Nodo n, Arista e, boolean inicio, boolean invertida) {
-        int centro = n.centro != null ? n.centro : (n.sectores != null && n.sectores.length > 0 ? n.sectores[0] : 0xFFCCCCCC);
+    /** Colores de un extremo de gota y, si el nodo las tiene, sus funciones de color (null = mezcla lineal). */
+    private record Lado(Colores.Lateral lat, Degradado normal, Degradado contra) {}
+
+    private Colores.Funciones funcionesDe(Lado a, Lado b, Arista e, boolean invertida) {
+        Mezcla m = mezcla;
+        Degradado espina = e.espina == null ? Degradado.entre(a.lat.centro(), b.lat.centro(), m)
+                         : invertida ? x -> e.espina.en(1 - x) : e.espina;
+        return new Colores.Funciones(
+            a.normal != null ? a.normal : Degradado.entre(a.lat.centro(), a.lat.normal(), m),
+            a.contra != null ? a.contra : Degradado.entre(a.lat.centro(), a.lat.contra(), m),
+            espina,
+            b.normal != null ? b.normal : Degradado.entre(b.lat.centro(), b.lat.normal(), m),
+            b.contra != null ? b.contra : Degradado.entre(b.lat.centro(), b.lat.contra(), m));
+    }
+
+    private Lado lateralDe(Nodo n, Arista e, boolean inicio, boolean invertida) {
+        int centro = n.centro != null ? n.centro
+                   : n.fNormal != null ? n.fNormal.en(0)
+                   : (n.sectores != null && n.sectores.length > 0 ? n.sectores[0] : 0xFFCCCCCC);
         List<Brazo> br = brazos(n);
         int d = br.size();
         int[] col = new int[d];
         java.util.Arrays.fill(col, centro);
+        Degradado[] fun = new Degradado[d];
+        if (n.fNormal != null && n.fNormal != n.fContra && d != 2)
+            throw new IllegalStateException("radios() solo en nodos de grado 2 (nodo " + n.id + "); con radio(f) vale cualquier grado");
         if (n.sectores != null) {
             if (n.sectores.length != d) throw new IllegalStateException(mensajeSectores(n, br));
             col = n.sectores;
+            if (n.fNormal != null) java.util.Arrays.fill(fun, n.fNormal);
         } else if (n.contra != null) {
             if (d != 2) throw new IllegalStateException("lados() solo en nodos de grado 2 (nodo " + n.id + ")");
             Arista primera = null;
@@ -636,13 +691,24 @@ public final class Composicion {
                     col[sc[1]] = n.normal;
                 }
         }
+        if (n.fNormal != null && n.sectores == null) {
+            if (n.fNormal == n.fContra) java.util.Arrays.fill(fun, n.fNormal);
+            else {
+                Arista primera = null;
+                for (Arista f : aristas) if (f.a == n || f.b == n) { primera = f; break; }
+                for (int k = 0; k < d; k++)
+                    if (br.get(k).e == primera) { int[] sc = sectoresDe(br, k); fun[sc[0]] = n.fContra; fun[sc[1]] = n.fNormal; }
+            }
+        }
         for (int k = 0; k < d; k++)
             if (br.get(k).e == e && br.get(k).inicio == inicio) {
                 int[] sc = sectoresDe(br, k);
-                return invertida ? new Colores.Lateral(col[sc[1]], centro, col[sc[0]], n.ajusteLateral, n.ajusteArco)   // la gota va al revés: normal y contra se cambian
-                                 : new Colores.Lateral(col[sc[0]], centro, col[sc[1]], n.ajusteLateral, n.ajusteArco);
+                return invertida ? new Lado(new Colores.Lateral(col[sc[1]], centro, col[sc[0]], n.ajusteLateral, n.ajusteArco),   // la gota va al revés: normal y contra se cambian
+                                            fun[sc[0]], fun[sc[1]])
+                                 : new Lado(new Colores.Lateral(col[sc[0]], centro, col[sc[1]], n.ajusteLateral, n.ajusteArco),
+                                            fun[sc[1]], fun[sc[0]]);
             }
-        return Colores.Lateral.uniforme(centro);
+        return new Lado(Colores.Lateral.uniforme(centro), n.fNormal, n.fContra);
     }
 
     // ---------- Pendiente del radio ----------

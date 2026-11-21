@@ -123,11 +123,11 @@ public class SuiteMatriz_01_Alambre {
         String s1 = w1.toString(), s2 = w2.toString();
         comprueba("PlotterSvg: documento completo", s1.startsWith("<svg ") && s1.contains("class=\"contorno\"") && s1.trim().endsWith("</svg>"), s1.substring(0, Math.min(80, s1.length())));
         comprueba("PlotterSvg: la vista abarca todas las gotas", anchoVista(s2) > anchoVista(s1), anchoVista(s1) + " frente a " + anchoVista(s2));
-        PlotterSvg vacio = new PlotterSvg(new java.io.StringWriter());
+        PlotterSvg vacio = new PlotterSvg(new java.io.StringWriter(), AJUSTES);   // sin etiquetas: este ciclo de vida corre también sin fuentes
         boolean lanza = false;
         try { vacio.close(); } catch (IllegalStateException e) { lanza = true; }
         comprueba("PlotterSvg: sin gotas no hay documento", lanza, "no lanza");
-        PlotterSvg cerrado = new PlotterSvg(new java.io.StringWriter());
+        PlotterSvg cerrado = new PlotterSvg(new java.io.StringWriter(), AJUSTES);
         cerrado.plot(a);
         cerrado.close();
         cerrado.close();
@@ -180,21 +180,25 @@ public class SuiteMatriz_01_Alambre {
                 }
                 Graphics2D gg = img.createGraphics();
                 gg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-                gg.setColor(Color.DARK_GRAY);
-                gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
-                gg.drawString(forma, 6, MARGEN_Y + fila * CH + 16);
-                gg.drawString("d = " + (int) d, 6, MARGEN_Y + fila * CH + 32);
+                if (Fuentes.hay()) {
+                    gg.setColor(Color.DARK_GRAY);
+                    gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+                    gg.drawString(forma, 6, MARGEN_Y + fila * CH + 16);
+                    gg.drawString("d = " + (int) d, 6, MARGEN_Y + fila * CH + 32);
+                }
                 gg.dispose();
                 fila++;
             }
         }
         Graphics2D gg = img.createGraphics();
         gg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        gg.setColor(Color.DARK_GRAY);
-        gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
-        for (int c = 0; c < cols; c++)
-            gg.drawString(String.format("r1 = %.1f   r2 = %.1f", RADIOS[c][0], RADIOS[c][1]),
-                    MARGEN_X + c * CW + 8, 18);
+        if (Fuentes.hay()) {
+            gg.setColor(Color.DARK_GRAY);
+            gg.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+            for (int c = 0; c < cols; c++)
+                gg.drawString(String.format("r1 = %.1f   r2 = %.1f", RADIOS[c][0], RADIOS[c][1]),
+                        MARGEN_X + c * CW + 8, 18);
+        }
         gg.dispose();
 
         ImageIO.write(img, "png", new File("suite_matriz_01_alambre.png"));
