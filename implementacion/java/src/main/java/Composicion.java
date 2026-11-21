@@ -55,6 +55,7 @@ public final class Composicion {
         private Integer contra, normal;
         private double ajusteLateral = 0.5, ajusteArco = 0.5;
         private Degradado fNormal, fContra;
+        private final List<Arista[]> pasos = new ArrayList<>();
 
         private Nodo(Composicion dueña, int id, double x, double y, double radio) {
             this.dueña = dueña; this.id = id; this.x = x; this.y = y; this.radio = radio;
@@ -63,6 +64,29 @@ public final class Composicion {
         public double x() { return x; }
         public double y() { return y; }
         public double radio() { return radio; }
+
+        /**
+         * Declara que las aristas e1 y e2, que llegan a este nodo, se continúan por él: su tangente en el nodo es la de
+         * Catmull-Rom entre sus vecinos (G1 entre las dos), como en un nodo de grado 2. Pensado para nodos de grado 3 o
+         * más, donde sin esto cada arista sale hacia su vecino. Un nodo puede tener varias parejas, sin repetir aristas;
+         * un tirador explícito de la arista manda sobre la pareja. Ver también {@link Composicion#relajar()}.
+         */
+        public Nodo paso(Arista e1, Arista e2) {
+            if (e1 == null || e2 == null) throw new NullPointerException("paso: arista nula");
+            if (e1 == e2) throw new IllegalArgumentException("paso: las dos aristas son la misma");
+            for (Arista e : new Arista[] { e1, e2 }) {
+                if (e.dueña != dueña || (e.a != this && e.b != this)) throw new IllegalArgumentException("paso: la arista no llega al nodo " + id);
+                if (e.a == e.b) throw new IllegalArgumentException("paso: un lazo no puede ser pareja de paso");
+                if (parejaDe(e) != null) throw new IllegalArgumentException("paso: la arista ya tiene pareja en el nodo " + id);
+            }
+            pasos.add(new Arista[] { e1, e2 });
+            return cambia();
+        }
+
+        private Arista parejaDe(Arista e) {
+            for (Arista[] p : pasos) { if (p[0] == e) return p[1]; if (p[1] == e) return p[0]; }
+            return null;
+        }
 
         /** Color único: centro y todos los sectores. */
         public Nodo color(int argb) { centro = argb; sectores = null; contra = normal = null; return cambia(); }
@@ -292,6 +316,41 @@ public final class Composicion {
             suma += Math.asin(Math.max(-0.999, Math.min(0.999, k)));
         }
         return Math.toDegrees(Math.abs(suma));
+    }
+
+    /** {@link #relajar(double)} con 120°. */
+    public Composicion relajar() { return relajar(120); }
+
+    /**
+     * Da tangente continua (G1) por los nodos de grado 3 o más sin tener que calcular los tiradores a mano: en cada
+     * nodo sin parejas declaradas, empareja las ramas más opuestas (ángulo entre las direcciones a sus vecinos mayor
+     * o igual que minGrados) con {@link Nodo#paso}, de más a menos opuestas. No mueve nodos ni toca radios; las
+     * ramas sin pareja siguen saliendo hacia su vecino. Heurística opt-in: se corrige con {@link Nodo#paso} o con
+     * tiradores explícitos. Hay que llamarla con la topología terminada (las aristas añadidas después no entran).
+     */
+    public Composicion relajar(double minGrados) {
+        for (Nodo n : nodos) {
+            if (grado(n) < 3 || !n.pasos.isEmpty()) continue;
+            List<Arista> ramas = new ArrayList<>();
+            for (Arista e : aristas) if (e.a != e.b && (e.a == n || e.b == n)) ramas.add(e);
+            while (ramas.size() >= 2) {
+                double mejor = -1; int bi = -1, bj = -1;
+                for (int i = 0; i < ramas.size(); i++) for (int j = i + 1; j < ramas.size(); j++) {
+                    double[] u = dirA(n, ramas.get(i)), w = dirA(n, ramas.get(j));
+                    double ang = Math.toDegrees(Math.acos(Math.max(-1, Math.min(1, u[0] * w[0] + u[1] * w[1]))));
+                    if (ang > mejor) { mejor = ang; bi = i; bj = j; }
+                }
+                if (mejor < minGrados) break;
+                n.paso(ramas.get(bi), ramas.get(bj));
+                ramas.remove(bj); ramas.remove(bi);
+            }
+        }
+        return this;
+    }
+
+    private static double[] dirA(Nodo n, Arista e) {
+        Nodo m = e.a == n ? e.b : e.a;
+        return unit(m.x - n.x, m.y - n.y);
     }
 
     // ---------- Pintado ----------
@@ -548,6 +607,11 @@ public final class Composicion {
         Gota.Vec v = inicio ? e.va : e.vb;
         Nodo n = inicio ? e.a : e.b, m = inicio ? e.b : e.a;
         if (v != null && (v.x() != 0 || v.y() != 0)) return unit(v.x(), v.y());
+        Arista pareja = n.parejaDe(e);
+        if (pareja != null) {
+            Nodo o = pareja.a == n ? pareja.b : pareja.a;
+            if (!(o.x == m.x && o.y == m.y)) return unit(m.x - o.x, m.y - o.y);
+        }
         if (grado(n) == 2) {
             Nodo o = null;
             for (Arista f : aristas) {

@@ -671,7 +671,52 @@ public class ComposicionPruebas {
         comprueba("altura: nula: NullPointerException", lanza(NullPointerException.class, () -> c.arista(n0, n2).altura(null)), "");
     }
 
+    // ---------- paso y relajar ----------
+
+    /** Cinta de cuatro nodos con una rama en el nodo 2 (grado 3). Las aristas se crean en este orden: 0-1, 1-2, 2-3, 2-4. */
+    static Composicion cintaConRama() {
+        Composicion c = new Composicion();
+        double[][] p = { { 40, 330 }, { 150, 150 }, { 260, 250 }, { 370, 360 }, { 235, 430 } };
+        var n = new Composicion.Nodo[p.length];
+        for (int i = 0; i < p.length; i++) n[i] = c.nodo(p[i][0], p[i][1], 16).centro(0xFF4FA36B);
+        c.arista(n[0], n[1]); c.arista(n[1], n[2]); c.arista(n[2], n[3]); c.arista(n[2], n[4]);
+        return c;
+    }
+
+    /** Ángulo (grados) entre la tangente de llegada de la gota 1 y la de salida de la gota 2 en el nodo 2. */
+    static double quiebroCinta(Composicion c) {
+        var g = c.gotas();
+        double e = 1e-4;
+        Point2D a1 = g.get(1).centro(1 - e), a2 = g.get(1).centro(1), b1 = g.get(2).centro(0), b2 = g.get(2).centro(e);
+        double ta = Math.atan2(a2.getY() - a1.getY(), a2.getX() - a1.getX()), tb = Math.atan2(b2.getY() - b1.getY(), b2.getX() - b1.getX());
+        return Math.abs(Math.toDegrees(Math.atan2(Math.sin(tb - ta), Math.cos(tb - ta))));
+    }
+
+    static void pasos() {
+        double sin = quiebroCinta(cintaConRama());
+        comprueba("relajar: sin relajar la cinta quiebra en el nodo de grado 3", sin > 1, String.format("%.2f°", sin));
+        Composicion r = cintaConRama().relajar();
+        double con = quiebroCinta(r);
+        comprueba("relajar: con relajar() la cinta es G1 en el nodo (< 0,05°)", con < 0.05, String.format("%.4f°", con));
+        comprueba("relajar: idempotente (segunda llamada sin error ni cambios)", Math.abs(quiebroCinta(r.relajar()) - con) < 1e-9, "");
+        // la rama (gota 3) sigue saliendo hacia su vecino: igual que sin relajar
+        Point2D rs = r.gotas().get(3).centro(0), rt = r.gotas().get(3).centro(1e-4);
+        Point2D ss = cintaConRama().gotas().get(3).centro(0), st = cintaConRama().gotas().get(3).centro(1e-4);
+        comprueba("relajar: la rama sin pareja no cambia", rt.distance(st) < 1e-9 && rs.distance(ss) < 1e-9, "");
+        comprueba("relajar con umbral 179°: no empareja nada (cinta a menos de 179°)", quiebroCinta(cintaConRama().relajar(179.9)) > 1, "");
+        // paso manual a otra pareja, mismos efectos que relajar() en la pareja natural
+        Composicion m = new Composicion();
+        var a = m.nodo(0, 0, 10).centro(0xFF000000); var b = m.nodo(120, 80, 10).centro(0xFF000000); var d = m.nodo(240, 0, 10).centro(0xFF000000);
+        var ab = m.arista(a, b); var bd = m.arista(b, d);
+        comprueba("paso: arista de otra composición o que no llega: IllegalArgumentException", lanza(IllegalArgumentException.class, () -> b.paso(ab, m.arista(a, d))), "");
+        comprueba("paso: la misma arista dos veces: IllegalArgumentException", lanza(IllegalArgumentException.class, () -> b.paso(ab, ab)), "");
+        comprueba("paso: arista nula: NullPointerException", lanza(NullPointerException.class, () -> b.paso(ab, null)), "");
+        b.paso(ab, bd);
+        comprueba("paso: la arista ya emparejada en el nodo: IllegalArgumentException", lanza(IllegalArgumentException.class, () -> b.paso(ab, bd)), "");
+    }
+
     public static void main(String[] args) throws Exception {
+        pasos();
         alturas();
         reglas();
         anillo();
