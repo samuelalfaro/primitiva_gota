@@ -715,7 +715,21 @@ public class ComposicionPruebas {
         comprueba("paso: la arista ya emparejada en el nodo: IllegalArgumentException", lanza(IllegalArgumentException.class, () -> b.paso(ab, bd)), "");
     }
 
+    static void rigidas() {
+        Composicion c = new Composicion();
+        var a = c.nodo(0, 0, 20).centro(0xFF000000); var b = c.nodo(30, 0, 20).centro(0xFF000000);
+        var d = c.nodo(130, 0, 20).centro(0xFF000000); var e = c.nodo(150, 10, 20).centro(0xFF000000);
+        var ab = c.arista(a, b); var bd = c.arista(b, d); var de = c.arista(d, e);
+        List<Composicion.Arista> r = c.rigidas();
+        comprueba("rigidas: detecta las gotas de trayectoria <= r1 + r2 (la 1.ª y la 3.ª)", r.size() == 2 && r.contains(ab) && r.contains(de) && !r.contains(bd), r.size() + " rígidas");
+        Composicion s = new Composicion();
+        var x = s.nodo(0, 0, 10).centro(0xFF000000); var y = s.nodo(60, 0, 10).centro(0xFF000000);
+        s.arista(x, y);
+        comprueba("rigidas: lista vacía si todas superan r1 + r2", s.rigidas().isEmpty(), "");
+    }
+
     public static void main(String[] args) throws Exception {
+        rigidas();
         pasos();
         alturas();
         reglas();

@@ -318,6 +318,18 @@ public final class Composicion {
         return Math.toDegrees(Math.abs(suma));
     }
 
+    /**
+     * Aristas cuya gota es rígida: su trayectoria mide r1 + r2 o menos, así que la forma son cuatro arcos sobre la recta
+     * de los centros y se ignoran los tiradores (la cinta se ve facetada, con quiebros en los nodos). Diagnóstico: con
+     * nodos más separados que r1 + r2, o con radios menores, la lista queda vacía.
+     */
+    public List<Arista> rigidas() {
+        construye();
+        List<Arista> r = new ArrayList<>();
+        for (Arista e : aristas) if (gotas.get(e.id).silueta() != null) r.add(e);
+        return r;
+    }
+
     /** {@link #relajar(double)} con 120°. */
     public Composicion relajar() { return relajar(120); }
 
