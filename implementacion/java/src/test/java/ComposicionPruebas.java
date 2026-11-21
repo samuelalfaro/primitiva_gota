@@ -637,7 +637,42 @@ public class ComposicionPruebas {
         comprueba("modo nulo: NullPointerException", lanza(NullPointerException.class, () -> c.render(lienzo(), tex, (ComposicionColor.Modo) null, op)), "");
     }
 
+    // ---------- altura de las aristas ----------
+
+    /** Dos cintas que se cruzan en (210, 210): roja de (150,150) a (360,360) (s = 85 en el cruce) y azul de (360,60) a (60,360) (s = 212): sin altura gana la azul. */
+    static Composicion cruz(Double alturaRoja, Double alturaAzul) {
+        final int ROJO = 0xFFE8283A, AZUL = 0xFF2850E8;
+        Composicion c = new Composicion().mezcla(Mezcla.RGB);
+        var r = c.arista(c.nodo(150, 150, 14).centro(ROJO), c.nodo(360, 360, 14).centro(ROJO));
+        var a = c.arista(c.nodo(360, 60, 14).centro(AZUL), c.nodo(60, 360, 14).centro(AZUL));
+        if (alturaRoja != null) r.altura(x -> alturaRoja);
+        if (alturaAzul != null) a.altura(x -> alturaAzul);
+        return c;
+    }
+
+    static boolean rojoEncima(Composicion c) {
+        BufferedImage im = lienzo();
+        c.render(im, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
+        int p = datos(im)[210 * W + 210];
+        return ((p >> 16) & 255) > (p & 255);
+    }
+
+    static void alturas() {
+        comprueba("altura: sin declarar manda la mayor s del recorrido (la azul, encima)", !rojoEncima(cruz(null, null)), "");
+        comprueba("altura: la arista roja más alta queda encima", rojoEncima(cruz(1.0, 0.0)), "");
+        comprueba("altura: la arista azul más alta queda encima", !rojoEncima(cruz(0.0, 1.0)), "");
+        comprueba("altura: la declarada queda por encima de la no declarada (roja)", rojoEncima(cruz(-5.0, null)), "");
+        comprueba("altura: con alturas iguales manda el orden del recorrido", !rojoEncima(cruz(2.0, 2.0)), "");
+        Composicion c = new Composicion();
+        var n0 = c.nodo(60, 60, 10); var n1 = c.nodo(200, 80, 10); var n2 = c.nodo(340, 60, 10);
+        c.arista(n0, n1).altura(x -> 0);
+        c.arista(n1, n2).altura(x -> 1);
+        comprueba("altura: alturas distintas en un nodo compartido: IllegalArgumentException", lanza(IllegalArgumentException.class, () -> c.render(lienzo())), "");
+        comprueba("altura: nula: NullPointerException", lanza(NullPointerException.class, () -> c.arista(n0, n2).altura(null)), "");
+    }
+
     public static void main(String[] args) throws Exception {
+        alturas();
         reglas();
         anillo();
         quiebros();

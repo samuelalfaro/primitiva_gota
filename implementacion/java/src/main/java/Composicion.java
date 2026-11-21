@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.DoubleUnaryOperator;
 
 /**
  * Composición de gotas: varias gotas que comparten nodos (una línea abierta, un ciclo, una estrella...).
@@ -137,6 +138,7 @@ public final class Composicion {
         private final Nodo a, b;
         private Gota.Vec va, vb;
         private Degradado espina;
+        private DoubleUnaryOperator altura;
 
         private Arista(Composicion dueña, int id, Nodo a, Nodo b) { this.dueña = dueña; this.id = id; this.a = a; this.b = b; }
 
@@ -155,6 +157,15 @@ public final class Composicion {
          * (x = 1); por defecto, la mezcla lineal entre los dos. Debe coincidir con los colores de los centros.
          */
         public Arista espina(Degradado f) { espina = Objects.requireNonNull(f, "espina"); dueña.invalida(); return this; }
+
+        /**
+         * Altura de la arista a lo largo de su eje, de {@link #a()} (x = 0) a {@link #b()} (x = 1): en un solape con
+         * {@link Solape#TRAZO} manda la mayor. Permite cruces alternados (por encima / por debajo) que el orden del
+         * recorrido no puede dar. Sin declarar, la arista usa el orden del recorrido como hasta ahora, y las aristas con
+         * altura quedan por encima de las que no la tienen. En los nodos, las alturas de las aristas declaradas que
+         * llegan deben coincidir (IllegalArgumentException al construir).
+         */
+        public Arista altura(DoubleUnaryOperator f) { altura = Objects.requireNonNull(f, "altura"); dueña.invalida(); return this; }
     }
 
     private final List<Nodo> nodos = new ArrayList<>();
@@ -485,8 +496,8 @@ public final class Composicion {
         if (op.solape() == Solape.TRAZO) {
             // Entre las gotas que contienen el píxel manda, primero, la que lo tiene en su cuerpo (las tapas de los nodos compartidos
             // no tapan a los cuerpos vecinos); después, la que va más tarde en el recorrido (mayor s); con empate, la arista escrita después.
-            boolean cuerpoTop = false;
-            double sTop = Double.NEGATIVE_INFINITY;
+            boolean cuerpoTop = false, altTop = false;
+            double sTop = Double.NEGATIVE_INFINITY, sGan = Double.NEGATIVE_INFINITY;
             for (int k = 0; k < gotas.size(); k++) {
                 if (!(s[k] <= 0)) continue;
                 Gota g = gotas.get(k);
@@ -495,7 +506,14 @@ public final class Composicion {
                 boolean cuerpo = v >= ck.c1() && v <= ck.c3();
                 double t = Coordenadas.porRho(g, x, y, Solape.TRAZO).t();
                 double sg = sInicio[k] + (sFin[k] - sInicio[k]) * g.fraccion(t);
-                if ((cuerpo && !cuerpoTop) || (cuerpo == cuerpoTop && sg >= sTop)) { cuerpoTop = cuerpo; sTop = sg; mejor = k; }
+                DoubleUnaryOperator fa = aristas.get(k).altura;
+                double h = sg;                                           // sin altura declarada manda s; con ella, la altura (por encima de s)
+                if (fa != null) { double x0 = g.fraccion(t); h = fa.applyAsDouble(invertida[k] ? 1 - x0 : x0); }
+                boolean dec = fa != null;
+                boolean gana = mejor < 0 || (cuerpo != cuerpoTop ? cuerpo
+                        : dec != altTop ? dec
+                        : h > sTop || (h == sTop && sg >= sGan));
+                if (gana) { cuerpoTop = cuerpo; altTop = dec; sTop = h; sGan = sg; mejor = k; }
             }
             if (mejor >= 0) return new double[] { cob, mejor };
         }
@@ -602,6 +620,25 @@ public final class Composicion {
         }
         bounds = bb;
         ordena(pasos, inv);
+        validaAlturas();
+    }
+
+    /** Las aristas con altura que llegan a un mismo nodo deben darle la misma altura (como los colores en los centros). */
+    private void validaAlturas() {
+        for (Nodo n : nodos) {
+            Double ref = null;
+            for (Arista e : aristas) {
+                if (e.altura == null) continue;
+                for (int extremo = 0; extremo < 2; extremo++) {
+                    if ((extremo == 0 ? e.a : e.b) != n) continue;
+                    double h = e.altura.applyAsDouble(extremo);
+                    if (ref == null) ref = h;
+                    else if (Math.abs(h - ref) > 1e-6 * Math.max(1, Math.abs(ref)))
+                        throw new IllegalArgumentException("nodo " + n.id + ": las alturas de las aristas que llegan no coinciden (" + ref + " y " + h
+                                + " en x = " + extremo + "); la altura debe ser continua en los nodos");
+                }
+            }
+        }
     }
 
     // ---------- Color lateral por sectores ----------
