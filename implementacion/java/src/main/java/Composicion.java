@@ -384,8 +384,9 @@ public final class Composicion {
         double[] h = new double[n];
         for (int i = 0; i < n; i++) {
             Nodo a = ps.get(i), b = cerrada ? ps.get((i + 1) % n) : ps.get(i + 1);
-            h[i] = Math.hypot(b.x - a.x, b.y - a.y);
-            if (h[i] < 1e-9) return;                                      // nodos coincidentes: sin spline
+            double cuerda = Math.hypot(b.x - a.x, b.y - a.y);
+            if (cuerda < 1e-9) return;                                    // nodos coincidentes: sin spline
+            h[i] = cuerda;
         }
         int m = cerrada ? n : n + 1;
         double[][] A = new double[m][m];
@@ -442,6 +443,18 @@ public final class Composicion {
             x[r][d] = v / A[r][r];
         }
         return x;
+    }
+
+    /**
+     * Aristas cuya gota (no rígida) se pliega: en algún punto del camino el radio de curvatura es menor o igual que el
+     * radio de la cinta (kappa * r >= 1) o el radio cambia más deprisa que el camino (|r'| >= |c'|). Diagnóstico de
+     * puntas y giros muy cerrados, por ejemplo un nodo donde la ruta se invierte casi 180°.
+     */
+    public List<Arista> plegadas() {
+        construye();
+        List<Arista> r = new ArrayList<>();
+        for (Arista e : aristas) if (gotas.get(e.id).plegada()) r.add(e);
+        return r;
     }
 
     /** {@link #relajar(double)} con 120°. */

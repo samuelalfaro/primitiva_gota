@@ -152,7 +152,19 @@ public final class Gota implements Geometria {
     static final boolean RIGIDA_CURVA = Boolean.getBoolean("gota.rigidaCurva");
     private static final double MARGEN_CURVA = Double.parseDouble(System.getProperty("gota.rigidaCurvaMargen", "0.9"));
 
-    private static boolean sinPliegue(double[] px, double[] py, Perfil.Resuelto radio) {
+    /**
+     * Diagnóstico: true si la gota no es rígida y su envolvente se pliega (en algún punto del camino el radio de
+     * curvatura es menor o igual que el radio del círculo, kappa * r >= 1, o |r'| >= |c'|). Los centros coincidentes
+     * (lazos) no cuentan.
+     */
+    boolean plegada() {
+        if (silueta != null || Math.hypot(px[3] - px[0], py[3] - py[0]) < 1e-9) return false;
+        return !sinPliegue(px, py, radio, 1.0);
+    }
+
+    private static boolean sinPliegue(double[] px, double[] py, Perfil.Resuelto radio) { return sinPliegue(px, py, radio, MARGEN_CURVA); }
+
+    private static boolean sinPliegue(double[] px, double[] py, Perfil.Resuelto radio, double margen) {
         if (Math.hypot(px[3] - px[0], py[3] - py[0]) < 1e-9) return false;
         final int n = 64;
         for (int i = 0; i <= n; i++) {
@@ -164,7 +176,7 @@ public final class Gota implements Geometria {
             double v = Math.hypot(dx, dy);
             if (v < 1e-9) return false;
             double kappa = Math.abs(dx * ddy - dy * ddx) / (v * v * v);
-            if (kappa * radio.r(t) >= MARGEN_CURVA || Math.abs(radio.dr(t)) / v >= MARGEN_CURVA) return false;
+            if (kappa * radio.r(t) >= margen || Math.abs(radio.dr(t)) / v >= margen) return false;
         }
         return true;
     }
