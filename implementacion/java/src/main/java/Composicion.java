@@ -6,7 +6,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Objects;
 import java.util.function.DoubleUnaryOperator;
 
@@ -163,6 +165,7 @@ public final class Composicion {
         private Gota.Vec va, vb;
         private Degradado espina;
         private DoubleUnaryOperator altura;
+        private Gota.Vec ava, avb;                  // tiradores de alisar(): solo si no hay tiradores explícitos
 
         private Arista(Composicion dueña, int id, Nodo a, Nodo b) { this.dueña = dueña; this.id = id; this.a = a; this.b = b; }
 
@@ -328,6 +331,117 @@ public final class Composicion {
         List<Arista> r = new ArrayList<>();
         for (Arista e : aristas) if (gotas.get(e.id).silueta() != null) r.add(e);
         return r;
+    }
+
+    /**
+     * Curvatura continua (G2) a lo largo de las cintas: por cada cadena de aristas que se continúan (nodos de grado 2 o
+     * parejas de {@link Nodo#paso}) calcula la spline cúbica C2 que pasa por sus nodos, con parámetro de longitud de
+     * cuerda (periódica si la cadena se cierra; natural, de curvatura nula en los extremos, si es abierta), y da a cada
+     * arista los tiradores de esa spline. Con los tiradores automáticos de siempre la tangente es continua (G1) pero la
+     * curvatura salta en cada nodo. No mueve nodos ni toca radios; las aristas con tiradores explícitos y los lazos
+     * quedan fuera, y una cadena cerrada de menos de tres aristas se deja como está. Opt-in e idempotente; llámala
+     * después de {@link #relajar()} si quieres que las uniones también entren.
+     */
+    public Composicion alisar() {
+        for (Arista e : aristas) { e.ava = null; e.avb = null; }
+        Set<Arista> hechas = new HashSet<>();
+        // cadenas abiertas: se empieza por una arista con un extremo sin continuación
+        for (Arista e : aristas) {
+            if (hechas.contains(e) || !alisable(e)) continue;
+            for (Nodo extremo : new Nodo[] { e.a, e.b }) {
+                if (continuacion(e, extremo) == null) { alisaCadena(e, extremo, hechas, false); break; }
+            }
+        }
+        for (Arista e : aristas) if (!hechas.contains(e) && alisable(e)) alisaCadena(e, e.a, hechas, true);
+        invalida();
+        return this;
+    }
+
+    private static boolean alisable(Arista e) { return e.a != e.b && e.va == null && e.vb == null; }
+
+    /** La arista que continúa a e al otro lado de n (grado 2, o pareja de paso), o null. */
+    private Arista continuacion(Arista e, Nodo n) {
+        Arista o = null;
+        if (grado(n) == 2) {
+            for (Arista f : aristas) if (f != e && (f.a == n || f.b == n)) o = f;
+        } else o = n.parejaDe(e);
+        return o != null && alisable(o) && o.a != o.b ? o : null;
+    }
+
+    private void alisaCadena(Arista primera, Nodo inicio, Set<Arista> hechas, boolean cerrada) {
+        List<Arista> es = new ArrayList<>();
+        List<Nodo> ps = new ArrayList<>();
+        Arista e = primera; Nodo desde = inicio;
+        while (e != null && hechas.add(e)) {
+            es.add(e); ps.add(desde);
+            Nodo hasta = e.a == desde ? e.b : e.a;
+            Arista sig = continuacion(e, hasta);
+            if (sig == null && !cerrada) ps.add(hasta);
+            desde = hasta; e = sig;
+        }
+        int n = es.size();
+        if (cerrada) { if (n < 3 || desde != inicio) { for (Arista f : es) hechas.remove(f); return; } }
+        double[] h = new double[n];
+        for (int i = 0; i < n; i++) {
+            Nodo a = ps.get(i), b = cerrada ? ps.get((i + 1) % n) : ps.get(i + 1);
+            h[i] = Math.hypot(b.x - a.x, b.y - a.y);
+            if (h[i] < 1e-9) return;                                      // nodos coincidentes: sin spline
+        }
+        int m = cerrada ? n : n + 1;
+        double[][] A = new double[m][m];
+        double[][] rhs = new double[m][2];
+        for (int i = 0; i < m; i++) {
+            Nodo p = ps.get(i), q = ps.get((i + 1) % ps.size()), o = ps.get((i + ps.size() - 1) % ps.size());
+            boolean interior = cerrada || (i > 0 && i < n);
+            if (interior) {
+                double hm = h[(i + n - 1) % n], hi = h[i % n];
+                A[i][(i + m - 1) % m] += hi; A[i][i] += 2 * (hm + hi); A[i][(i + 1) % m] += hm;
+                rhs[i][0] = 3 * (hi * (p.x - o.x) / hm + hm * (q.x - p.x) / hi);
+                rhs[i][1] = 3 * (hi * (p.y - o.y) / hm + hm * (q.y - p.y) / hi);
+            } else if (i == 0) {                                          // extremo natural: 2 m0 + m1 = 3 (P1 - P0) / h0
+                Nodo q1 = ps.get(1);
+                A[0][0] = 2; A[0][1] = 1;
+                rhs[0][0] = 3 * (q1.x - p.x) / h[0]; rhs[0][1] = 3 * (q1.y - p.y) / h[0];
+            } else {                                                      // m_{n-1} + 2 m_n = 3 (Pn - Pn-1) / h_{n-1}
+                Nodo a = ps.get(n - 1);
+                A[i][i - 1] = 1; A[i][i] = 2;
+                rhs[i][0] = 3 * (p.x - a.x) / h[n - 1]; rhs[i][1] = 3 * (p.y - a.y) / h[n - 1];
+            }
+        }
+        double[][] mm = resuelve(A, rhs);
+        if (mm == null) { for (Arista f : es) hechas.remove(f); return; }
+        for (int i = 0; i < n; i++) {
+            int j = cerrada ? (i + 1) % n : i + 1;
+            Gota.Vec c1 = new Gota.Vec(mm[i][0] * h[i] / 3, mm[i][1] * h[i] / 3);
+            Gota.Vec c2 = new Gota.Vec(-mm[j][0] * h[i] / 3, -mm[j][1] * h[i] / 3);
+            Arista f = es.get(i);
+            if (f.a == ps.get(i)) { f.ava = c1; f.avb = c2; } else { f.avb = c1; f.ava = c2; }
+        }
+    }
+
+    /** Eliminación gaussiana con pivote parcial; null si el sistema es singular. */
+    private static double[][] resuelve(double[][] A, double[][] b) {
+        int m = A.length;
+        for (int c = 0; c < m; c++) {
+            int piv = c;
+            for (int r = c + 1; r < m; r++) if (Math.abs(A[r][c]) > Math.abs(A[piv][c])) piv = r;
+            if (Math.abs(A[piv][c]) < 1e-12) return null;
+            double[] t = A[c]; A[c] = A[piv]; A[piv] = t;
+            double[] u = b[c]; b[c] = b[piv]; b[piv] = u;
+            for (int r = c + 1; r < m; r++) {
+                double f = A[r][c] / A[c][c];
+                if (f == 0) continue;
+                for (int k = c; k < m; k++) A[r][k] -= f * A[c][k];
+                b[r][0] -= f * b[c][0]; b[r][1] -= f * b[c][1];
+            }
+        }
+        double[][] x = new double[m][2];
+        for (int r = m - 1; r >= 0; r--) for (int d = 0; d < 2; d++) {
+            double v = b[r][d];
+            for (int k = r + 1; k < m; k++) v -= A[r][k] * x[k][d];
+            x[r][d] = v / A[r][r];
+        }
+        return x;
     }
 
     /** {@link #relajar(double)} con 120°. */
@@ -661,8 +775,8 @@ public final class Composicion {
                 throw new IllegalStateException("lazo en el nodo " + e.a.id + ": hay que dar los dos tiradores");
             double d = Math.hypot(e.b.x - e.a.x, e.b.y - e.a.y);
             double[] ua = salida(e, true), ub = salida(e, false);
-            Gota.Vec va = e.va != null ? e.va : new Gota.Vec(ua[0] * d / 3, ua[1] * d / 3);
-            Gota.Vec vb = e.vb != null ? e.vb : new Gota.Vec(ub[0] * d / 3, ub[1] * d / 3);
+            Gota.Vec va = e.va != null ? e.va : e.ava != null ? e.ava : new Gota.Vec(ua[0] * d / 3, ua[1] * d / 3);
+            Gota.Vec vb = e.vb != null ? e.vb : e.avb != null ? e.avb : new Gota.Vec(ub[0] * d / 3, ub[1] * d / 3);
             ars.add(new Ar(e.a.id, e.b.id, va, vb, Double.NaN, Double.NaN, e.va != null || e.vb != null));
         }
         if (ajustaPendientes) ars = igualaK(ars);

@@ -728,7 +728,84 @@ public class ComposicionPruebas {
         comprueba("rigidas: lista vacía si todas superan r1 + r2", s.rigidas().isEmpty(), "");
     }
 
+    // ---------- alisar (G2) ----------
+
+    static double curvaturaConSigno(Point2D a, Point2D b, Point2D c) {
+        double cross = (b.getX() - a.getX()) * (c.getY() - a.getY()) - (b.getY() - a.getY()) * (c.getX() - a.getX());
+        return 2 * cross / (a.distance(b) * b.distance(c) * c.distance(a));
+    }
+
+    /** Salto máximo de curvatura entre la llegada y la salida de las gotas consecutivas g[i] -> g[i+1] (cíclico si cierra), relativo a la curvatura máxima de la cadena. */
+    static double saltoCurvatura(List<Gota> g, boolean cierra) {
+        double e = 1e-3, salto = 0, kmax = 1e-9;
+        for (int i = 0; i < g.size() - (cierra ? 0 : 1); i++) {
+            Gota p = g.get(i), q = g.get((i + 1) % g.size());
+            double kp = curvaturaConSigno(p.centro(1 - 2 * e), p.centro(1 - e), p.centro(1));
+            double kq = curvaturaConSigno(q.centro(0), q.centro(e), q.centro(2 * e));
+            salto = Math.max(salto, Math.abs(kp - kq));
+            kmax = Math.max(kmax, Math.max(Math.abs(kp), Math.abs(kq)));
+        }
+        return salto / kmax;
+    }
+
+    static Composicion trebolDeNodos(int N) {
+        Composicion c = new Composicion();
+        var n = new Composicion.Nodo[N];
+        for (int i = 0; i < N; i++) {
+            double t = 2 * Math.PI * i / N;
+            n[i] = c.nodo(210 + 48 * (Math.sin(t) + 2 * Math.sin(2 * t)), 210 + 48 * (Math.cos(t) - 2 * Math.cos(2 * t)), 8).centro(0xFF336699);
+        }
+        for (int i = 0; i < N; i++) c.arista(n[i], n[(i + 1) % N]);
+        return c;
+    }
+
+    static void alisar() {
+        double antes = saltoCurvatura(trebolDeNodos(30).gotas(), true);
+        double despues = saltoCurvatura(trebolDeNodos(30).alisar().gotas(), true);
+        comprueba("alisar: sin alisar la curvatura salta en los nodos (> 5 %)", antes > 0.05, String.format("%.1f %%", 100 * antes));
+        comprueba("alisar: con alisar() la curvatura es continua en los nodos (< 1 %) en una cadena cerrada", despues < 0.01, String.format("%.3f %%", 100 * despues));
+        // cadena abierta: curvatura nula en los extremos (spline natural) y continua dentro
+        Composicion o = new Composicion();
+        double[][] p = { { 40, 300 }, { 120, 150 }, { 220, 120 }, { 320, 220 }, { 400, 330 } };
+        var n = new Composicion.Nodo[p.length];
+        for (int i = 0; i < p.length; i++) n[i] = o.nodo(p[i][0], p[i][1], 10).centro(0xFF336699);
+        for (int i = 0; i + 1 < p.length; i++) o.arista(n[i], n[i + 1]);
+        var g = o.alisar().gotas();
+        double e = 1e-3, k0 = curvaturaConSigno(g.get(0).centro(0), g.get(0).centro(e), g.get(0).centro(2 * e));
+        comprueba("alisar: cadena abierta, curvatura nula en el extremo (natural)", Math.abs(k0) < 1e-3, String.format("%.5f", k0));
+        comprueba("alisar: cadena abierta, curvatura continua en los nodos interiores (< 1 %)", saltoCurvatura(g, false) < 0.01, String.format("%.3f %%", 100 * saltoCurvatura(g, false)));
+        // idempotente
+        Composicion c = trebolDeNodos(30).alisar();
+        Point2D m1 = c.gotas().get(5).centro(0.5);
+        Point2D m2 = c.alisar().gotas().get(5).centro(0.5);
+        comprueba("alisar: idempotente", m1.distance(m2) < 1e-9, "");
+        // un tirador explícito queda fuera y manda
+        Composicion x = new Composicion();
+        var a = x.nodo(40, 200, 10).centro(0xFF336699); var b = x.nodo(160, 120, 10).centro(0xFF336699);
+        var d = x.nodo(280, 200, 10).centro(0xFF336699); var f = x.nodo(400, 120, 10).centro(0xFF336699);
+        x.arista(a, b); x.arista(b, d).tiradores(new Gota.Vec(10, 60), new Gota.Vec(-10, 60)); x.arista(d, f);
+        Point2D sin = x.gotas().get(1).centro(0.5);
+        Point2D con = x.alisar().gotas().get(1).centro(0.5);
+        comprueba("alisar: la arista con tiradores explícitos no cambia", sin.distance(con) < 1e-9, "");
+        // junto con relajar(): la cinta con rama sigue G1 en el nodo de grado 3 y renderiza
+        Composicion r = cintaConRama().relajar().alisar();
+        comprueba("alisar + relajar: la cinta es G1 en el nodo de grado 3 (< 0,05°)", quiebroCinta(r) < 0.05, String.format("%.4f°", quiebroCinta(r)));
+        comprueba("alisar + relajar: renderiza", datos(pintaEn(r)) != null, "");
+        Composicion anillo = new Composicion();
+        var u = anillo.nodo(100, 100, 12).centro(0xFF336699); var w = anillo.nodo(300, 100, 12).centro(0xFF336699);
+        anillo.arista(u, w); anillo.arista(w, u);
+        Point2D ant = anillo.gotas().get(0).centro(0.5);
+        comprueba("alisar: el anillo de dos nodos se deja como está", ant.distance(anillo.alisar().gotas().get(0).centro(0.5)) < 1e-9, "");
+    }
+
+    static BufferedImage pintaEn(Composicion c) {
+        BufferedImage im = lienzo();
+        c.render(im);
+        return im;
+    }
+
     public static void main(String[] args) throws Exception {
+        alisar();
         rigidas();
         pasos();
         alturas();
