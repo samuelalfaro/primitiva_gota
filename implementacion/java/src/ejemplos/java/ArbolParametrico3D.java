@@ -35,6 +35,11 @@ public final class ArbolParametrico3D {
         public long semilla = 20261121;
         /** Inclinación máxima de las ramas respecto de la vertical. */
         public double inclinacionMaxima = Math.toRadians(78);
+        /**
+         * Giro acumulado del azimut por nivel (ángulo áureo por defecto), para que las ramas se abran alrededor del
+         * tronco y no en un solo abanico. Con 0 se obtiene el abanico plano original.
+         */
+        public double giro = Math.toRadians(137.50776);
     }
 
     /** Un punto del árbol en coordenadas del mundo. */
@@ -210,6 +215,7 @@ public final class ArbolParametrico3D {
                     : (double) i / (p.ramas - 1) - 0.5;
 
             double azimutHija = az
+                    + p.giro * (nivel + 1)
                     + posicion * p.apertura
                     + aleatorio(p.variacionAngular * 0.45);
 
