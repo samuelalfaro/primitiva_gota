@@ -9,7 +9,7 @@ public class EstudioTresClases {
         double dx=(x2-x0)/(b-a),dy=(y2-y0)/(b-a),ddx=(x2-2*x1+x0)/((b-a)*(b-a)/4),ddy=(y2-2*y1+y0)/((b-a)*(b-a)/4);
         double n=Math.hypot(dx,dy);return n<1e-9?0:(dx*ddy-dy*ddx)/(n*n*n);}
     /** J = 1 - |k|*vc del lado cóncavo (J<=0: inversión), mínimo entre las pasadas */
-    static double J(Gota g,java.util.List<Geometria.Hebra> hs,double x,double y){double j=1e9;
+    static double J(Gota g,java.util.List<Camino.Hebra> hs,double x,double y){double j=1e9;
         for(var hb:hs){double t=hb.t(),k=kappa(g,t);if(Math.abs(k)<1e-9)continue;double[] T=tan(g,t);
             double vc=(-(x-g.cx(t))*T[1]+(y-g.cy(t))*T[0])*Math.signum(k);j=Math.min(j,1-Math.abs(k)*vc);}
         return j;}

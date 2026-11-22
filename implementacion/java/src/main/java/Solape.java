@@ -55,11 +55,11 @@ public enum Solape {
     PONDERADO {
         static final double K = Double.parseDouble(System.getProperty("solape.k", "6"));
 
-        @Override void capas(Geometria g, Coordenadas c, double x, double y, Consumer<Capa> out) {
-            List<Geometria.Hebra> hs = g.mascara().hebras(x, y);
+        @Override void capas(Camino g, Coordenadas c, double x, double y, Consumer<Capa> out) {
+            List<Camino.Hebra> hs = g.mascara().hebras(x, y);
             Memo memo = new Memo(c, x, y);
             for (int h = 0; h < hs.size(); h++) {
-                Geometria.Hebra hb = hs.get(h);
+                Camino.Hebra hb = hs.get(h);
                 double cob = hb.cobertura();
                 if (cob <= 0) continue;
                 double w = 1;
@@ -84,12 +84,12 @@ public enum Solape {
     PONDERADO_UV {
         static final double K = Double.parseDouble(System.getProperty("solape.k", "6"));
 
-        @Override void capas(Geometria g, Coordenadas c, double x, double y, Consumer<Capa> out) {
-            List<Geometria.Hebra> hs = g.mascara().hebras(x, y);
+        @Override void capas(Camino g, Coordenadas c, double x, double y, Consumer<Capa> out) {
+            List<Camino.Hebra> hs = g.mascara().hebras(x, y);
             Memo memo = new Memo(c, x, y);
             double t = 0, u = 0, v = 0, cob = 0; boolean hay = false;
             for (int h = 0; h < hs.size(); h++) {
-                Geometria.Hebra hb = hs.get(h);
+                Camino.Hebra hb = hs.get(h);
                 double cb = hb.cobertura();
                 if (cb <= 0) continue;
                 final double limite = h == hs.size() - 1 ? Double.POSITIVE_INFINITY : 0.5 * (hb.t() + hs.get(h + 1).t());
