@@ -25,7 +25,7 @@ final class Pliegue {
     private final boolean soloInterior;         // ESPIGA: solo el abanico interior (w de 1 en X a 0 en la espina); ORTOGONAL: toda la cuña
     private final double[] d = new double[NA + 1], r = new double[NA + 1], t = new double[NA + 1];
 
-    private Pliegue(double ta, double tb, double xx, double xy, int lado, Geometria g, double[][] hw, int m, boolean soloInterior) {
+    private Pliegue(double ta, double tb, double xx, double xy, int lado, Camino g, double[][] hw, int m, boolean soloInterior) {
         this.ta = ta; this.tb = tb; this.xx = xx; this.xy = xy; this.lado = lado; this.soloInterior = soloInterior;
         double[] ca = { g.cx(ta), g.cy(ta) }, cb = { g.cx(tb), g.cy(tb) };
         a0 = Math.atan2(ca[1] - xy, ca[0] - xx);
@@ -95,7 +95,7 @@ final class Pliegue {
     /** EXPERIMENTAL: "exacto" (por defecto: X es el cruce de la envolvente exacta y ta, tb los pies de X sobre la espina), "esquina" (intervalo de primera salida disparada), "envolvente" (ta y tb del cruce exacto, centro en el corte de las normales) o "envolventeX" (también el centro). */
     private static final String DETECCION = System.getProperty("gota.pliegue", "exacto");
 
-    static Pliegue de(Geometria g, Zonas z, double[][] hw, int m) {
+    static Pliegue de(Camino g, Zonas z, double[][] hw, int m) {
         if (g.arcos() != null) return null;          // forma rígida: la silueta de cuatro arcos no se pliega
         if (DETECCION.equals("exacto")) {
             // X es el cruce de la envolvente exacta, que es esquina de la silueta (ningún otro disco de la familia lo cubre: |X - c(s)| >= r(s)).
@@ -150,7 +150,7 @@ final class Pliegue {
     }
 
     /** El pie de (x, y) sobre el camino más cercano a t0: el mínimo local de |(x, y) - c(t)| cuyo t está más cerca de t0. */
-    private static double pie(Geometria g, double x, double y, double t0, int m) {
+    private static double pie(Camino g, double x, double y, double t0, int m) {
         double mejor = t0, dmejor = Double.MAX_VALUE;
         for (int i = 0; i <= m; i++) {
             double t = i / (double) m, d = dist2(g, x, y, t);
@@ -168,7 +168,7 @@ final class Pliegue {
         return mejor;
     }
 
-    private static double dist2(Geometria g, double x, double y, double t) {
+    private static double dist2(Camino g, double x, double y, double t) {
         double dx = x - g.cx(t), dy = y - g.cy(t);
         return dx * dx + dy * dy;
     }
@@ -177,7 +177,7 @@ final class Pliegue {
     private static final double FACTOR = 1.35;   // la primera salida de la normal es "disparada" si pasa de FACTOR veces el radio
 
     /** Primera salida de la normal de t por el lado sg de la máscara. */
-    private static double salida(Geometria g, double t, double sg) {
+    private static double salida(Camino g, double t, double sg) {
         double r = Math.max(g.rad(t), 1), tx = g.tangente(t)[0], ty = g.tangente(t)[1], nx = sg * ty, ny = -sg * tx, cx = g.cx(t), cy = g.cy(t), paso = r / 32, lo = 0, hi = 4 * r + 50;
         for (double d = paso; d <= hi; d += paso) {
             if (!g.mascara().contiene(cx + d * nx, cy + d * ny)) { hi = d; break; }
@@ -187,7 +187,7 @@ final class Pliegue {
     }
 
     /** Bisección en t entre t0 (fuera del intervalo disparado) y t1 (dentro): el t donde la salida pasa de FACTOR·r. */
-    private static double refina(Geometria g, double t0, double t1, double sg, boolean u) {
+    private static double refina(Camino g, double t0, double t1, double sg, boolean u) {
         for (int it = 0; it < 30; it++) {
             double tm = (t0 + t1) / 2;
             if (salida(g, tm, sg) > FACTOR * g.rad(tm)) t1 = tm; else t0 = tm;
@@ -200,7 +200,7 @@ final class Pliegue {
      * cada mitad es la costilla recta. Solo la mitad interior se pliega, así que la zona es el abanico entre X, las dos costillas interiores
      * (rectas de X a c(ta) y a c(tb), de longitud r) y la espina; la mitad exterior conserva sus coordenadas.
      */
-    static Pliegue espiga(Geometria g, Zonas z, int m) {
+    static Pliegue espiga(Camino g, Zonas z, int m) {
         if (g.arcos() != null) return null;
         double[][][] q = new double[2][m + 1][2];
         for (int i = 0; i <= m; i++) {
@@ -216,7 +216,7 @@ final class Pliegue {
      * de mayor tramo de t. {@code orto}: ORTOGONAL (cuña completa, ta y tb en los pies de X sobre la espina); si no, ESPIGA (solo el abanico interior).
      * Solapes entre zonas (intervalos de t que se pisan) todavía sin regla de prioridad: gana la primera de la lista.
      */
-    static java.util.List<Pliegue> todos(Geometria g, Zonas z, double[][] hw, int m, boolean orto) {
+    static java.util.List<Pliegue> todos(Camino g, Zonas z, double[][] hw, int m, boolean orto) {
         java.util.List<Pliegue> out = new java.util.ArrayList<>();
         if (g.arcos() != null) return out;
         double[][][] qs = new double[2][m + 1][2];
@@ -261,7 +261,7 @@ final class Pliegue {
     }
 
     /** Otro disco de la familia cubre el punto (x, y): |X - c(s)| < r(s) para algún s. Los discos de los dos t del cruce quedan en r (tolerancia 1 %). */
-    private static boolean cubierto(Geometria g, double x, double y, int m) {
+    private static boolean cubierto(Camino g, double x, double y, int m) {
         for (int i = 0; i <= m; i++) {
             double t = i / (double) m, rr = g.rad(t);
             if (Math.sqrt(dist2(g, x, y, t)) < rr * 0.99) return true;
@@ -269,7 +269,7 @@ final class Pliegue {
         return false;
     }
 
-    private static Pliegue mejor(Geometria g, double[][] hw, int m, double[][][] qs, boolean soloInterior) {
+    private static Pliegue mejor(Camino g, double[][] hw, int m, double[][][] qs, boolean soloInterior) {
         Pliegue mejor = null;
         double mejorDt = 0;
         for (int l = 0; l < 2; l++) {
