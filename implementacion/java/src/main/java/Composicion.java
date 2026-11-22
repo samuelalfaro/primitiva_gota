@@ -6,8 +6,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Objects;
+import java.util.function.DoubleUnaryOperator;
 
 /**
  * Composición de gotas: varias gotas que comparten nodos (una línea abierta, un ciclo, una estrella...).
@@ -54,6 +57,7 @@ public final class Composicion {
         private Integer contra, normal;
         private double ajusteLateral = 0.5, ajusteArco = 0.5;
         private Degradado fNormal, fContra;
+        private final List<Arista[]> pasos = new ArrayList<>();
 
         private Nodo(Composicion dueña, int id, double x, double y, double radio) {
             this.dueña = dueña; this.id = id; this.x = x; this.y = y; this.radio = radio;
@@ -62,6 +66,29 @@ public final class Composicion {
         public double x() { return x; }
         public double y() { return y; }
         public double radio() { return radio; }
+
+        /**
+         * Declara que las aristas e1 y e2, que llegan a este nodo, se continúan por él: su tangente en el nodo es la de
+         * Catmull-Rom entre sus vecinos (G1 entre las dos), como en un nodo de grado 2. Pensado para nodos de grado 3 o
+         * más, donde sin esto cada arista sale hacia su vecino. Un nodo puede tener varias parejas, sin repetir aristas;
+         * un tirador explícito de la arista manda sobre la pareja. Ver también {@link Composicion#relajar()}.
+         */
+        public Nodo paso(Arista e1, Arista e2) {
+            if (e1 == null || e2 == null) throw new NullPointerException("paso: arista nula");
+            if (e1 == e2) throw new IllegalArgumentException("paso: las dos aristas son la misma");
+            for (Arista e : new Arista[] { e1, e2 }) {
+                if (e.dueña != dueña || (e.a != this && e.b != this)) throw new IllegalArgumentException("paso: la arista no llega al nodo " + id);
+                if (e.a == e.b) throw new IllegalArgumentException("paso: un lazo no puede ser pareja de paso");
+                if (parejaDe(e) != null) throw new IllegalArgumentException("paso: la arista ya tiene pareja en el nodo " + id);
+            }
+            pasos.add(new Arista[] { e1, e2 });
+            return cambia();
+        }
+
+        private Arista parejaDe(Arista e) {
+            for (Arista[] p : pasos) { if (p[0] == e) return p[1]; if (p[1] == e) return p[0]; }
+            return null;
+        }
 
         /** Color único: centro y todos los sectores. */
         public Nodo color(int argb) { centro = argb; sectores = null; contra = normal = null; return cambia(); }
@@ -137,6 +164,8 @@ public final class Composicion {
         private final Nodo a, b;
         private Gota.Vec va, vb;
         private Degradado espina;
+        private DoubleUnaryOperator altura;
+        private Gota.Vec ava, avb;                  // tiradores de alisar(): solo si no hay tiradores explícitos
 
         private Arista(Composicion dueña, int id, Nodo a, Nodo b) { this.dueña = dueña; this.id = id; this.a = a; this.b = b; }
 
@@ -155,6 +184,15 @@ public final class Composicion {
          * (x = 1); por defecto, la mezcla lineal entre los dos. Debe coincidir con los colores de los centros.
          */
         public Arista espina(Degradado f) { espina = Objects.requireNonNull(f, "espina"); dueña.invalida(); return this; }
+
+        /**
+         * Altura de la arista a lo largo de su eje, de {@link #a()} (x = 0) a {@link #b()} (x = 1): en un solape con
+         * {@link Solape#TRAZO} manda la mayor. Permite cruces alternados (por encima / por debajo) que el orden del
+         * recorrido no puede dar. Sin declarar, la arista usa el orden del recorrido como hasta ahora, y las aristas con
+         * altura quedan por encima de las que no la tienen. En los nodos, las alturas de las aristas declaradas que
+         * llegan deben coincidir (IllegalArgumentException al construir).
+         */
+        public Arista altura(DoubleUnaryOperator f) { altura = Objects.requireNonNull(f, "altura"); dueña.invalida(); return this; }
     }
 
     private final List<Nodo> nodos = new ArrayList<>();
@@ -281,6 +319,183 @@ public final class Composicion {
             suma += Math.asin(Math.max(-0.999, Math.min(0.999, k)));
         }
         return Math.toDegrees(Math.abs(suma));
+    }
+
+    /**
+     * Aristas cuya gota es rígida: su trayectoria mide r1 + r2 o menos, así que la forma son cuatro arcos sobre la recta
+     * de los centros y se ignoran los tiradores (la cinta se ve facetada, con quiebros en los nodos). Diagnóstico: con
+     * nodos más separados que r1 + r2, o con radios menores, la lista queda vacía.
+     */
+    public List<Arista> rigidas() {
+        construye();
+        List<Arista> r = new ArrayList<>();
+        for (Arista e : aristas) if (gotas.get(e.id).silueta() != null) r.add(e);
+        return r;
+    }
+
+    /**
+     * Curvatura continua (G2) a lo largo de las cintas: por cada cadena de aristas que se continúan (nodos de grado 2 o
+     * parejas de {@link Nodo#paso}) calcula la spline cúbica C2 que pasa por sus nodos, con parámetro de longitud de
+     * cuerda (periódica si la cadena se cierra; natural, de curvatura nula en los extremos, si es abierta), y da a cada
+     * arista los tiradores de esa spline. Con los tiradores automáticos de siempre la tangente es continua (G1) pero la
+     * curvatura salta en cada nodo. No mueve nodos ni toca radios; las aristas con tiradores explícitos y los lazos
+     * quedan fuera, y una cadena cerrada de menos de tres aristas se deja como está. Opt-in e idempotente; llámala
+     * después de {@link #relajar()} si quieres que las uniones también entren.
+     * <p>
+     * Límite medido (estudio_trenza_aleatoria.md, 200 semillas de puntos aleatorios): con giros muy cerrados, y sobre
+     * todo con nodos donde la ruta se invierte casi 180°, la spline concentra la curvatura y puede aumentar las aristas
+     * cuya envolvente se pliega (2,4 veces más que con los tiradores automáticos). La silueta no se ve afectada; las
+     * coordenadas (color y textura por bandas) pueden. Es una función de ayuda: comprueba con {@link #plegadas()} y
+     * deja esas aristas con tiradores explícitos si hace falta.
+     */
+    public Composicion alisar() {
+        for (Arista e : aristas) { e.ava = null; e.avb = null; }
+        Set<Arista> hechas = new HashSet<>();
+        // cadenas abiertas: se empieza por una arista con un extremo sin continuación
+        for (Arista e : aristas) {
+            if (hechas.contains(e) || !alisable(e)) continue;
+            for (Nodo extremo : new Nodo[] { e.a, e.b }) {
+                if (continuacion(e, extremo) == null) { alisaCadena(e, extremo, hechas, false); break; }
+            }
+        }
+        for (Arista e : aristas) if (!hechas.contains(e) && alisable(e)) alisaCadena(e, e.a, hechas, true);
+        invalida();
+        return this;
+    }
+
+    private static boolean alisable(Arista e) { return e.a != e.b && e.va == null && e.vb == null; }
+
+    /** La arista que continúa a e al otro lado de n (grado 2, o pareja de paso), o null. */
+    private Arista continuacion(Arista e, Nodo n) {
+        Arista o = null;
+        if (grado(n) == 2) {
+            for (Arista f : aristas) if (f != e && (f.a == n || f.b == n)) o = f;
+        } else o = n.parejaDe(e);
+        return o != null && alisable(o) && o.a != o.b ? o : null;
+    }
+
+    private void alisaCadena(Arista primera, Nodo inicio, Set<Arista> hechas, boolean cerrada) {
+        List<Arista> es = new ArrayList<>();
+        List<Nodo> ps = new ArrayList<>();
+        Arista e = primera; Nodo desde = inicio;
+        while (e != null && hechas.add(e)) {
+            es.add(e); ps.add(desde);
+            Nodo hasta = e.a == desde ? e.b : e.a;
+            Arista sig = continuacion(e, hasta);
+            if (sig == null && !cerrada) ps.add(hasta);
+            desde = hasta; e = sig;
+        }
+        int n = es.size();
+        if (cerrada) { if (n < 3 || desde != inicio) { for (Arista f : es) hechas.remove(f); return; } }
+        double[] h = new double[n];
+        for (int i = 0; i < n; i++) {
+            Nodo a = ps.get(i), b = cerrada ? ps.get((i + 1) % n) : ps.get(i + 1);
+            double cuerda = Math.hypot(b.x - a.x, b.y - a.y);
+            if (cuerda < 1e-9) return;                                    // nodos coincidentes: sin spline
+            h[i] = cuerda;
+        }
+        int m = cerrada ? n : n + 1;
+        double[][] A = new double[m][m];
+        double[][] rhs = new double[m][2];
+        for (int i = 0; i < m; i++) {
+            Nodo p = ps.get(i), q = ps.get((i + 1) % ps.size()), o = ps.get((i + ps.size() - 1) % ps.size());
+            boolean interior = cerrada || (i > 0 && i < n);
+            if (interior) {
+                double hm = h[(i + n - 1) % n], hi = h[i % n];
+                A[i][(i + m - 1) % m] += hi; A[i][i] += 2 * (hm + hi); A[i][(i + 1) % m] += hm;
+                rhs[i][0] = 3 * (hi * (p.x - o.x) / hm + hm * (q.x - p.x) / hi);
+                rhs[i][1] = 3 * (hi * (p.y - o.y) / hm + hm * (q.y - p.y) / hi);
+            } else if (i == 0) {                                          // extremo natural: 2 m0 + m1 = 3 (P1 - P0) / h0
+                Nodo q1 = ps.get(1);
+                A[0][0] = 2; A[0][1] = 1;
+                rhs[0][0] = 3 * (q1.x - p.x) / h[0]; rhs[0][1] = 3 * (q1.y - p.y) / h[0];
+            } else {                                                      // m_{n-1} + 2 m_n = 3 (Pn - Pn-1) / h_{n-1}
+                Nodo a = ps.get(n - 1);
+                A[i][i - 1] = 1; A[i][i] = 2;
+                rhs[i][0] = 3 * (p.x - a.x) / h[n - 1]; rhs[i][1] = 3 * (p.y - a.y) / h[n - 1];
+            }
+        }
+        double[][] mm = resuelve(A, rhs);
+        if (mm == null) { for (Arista f : es) hechas.remove(f); return; }
+        for (int i = 0; i < n; i++) {
+            int j = cerrada ? (i + 1) % n : i + 1;
+            Gota.Vec c1 = new Gota.Vec(mm[i][0] * h[i] / 3, mm[i][1] * h[i] / 3);
+            Gota.Vec c2 = new Gota.Vec(-mm[j][0] * h[i] / 3, -mm[j][1] * h[i] / 3);
+            Arista f = es.get(i);
+            if (f.a == ps.get(i)) { f.ava = c1; f.avb = c2; } else { f.avb = c1; f.ava = c2; }
+        }
+    }
+
+    /** Eliminación gaussiana con pivote parcial; null si el sistema es singular. */
+    private static double[][] resuelve(double[][] A, double[][] b) {
+        int m = A.length;
+        for (int c = 0; c < m; c++) {
+            int piv = c;
+            for (int r = c + 1; r < m; r++) if (Math.abs(A[r][c]) > Math.abs(A[piv][c])) piv = r;
+            if (Math.abs(A[piv][c]) < 1e-12) return null;
+            double[] t = A[c]; A[c] = A[piv]; A[piv] = t;
+            double[] u = b[c]; b[c] = b[piv]; b[piv] = u;
+            for (int r = c + 1; r < m; r++) {
+                double f = A[r][c] / A[c][c];
+                if (f == 0) continue;
+                for (int k = c; k < m; k++) A[r][k] -= f * A[c][k];
+                b[r][0] -= f * b[c][0]; b[r][1] -= f * b[c][1];
+            }
+        }
+        double[][] x = new double[m][2];
+        for (int r = m - 1; r >= 0; r--) for (int d = 0; d < 2; d++) {
+            double v = b[r][d];
+            for (int k = r + 1; k < m; k++) v -= A[r][k] * x[k][d];
+            x[r][d] = v / A[r][r];
+        }
+        return x;
+    }
+
+    /**
+     * Aristas cuya gota (no rígida) se pliega: en algún punto del camino el radio de curvatura es menor o igual que el
+     * radio de la cinta (kappa * r >= 1) o el radio cambia más deprisa que el camino (|r'| >= |c'|). Diagnóstico de
+     * puntas y giros muy cerrados, por ejemplo un nodo donde la ruta se invierte casi 180°.
+     */
+    public List<Arista> plegadas() {
+        construye();
+        List<Arista> r = new ArrayList<>();
+        for (Arista e : aristas) if (gotas.get(e.id).plegada()) r.add(e);
+        return r;
+    }
+
+    /** {@link #relajar(double)} con 120°. */
+    public Composicion relajar() { return relajar(120); }
+
+    /**
+     * Da tangente continua (G1) por los nodos de grado 3 o más sin tener que calcular los tiradores a mano: en cada
+     * nodo sin parejas declaradas, empareja las ramas más opuestas (ángulo entre las direcciones a sus vecinos mayor
+     * o igual que minGrados) con {@link Nodo#paso}, de más a menos opuestas. No mueve nodos ni toca radios; las
+     * ramas sin pareja siguen saliendo hacia su vecino. Heurística opt-in: se corrige con {@link Nodo#paso} o con
+     * tiradores explícitos. Hay que llamarla con la topología terminada (las aristas añadidas después no entran).
+     */
+    public Composicion relajar(double minGrados) {
+        for (Nodo n : nodos) {
+            if (grado(n) < 3 || !n.pasos.isEmpty()) continue;
+            List<Arista> ramas = new ArrayList<>();
+            for (Arista e : aristas) if (e.a != e.b && (e.a == n || e.b == n)) ramas.add(e);
+            while (ramas.size() >= 2) {
+                double mejor = -1; int bi = -1, bj = -1;
+                for (int i = 0; i < ramas.size(); i++) for (int j = i + 1; j < ramas.size(); j++) {
+                    double[] u = dirA(n, ramas.get(i)), w = dirA(n, ramas.get(j));
+                    double ang = Math.toDegrees(Math.acos(Math.max(-1, Math.min(1, u[0] * w[0] + u[1] * w[1]))));
+                    if (ang > mejor) { mejor = ang; bi = i; bj = j; }
+                }
+                if (mejor < minGrados) break;
+                n.paso(ramas.get(bi), ramas.get(bj));
+                ramas.remove(bj); ramas.remove(bi);
+            }
+        }
+        return this;
+    }
+
+    private static double[] dirA(Nodo n, Arista e) {
+        Nodo m = e.a == n ? e.b : e.a;
+        return unit(m.x - n.x, m.y - n.y);
     }
 
     // ---------- Pintado ----------
@@ -485,8 +700,8 @@ public final class Composicion {
         if (op.solape() == Solape.TRAZO) {
             // Entre las gotas que contienen el píxel manda, primero, la que lo tiene en su cuerpo (las tapas de los nodos compartidos
             // no tapan a los cuerpos vecinos); después, la que va más tarde en el recorrido (mayor s); con empate, la arista escrita después.
-            boolean cuerpoTop = false;
-            double sTop = Double.NEGATIVE_INFINITY;
+            boolean cuerpoTop = false, altTop = false;
+            double sTop = Double.NEGATIVE_INFINITY, sGan = Double.NEGATIVE_INFINITY;
             for (int k = 0; k < gotas.size(); k++) {
                 if (!(s[k] <= 0)) continue;
                 Gota g = gotas.get(k);
@@ -495,7 +710,14 @@ public final class Composicion {
                 boolean cuerpo = v >= ck.c1() && v <= ck.c3();
                 double t = Coordenadas.porRho(g, x, y, Solape.TRAZO).t();
                 double sg = sInicio[k] + (sFin[k] - sInicio[k]) * g.fraccion(t);
-                if ((cuerpo && !cuerpoTop) || (cuerpo == cuerpoTop && sg >= sTop)) { cuerpoTop = cuerpo; sTop = sg; mejor = k; }
+                DoubleUnaryOperator fa = aristas.get(k).altura;
+                double h = sg;                                           // sin altura declarada manda s; con ella, la altura (por encima de s)
+                if (fa != null) { double x0 = g.fraccion(t); h = fa.applyAsDouble(invertida[k] ? 1 - x0 : x0); }
+                boolean dec = fa != null;
+                boolean gana = mejor < 0 || (cuerpo != cuerpoTop ? cuerpo
+                        : dec != altTop ? dec
+                        : h > sTop || (h == sTop && sg >= sGan));
+                if (gana) { cuerpoTop = cuerpo; altTop = dec; sTop = h; sGan = sg; mejor = k; }
             }
             if (mejor >= 0) return new double[] { cob, mejor };
         }
@@ -530,6 +752,11 @@ public final class Composicion {
         Gota.Vec v = inicio ? e.va : e.vb;
         Nodo n = inicio ? e.a : e.b, m = inicio ? e.b : e.a;
         if (v != null && (v.x() != 0 || v.y() != 0)) return unit(v.x(), v.y());
+        Arista pareja = n.parejaDe(e);
+        if (pareja != null) {
+            Nodo o = pareja.a == n ? pareja.b : pareja.a;
+            if (!(o.x == m.x && o.y == m.y)) return unit(m.x - o.x, m.y - o.y);
+        }
         if (grado(n) == 2) {
             Nodo o = null;
             for (Arista f : aristas) {
@@ -567,8 +794,8 @@ public final class Composicion {
                 throw new IllegalStateException("lazo en el nodo " + e.a.id + ": hay que dar los dos tiradores");
             double d = Math.hypot(e.b.x - e.a.x, e.b.y - e.a.y);
             double[] ua = salida(e, true), ub = salida(e, false);
-            Gota.Vec va = e.va != null ? e.va : new Gota.Vec(ua[0] * d / 3, ua[1] * d / 3);
-            Gota.Vec vb = e.vb != null ? e.vb : new Gota.Vec(ub[0] * d / 3, ub[1] * d / 3);
+            Gota.Vec va = e.va != null ? e.va : e.ava != null ? e.ava : new Gota.Vec(ua[0] * d / 3, ua[1] * d / 3);
+            Gota.Vec vb = e.vb != null ? e.vb : e.avb != null ? e.avb : new Gota.Vec(ub[0] * d / 3, ub[1] * d / 3);
             ars.add(new Ar(e.a.id, e.b.id, va, vb, Double.NaN, Double.NaN, e.va != null || e.vb != null));
         }
         if (ajustaPendientes) ars = igualaK(ars);
@@ -602,6 +829,25 @@ public final class Composicion {
         }
         bounds = bb;
         ordena(pasos, inv);
+        validaAlturas();
+    }
+
+    /** Las aristas con altura que llegan a un mismo nodo deben darle la misma altura (como los colores en los centros). */
+    private void validaAlturas() {
+        for (Nodo n : nodos) {
+            Double ref = null;
+            for (Arista e : aristas) {
+                if (e.altura == null) continue;
+                for (int extremo = 0; extremo < 2; extremo++) {
+                    if ((extremo == 0 ? e.a : e.b) != n) continue;
+                    double h = e.altura.applyAsDouble(extremo);
+                    if (ref == null) ref = h;
+                    else if (Math.abs(h - ref) > 1e-6 * Math.max(1, Math.abs(ref)))
+                        throw new IllegalArgumentException("nodo " + n.id + ": las alturas de las aristas que llegan no coinciden (" + ref + " y " + h
+                                + " en x = " + extremo + "); la altura debe ser continua en los nodos");
+                }
+            }
+        }
     }
 
     // ---------- Color lateral por sectores ----------

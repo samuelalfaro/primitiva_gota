@@ -637,7 +637,178 @@ public class ComposicionPruebas {
         comprueba("modo nulo: NullPointerException", lanza(NullPointerException.class, () -> c.render(lienzo(), tex, (ComposicionColor.Modo) null, op)), "");
     }
 
+    // ---------- altura de las aristas ----------
+
+    /** Dos cintas que se cruzan en (210, 210): roja de (150,150) a (360,360) (s = 85 en el cruce) y azul de (360,60) a (60,360) (s = 212): sin altura gana la azul. */
+    static Composicion cruz(Double alturaRoja, Double alturaAzul) {
+        final int ROJO = 0xFFE8283A, AZUL = 0xFF2850E8;
+        Composicion c = new Composicion().mezcla(Mezcla.RGB);
+        var r = c.arista(c.nodo(150, 150, 14).centro(ROJO), c.nodo(360, 360, 14).centro(ROJO));
+        var a = c.arista(c.nodo(360, 60, 14).centro(AZUL), c.nodo(60, 360, 14).centro(AZUL));
+        if (alturaRoja != null) r.altura(x -> alturaRoja);
+        if (alturaAzul != null) a.altura(x -> alturaAzul);
+        return c;
+    }
+
+    static boolean rojoEncima(Composicion c) {
+        BufferedImage im = lienzo();
+        c.render(im, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
+        int p = datos(im)[210 * W + 210];
+        return ((p >> 16) & 255) > (p & 255);
+    }
+
+    static void alturas() {
+        comprueba("altura: sin declarar manda la mayor s del recorrido (la azul, encima)", !rojoEncima(cruz(null, null)), "");
+        comprueba("altura: la arista roja más alta queda encima", rojoEncima(cruz(1.0, 0.0)), "");
+        comprueba("altura: la arista azul más alta queda encima", !rojoEncima(cruz(0.0, 1.0)), "");
+        comprueba("altura: la declarada queda por encima de la no declarada (roja)", rojoEncima(cruz(-5.0, null)), "");
+        comprueba("altura: con alturas iguales manda el orden del recorrido", !rojoEncima(cruz(2.0, 2.0)), "");
+        Composicion c = new Composicion();
+        var n0 = c.nodo(60, 60, 10); var n1 = c.nodo(200, 80, 10); var n2 = c.nodo(340, 60, 10);
+        c.arista(n0, n1).altura(x -> 0);
+        c.arista(n1, n2).altura(x -> 1);
+        comprueba("altura: alturas distintas en un nodo compartido: IllegalArgumentException", lanza(IllegalArgumentException.class, () -> c.render(lienzo())), "");
+        comprueba("altura: nula: NullPointerException", lanza(NullPointerException.class, () -> c.arista(n0, n2).altura(null)), "");
+    }
+
+    // ---------- paso y relajar ----------
+
+    /** Cinta de cuatro nodos con una rama en el nodo 2 (grado 3). Las aristas se crean en este orden: 0-1, 1-2, 2-3, 2-4. */
+    static Composicion cintaConRama() {
+        Composicion c = new Composicion();
+        double[][] p = { { 40, 330 }, { 150, 150 }, { 260, 250 }, { 370, 360 }, { 235, 430 } };
+        var n = new Composicion.Nodo[p.length];
+        for (int i = 0; i < p.length; i++) n[i] = c.nodo(p[i][0], p[i][1], 16).centro(0xFF4FA36B);
+        c.arista(n[0], n[1]); c.arista(n[1], n[2]); c.arista(n[2], n[3]); c.arista(n[2], n[4]);
+        return c;
+    }
+
+    /** Ángulo (grados) entre la tangente de llegada de la gota 1 y la de salida de la gota 2 en el nodo 2. */
+    static double quiebroCinta(Composicion c) {
+        var g = c.gotas();
+        double e = 1e-4;
+        Point2D a1 = g.get(1).centro(1 - e), a2 = g.get(1).centro(1), b1 = g.get(2).centro(0), b2 = g.get(2).centro(e);
+        double ta = Math.atan2(a2.getY() - a1.getY(), a2.getX() - a1.getX()), tb = Math.atan2(b2.getY() - b1.getY(), b2.getX() - b1.getX());
+        return Math.abs(Math.toDegrees(Math.atan2(Math.sin(tb - ta), Math.cos(tb - ta))));
+    }
+
+    static void pasos() {
+        double sin = quiebroCinta(cintaConRama());
+        comprueba("relajar: sin relajar la cinta quiebra en el nodo de grado 3", sin > 1, String.format("%.2f°", sin));
+        Composicion r = cintaConRama().relajar();
+        double con = quiebroCinta(r);
+        comprueba("relajar: con relajar() la cinta es G1 en el nodo (< 0,05°)", con < 0.05, String.format("%.4f°", con));
+        comprueba("relajar: idempotente (segunda llamada sin error ni cambios)", Math.abs(quiebroCinta(r.relajar()) - con) < 1e-9, "");
+        // la rama (gota 3) sigue saliendo hacia su vecino: igual que sin relajar
+        Point2D rs = r.gotas().get(3).centro(0), rt = r.gotas().get(3).centro(1e-4);
+        Point2D ss = cintaConRama().gotas().get(3).centro(0), st = cintaConRama().gotas().get(3).centro(1e-4);
+        comprueba("relajar: la rama sin pareja no cambia", rt.distance(st) < 1e-9 && rs.distance(ss) < 1e-9, "");
+        comprueba("relajar con umbral 179°: no empareja nada (cinta a menos de 179°)", quiebroCinta(cintaConRama().relajar(179.9)) > 1, "");
+        // paso manual a otra pareja, mismos efectos que relajar() en la pareja natural
+        Composicion m = new Composicion();
+        var a = m.nodo(0, 0, 10).centro(0xFF000000); var b = m.nodo(120, 80, 10).centro(0xFF000000); var d = m.nodo(240, 0, 10).centro(0xFF000000);
+        var ab = m.arista(a, b); var bd = m.arista(b, d);
+        comprueba("paso: arista de otra composición o que no llega: IllegalArgumentException", lanza(IllegalArgumentException.class, () -> b.paso(ab, m.arista(a, d))), "");
+        comprueba("paso: la misma arista dos veces: IllegalArgumentException", lanza(IllegalArgumentException.class, () -> b.paso(ab, ab)), "");
+        comprueba("paso: arista nula: NullPointerException", lanza(NullPointerException.class, () -> b.paso(ab, null)), "");
+        b.paso(ab, bd);
+        comprueba("paso: la arista ya emparejada en el nodo: IllegalArgumentException", lanza(IllegalArgumentException.class, () -> b.paso(ab, bd)), "");
+    }
+
+    static void rigidas() {
+        Composicion c = new Composicion();
+        var a = c.nodo(0, 0, 20).centro(0xFF000000); var b = c.nodo(30, 0, 20).centro(0xFF000000);
+        var d = c.nodo(130, 0, 20).centro(0xFF000000); var e = c.nodo(150, 10, 20).centro(0xFF000000);
+        var ab = c.arista(a, b); var bd = c.arista(b, d); var de = c.arista(d, e);
+        List<Composicion.Arista> r = c.rigidas();
+        comprueba("rigidas: detecta las gotas de trayectoria <= r1 + r2 (la 1.ª y la 3.ª)", r.size() == 2 && r.contains(ab) && r.contains(de) && !r.contains(bd), r.size() + " rígidas");
+        Composicion s = new Composicion();
+        var x = s.nodo(0, 0, 10).centro(0xFF000000); var y = s.nodo(60, 0, 10).centro(0xFF000000);
+        s.arista(x, y);
+        comprueba("rigidas: lista vacía si todas superan r1 + r2", s.rigidas().isEmpty(), "");
+    }
+
+    // ---------- alisar (G2) ----------
+
+    static double curvaturaConSigno(Point2D a, Point2D b, Point2D c) {
+        double cross = (b.getX() - a.getX()) * (c.getY() - a.getY()) - (b.getY() - a.getY()) * (c.getX() - a.getX());
+        return 2 * cross / (a.distance(b) * b.distance(c) * c.distance(a));
+    }
+
+    /** Salto máximo de curvatura entre la llegada y la salida de las gotas consecutivas g[i] -> g[i+1] (cíclico si cierra), relativo a la curvatura máxima de la cadena. */
+    static double saltoCurvatura(List<Gota> g, boolean cierra) {
+        double e = 1e-3, salto = 0, kmax = 1e-9;
+        for (int i = 0; i < g.size() - (cierra ? 0 : 1); i++) {
+            Gota p = g.get(i), q = g.get((i + 1) % g.size());
+            double kp = curvaturaConSigno(p.centro(1 - 2 * e), p.centro(1 - e), p.centro(1));
+            double kq = curvaturaConSigno(q.centro(0), q.centro(e), q.centro(2 * e));
+            salto = Math.max(salto, Math.abs(kp - kq));
+            kmax = Math.max(kmax, Math.max(Math.abs(kp), Math.abs(kq)));
+        }
+        return salto / kmax;
+    }
+
+    static Composicion trebolDeNodos(int N) {
+        Composicion c = new Composicion();
+        var n = new Composicion.Nodo[N];
+        for (int i = 0; i < N; i++) {
+            double t = 2 * Math.PI * i / N;
+            n[i] = c.nodo(210 + 48 * (Math.sin(t) + 2 * Math.sin(2 * t)), 210 + 48 * (Math.cos(t) - 2 * Math.cos(2 * t)), 8).centro(0xFF336699);
+        }
+        for (int i = 0; i < N; i++) c.arista(n[i], n[(i + 1) % N]);
+        return c;
+    }
+
+    static void alisar() {
+        double antes = saltoCurvatura(trebolDeNodos(30).gotas(), true);
+        double despues = saltoCurvatura(trebolDeNodos(30).alisar().gotas(), true);
+        comprueba("alisar: sin alisar la curvatura salta en los nodos (> 5 %)", antes > 0.05, String.format("%.1f %%", 100 * antes));
+        comprueba("alisar: con alisar() la curvatura es continua en los nodos (< 1 %) en una cadena cerrada", despues < 0.01, String.format("%.3f %%", 100 * despues));
+        // cadena abierta: curvatura nula en los extremos (spline natural) y continua dentro
+        Composicion o = new Composicion();
+        double[][] p = { { 40, 300 }, { 120, 150 }, { 220, 120 }, { 320, 220 }, { 400, 330 } };
+        var n = new Composicion.Nodo[p.length];
+        for (int i = 0; i < p.length; i++) n[i] = o.nodo(p[i][0], p[i][1], 10).centro(0xFF336699);
+        for (int i = 0; i + 1 < p.length; i++) o.arista(n[i], n[i + 1]);
+        var g = o.alisar().gotas();
+        double e = 1e-3, k0 = curvaturaConSigno(g.get(0).centro(0), g.get(0).centro(e), g.get(0).centro(2 * e));
+        comprueba("alisar: cadena abierta, curvatura nula en el extremo (natural)", Math.abs(k0) < 1e-3, String.format("%.5f", k0));
+        comprueba("alisar: cadena abierta, curvatura continua en los nodos interiores (< 1 %)", saltoCurvatura(g, false) < 0.01, String.format("%.3f %%", 100 * saltoCurvatura(g, false)));
+        // idempotente
+        Composicion c = trebolDeNodos(30).alisar();
+        Point2D m1 = c.gotas().get(5).centro(0.5);
+        Point2D m2 = c.alisar().gotas().get(5).centro(0.5);
+        comprueba("alisar: idempotente", m1.distance(m2) < 1e-9, "");
+        // un tirador explícito queda fuera y manda
+        Composicion x = new Composicion();
+        var a = x.nodo(40, 200, 10).centro(0xFF336699); var b = x.nodo(160, 120, 10).centro(0xFF336699);
+        var d = x.nodo(280, 200, 10).centro(0xFF336699); var f = x.nodo(400, 120, 10).centro(0xFF336699);
+        x.arista(a, b); x.arista(b, d).tiradores(new Gota.Vec(10, 60), new Gota.Vec(-10, 60)); x.arista(d, f);
+        Point2D sin = x.gotas().get(1).centro(0.5);
+        Point2D con = x.alisar().gotas().get(1).centro(0.5);
+        comprueba("alisar: la arista con tiradores explícitos no cambia", sin.distance(con) < 1e-9, "");
+        // junto con relajar(): la cinta con rama sigue G1 en el nodo de grado 3 y renderiza
+        Composicion r = cintaConRama().relajar().alisar();
+        comprueba("alisar + relajar: la cinta es G1 en el nodo de grado 3 (< 0,05°)", quiebroCinta(r) < 0.05, String.format("%.4f°", quiebroCinta(r)));
+        comprueba("alisar + relajar: renderiza", datos(pintaEn(r)) != null, "");
+        Composicion anillo = new Composicion();
+        var u = anillo.nodo(100, 100, 12).centro(0xFF336699); var w = anillo.nodo(300, 100, 12).centro(0xFF336699);
+        anillo.arista(u, w); anillo.arista(w, u);
+        Point2D ant = anillo.gotas().get(0).centro(0.5);
+        comprueba("alisar: el anillo de dos nodos se deja como está", ant.distance(anillo.alisar().gotas().get(0).centro(0.5)) < 1e-9, "");
+    }
+
+    static BufferedImage pintaEn(Composicion c) {
+        BufferedImage im = lienzo();
+        c.render(im);
+        return im;
+    }
+
     public static void main(String[] args) throws Exception {
+        alisar();
+        rigidas();
+        pasos();
+        alturas();
         reglas();
         anillo();
         quiebros();
