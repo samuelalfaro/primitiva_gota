@@ -4,7 +4,7 @@ import pintado.Plotter;
 import color.Relleno;
 import color.Mezcla;
 import color.Texturas;
-import color.ComposicionColor;
+import color.Combinacion;
 import color.Colores;
 import java.awt.*;
 import java.awt.geom.*;
@@ -72,7 +72,7 @@ public class BalonDemo {
                 int cf = color(x + 0.5 - c.x, y + 0.5 - c.y, R, ang, col, m, 1.6);
                 if (textura) {
                     int ct = TEX.muestrea((x + 0.5 - c.x) / (2 * R) + 0.5, (y + 0.5 - c.y) / (2 * R) + 0.5);
-                    cf = ComposicionColor.aplica(ComposicionColor.Modo.MODULATE, cf, ct, 0xFF000000);
+                    cf = Combinacion.aplica(Combinacion.Modo.MODULATE, cf, ct, 0xFF000000);
                 }
                 mask.setRGB(x, y, (a << 24) | (cf & 0xFFFFFF));
             }
@@ -84,7 +84,7 @@ public class BalonDemo {
         Point2D.Double c = new Point2D.Double(W / 2.0, H / 2.0 + 14);
         try {
             Relleno col = Colores.cuatroColores(CENTRO, CENTRO, ROJO, AZUL);
-            Relleno rel = ComposicionColor.combinar(col, Texturas.disco(TEX), ComposicionColor.Modo.MODULATE);
+            Relleno rel = Combinacion.combinar(col, Texturas.disco(TEX), Combinacion.Modo.MODULATE);
             Plotter.raster(img).plot(Gota.lineal(c, R, c, R, Perfil.central(1.0)), rel);
         } catch (RuntimeException ex) {
             Graphics2D g = img.createGraphics();
