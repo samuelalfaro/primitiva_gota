@@ -147,7 +147,7 @@ public final class ArbolParametrico3D {
 
         ArbolParametrico3D arbol = new ArbolParametrico3D(p);
         Punto3D raiz = arbol.punto(0, 0, 0, p.radio, 0);
-        arbol.crecer(raiz, 0, 0, 0,
+        arbol.crecer(raiz, 0, 0,
                 p.altura, p.radio, 0);
         return new Modelo(arbol.puntos, arbol.ramas);
     }
