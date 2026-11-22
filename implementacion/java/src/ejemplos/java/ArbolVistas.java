@@ -130,6 +130,9 @@ public final class ArbolVistas {
 
     public static void main(String[] args) throws Exception {
         ArbolParametrico3D.Parametros p = new ArbolParametrico3D.Parametros();
+        // densidad: -Dramas=N (ramas hijas por nodo) y -Dniveles=N; con 3-4 ramas hay muchos más cruces (test de estrés)
+        p.ramas = Integer.getInteger("ramas", p.ramas);
+        p.niveles = Integer.getInteger("niveles", p.niveles);
         double yaw = args.length > 0 ? Double.parseDouble(args[0]) : 35, pitch = args.length > 1 ? Double.parseDouble(args[1]) : 20;
         ArbolParametrico3D.Modelo m = ArbolParametrico3D.crear(p);
         if (args.length > 2 && args[2].equals("niebla")) { niebla(m, yaw, pitch); return; }
