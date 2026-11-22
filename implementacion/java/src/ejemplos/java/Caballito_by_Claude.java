@@ -56,9 +56,9 @@ public class Caballito_by_Claude {
         { 396, 664, 4.5 }, { 430, 668, 3 }
     };
 
-    static Composicion cuerpo() {
-        Composicion c = new Composicion().mezcla(RGB);
-        Composicion.Nodo prev = null;
+    static Grafo cuerpo() {
+        Grafo c = new Grafo().mezcla(RGB);
+        Grafo.Nodo prev = null;
         int n = P.length;
         for (int i = 0; i < n; i++) {
             double t = (double) i / (n - 1);
@@ -74,9 +74,9 @@ public class Caballito_by_Claude {
     }
 
     /** Gota de base ancha y punta fina que se desvanece hacia el borde (aleta, espina, cresta). */
-    static Composicion rayo(double x0, double y0, double r0, double x1, double y1, double r1,
+    static Grafo rayo(double x0, double y0, double r0, double x1, double y1, double r1,
                             double vx, double vy, int base, int punta, double desvanece) {
-        Composicion c = new Composicion().mezcla(RGB);
+        Grafo c = new Grafo().mezcla(RGB);
         Degradado fb = x -> mezcla(base, conAlfa(base, 0), Math.pow(x, 1.5) * desvanece);
         Degradado fp = x -> mezcla(punta, conAlfa(punta, 0), Math.pow(x, 1.5) * desvanece);
         var a = c.nodo(x0, y0, r0).centro(base).radio(fb);

@@ -15,7 +15,7 @@ public class GaleriaTapas {
         Gota gruesa = Gota.curva(p(80, 90), 34, new Gota.Vec(130, 0), p(300, 290), 62, new Gota.Vec(0, -130), Perfil.recto());
         Colores.Lateral a = new Colores.Lateral(0xFFD7263D, 0xFFFFE9A8, 0xFF2D6CDF);
         Colores.Lateral b = new Colores.Lateral(0xFF1FA39A, 0xFFE8F5D0, 0xFFF28E2B);
-        Composicion estT = ComposicionPruebas.estrella(0);
+        Grafo estT = ComposicionPruebas.estrella(0);
 
         Object[][] filas = {
                 { "gruesa-textura", new Relleno[] { Texturas.tira(tex), Texturas.discoCapsula(tex), null } },

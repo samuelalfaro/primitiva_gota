@@ -8,7 +8,7 @@ import java.util.List;
  * necesitaría cualquier otro dibujo de la primitiva (por ejemplo, un modo de alambre).
  * Todas las coordenadas están en el espacio de la imagen.
  */
-public interface Geometria {
+public interface Camino {
     /** Centro del círculo de la familia en t. */
     double cx(double t);
     double cy(double t);

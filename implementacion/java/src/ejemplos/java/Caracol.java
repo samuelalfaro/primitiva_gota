@@ -7,8 +7,8 @@ import javax.imageio.ImageIO;
 public class Caracol {
     static final int W = 640, H = 620, FONDO = 0xFFF4F1EA, RECORTE = 130, ALTO = 480;
 
-    static Composicion cuerpo() {
-        Composicion c = new Composicion();
+    static Grafo cuerpo() {
+        Grafo c = new Grafo();
         var cola = c.nodo(150, 396, 3).centro(0xFFE8C9A0).sectores(0xFFB98B5E);
         var lomo = c.nodo(262, 392, 21).centro(0xFFF3DDB8).lados(0xFFB98B5E, 0xFFE8C9A0).ajusteLateral(0.35);
         var cuello = c.nodo(376, 372, 25).centro(0xFFF3DDB8).lados(0xFFB98B5E, 0xFFE8C9A0).ajusteLateral(0.35);
@@ -19,8 +19,8 @@ public class Caracol {
         return c;
     }
 
-    static Composicion antena(double x0, double y0, double x1, double y1, double vx, double vy) {
-        Composicion c = new Composicion();
+    static Grafo antena(double x0, double y0, double x1, double y1, double vx, double vy) {
+        Grafo c = new Grafo();
         var a = c.nodo(x0, y0, 5).color(0xFFD9AE80);
         var b = c.nodo(x1, y1, 8).centro(0xFFF1D7B0).sectores(0xFF8D5B3A);
         c.arista(a, b).tiradores(new Gota.Vec(vx, vy), null);
@@ -28,10 +28,10 @@ public class Caracol {
     }
 
     /** Concha: espiral logarítmica de nodos, del grande exterior al pequeño interior, con sectores alternos. */
-    static Composicion concha(double cx, double cy) {
-        Composicion c = new Composicion();
+    static Grafo concha(double cx, double cy) {
+        Grafo c = new Grafo();
         int[][] tono = { { 0xFFD2691E, 0xFFE9954A, 0xFF8B4513 }, { 0xFFB8541A, 0xFFF0B070, 0xFF7A3A12 } };
-        Composicion.Nodo prev = null;
+        Grafo.Nodo prev = null;
         int n = 7;
         for (int i = 0; i < n; i++) {
             double th = Math.PI * 0.95 + i * 0.95, rho = 70 * Math.exp(-0.27 * (th - Math.PI * 0.95));
@@ -64,13 +64,13 @@ public class Caracol {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), FONDO);
         sol(im, 540, 215);
-        Composicion hoja = Hoja.limbo(new Hoja.Tr(30, 440, Math.toRadians(-4), 0.9), 3.6);
+        Grafo hoja = Hoja.limbo(new Hoja.Tr(30, 440, Math.toRadians(-4), 0.9), 3.6);
         hoja.render(im);
         Hoja.venas(hoja, 1.0, 0.55).render(im);
         cuerpo().render(im);
         antena(458, 308, 484, 236, 4, -30).render(im);
         antena(440, 306, 432, 232, -6, -30).render(im);
-        Composicion concha = concha(300, 300);
+        Grafo concha = concha(300, 300);
         concha.render(im);
         concha.render(im, ESTRIAS);            // las estrías de crecimiento: líneas transversales al camino, con alfa, sobre el color
         // ojos

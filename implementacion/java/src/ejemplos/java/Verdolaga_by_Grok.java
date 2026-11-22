@@ -35,16 +35,16 @@ public class Verdolaga_by_Grok {
         return x -> mezcla(c, mezcla(c, AMAR3, 0.5), 0.4 * x * x);
     }
 
-    static Composicion.Nodo segmento(Composicion c, Composicion.Nodo prev,
+    static Grafo.Nodo segmento(Grafo c, Grafo.Nodo prev,
                                      double x, double y, double r, int col, int colPrev) {
         var nd = c.nodo(x, y, r).centro(col).radio(radioTallo(col));
         if (prev != null) c.arista(prev, nd).espina(espinaTallo(colPrev, col));
         return nd;
     }
 
-    static Composicion.Nodo rama(Composicion c, Composicion.Nodo desde, double x0, double y0, double ang, double largo,
+    static Grafo.Nodo rama(Grafo c, Grafo.Nodo desde, double x0, double y0, double ang, double largo,
                                  double r0, double r1, int col0, int col1, int nSeg) {
-        Composicion.Nodo prev = desde;
+        Grafo.Nodo prev = desde;
         int colPrev = col0;
         int i0 = desde == null ? 0 : 1;
         for (int i = i0; i < nSeg; i++) {
@@ -60,7 +60,7 @@ public class Verdolaga_by_Grok {
         return prev;
     }
 
-    static void hoja(Composicion c, double x0, double y0, double ang, double largo, double rBase, double rPunta, int tono) {
+    static void hoja(Grafo c, double x0, double y0, double ang, double largo, double rBase, double rPunta, int tono) {
         int c0 = mezcla(tono, VERDE1, 0.3);
         int c1 = mezcla(tono, VERDE2, 0.4);
         var a = c.nodo(x0, y0, rBase).centro(c0).radio(radioHoja(c0));
@@ -72,7 +72,7 @@ public class Verdolaga_by_Grok {
                        new Gota.Vec(-Math.cos(ang) * largo * 0.15, -Math.sin(ang) * largo * 0.15));
     }
 
-    static void flor(Composicion c, double cx, double cy, double escala) {
+    static void flor(Grafo c, double cx, double cy, double escala) {
         int centro = AMAR2;
         var m = c.nodo(cx, cy, 2.2 * escala).centro(centro).radio(x -> mezcla(centro, AMAR3, 0.3 * x));
         for (int k = 0; k < 5; k++) {
@@ -103,7 +103,7 @@ public class Verdolaga_by_Grok {
         };
     }
 
-    static void colocarHojas(Composicion c, double x0, double y0, double ang, double largo, int n) {
+    static void colocarHojas(Grafo c, double x0, double y0, double ang, double largo, int n) {
         for (int i = 1; i <= n; i++) {
             double t = (i - 0.3) / (n + 0.4);
             double[] p = puntoRama(x0, y0, ang, largo, t);
@@ -124,7 +124,7 @@ public class Verdolaga_by_Grok {
     static BufferedImage dibuja() {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         fondo(im);
-        Composicion c = new Composicion().mezcla(RGB);
+        Grafo c = new Grafo().mezcla(RGB);
 
         double bx = 90, by = 430;
         var base = c.nodo(bx, by, 9).centro(ROJO1).radio(radioTallo(ROJO1));

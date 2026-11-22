@@ -423,12 +423,12 @@ final class Silueta {
         }
 
         /** El camino es recto: un solo paso, en el pie de la perpendicular (con los centros coincidentes, la mitad). */
-        @Override public java.util.List<Geometria.Hebra> hebras(double x, double y) {
+        @Override public java.util.List<Camino.Hebra> hebras(double x, double y) {
             double sd = angulos.conector() == Conector.BIARCO ? (Silueta.this.contiene(x, y) ? -1 : 1) : -distancia(x, y);
             if (!(sd < Envolvente.BANDA)) return java.util.List.of();
             double ex = x - c1.x, ey = y - c1.y;
             double t = d > 1e-12 * (r1 + r2) ? Math.max(0, Math.min(1, (ex * tx + ey * ty) / d)) : 0.5;
-            return java.util.List.of(new Geometria.Hebra(t, sd));
+            return java.util.List.of(new Camino.Hebra(t, sd));
         }
     }
 
@@ -601,10 +601,10 @@ final class Silueta {
         private final double[][] cx6, cy6;                // c(t) de cada tramo, en Bernstein de grado 6
         private final double[][] kExt, kCero, kInt;       // K = |c|^2 - (r + d)^2 para d = +BANDA, 0, -BANDA
         private final boolean interiorValido;
-        private final Geometria geo;                      // para la distancia (franja del borde) y las hebras
+        private final Camino geo;                      // para la distancia (franja del borde) y las hebras
 
         /** Un elemento por tramo: los controles de c(t) y los de r(t) (ambas cúbicas) en ese tramo. */
-        Envolvente(Geometria geo, double[][] pxs, double[][] pys, double[][] radios) {
+        Envolvente(Camino geo, double[][] pxs, double[][] pys, double[][] radios) {
             this.geo = geo;
             int n = pxs.length;
             cx6 = new double[n][]; cy6 = new double[n][];
@@ -632,7 +632,7 @@ final class Silueta {
             return Math.max(0, Math.min(1, 0.5 - geo.distancia(x, y)));        // franja del borde
         }
 
-        @Override public java.util.List<Geometria.Hebra> hebras(double x, double y) {
+        @Override public java.util.List<Camino.Hebra> hebras(double x, double y) {
             if (!dentro(x, y, EXT)) return java.util.List.of();
             return geo.hebras(x, y, BANDA);
         }

@@ -92,11 +92,11 @@ public class Medusa_by_Grok {
         };
     }
 
-    static Composicion tentaculo(double x0, double y0, double ang0, double largo, int k, int n) {
-        Composicion c = new Composicion().mezcla(RGB);
+    static Grafo tentaculo(double x0, double y0, double ang0, double largo, int k, int n) {
+        Grafo c = new Grafo().mezcla(RGB);
         int col0 = tonoTentaculo(k, n);
         int m = 8;
-        Composicion.Nodo prev = null;
+        Grafo.Nodo prev = null;
         for (int i = 0; i < m; i++) {
             double t = (double) i / (m - 1);
             double ond = Math.sin(t * Math.PI * 2.4 + k * 0.85) * (14 + 36 * t);
@@ -118,10 +118,10 @@ public class Medusa_by_Grok {
         return c;
     }
 
-    static Composicion brazoOral(double x0, double y0, double ang, double largo, int tono) {
-        Composicion c = new Composicion().mezcla(RGB);
+    static Grafo brazoOral(double x0, double y0, double ang, double largo, int tono) {
+        Grafo c = new Grafo().mezcla(RGB);
         int m = 5;
-        Composicion.Nodo prev = null;
+        Grafo.Nodo prev = null;
         for (int i = 0; i < m; i++) {
             double t = (double) i / (m - 1);
             double ond = Math.sin(t * Math.PI * 1.5 + ang) * 12 * t;

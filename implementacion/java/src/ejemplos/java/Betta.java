@@ -42,7 +42,7 @@ public class Betta {
 
     // ---------- piezas ----------
 
-    static Composicion.Nodo nodo(Composicion c, double x, double y, double r, int centro, Degradado f) {
+    static Grafo.Nodo nodo(Grafo c, double x, double y, double r, int centro, Degradado f) {
         return c.nodo(x, y, r).centro(centro).radio(f);
     }
 
@@ -54,10 +54,10 @@ public class Betta {
     }
 
     /** Cuerpo: de la cola a la cabeza, con la paleta corriendo por la espina. */
-    static Composicion cuerpo() {
-        Composicion c = new Composicion().mezcla(Mezcla.RGB);
+    static Grafo cuerpo() {
+        Grafo c = new Grafo().mezcla(Mezcla.RGB);
         double[][] p = { {235, 272, 7}, {300, 266, 26}, {385, 254, 41}, {475, 248, 43}, {552, 254, 31}, {612, 264, 15} };
-        Composicion.Nodo prev = null;
+        Grafo.Nodo prev = null;
         for (int i = 0; i < p.length; i++) {
             double t = (double) i / (p.length - 1);
             int col = cuerpo(t);
@@ -72,9 +72,9 @@ public class Betta {
     }
 
     /** Aleta de base ancha y punta fina que se desvanece hacia el borde. */
-    static Composicion aleta(double x0, double y0, double r0, double x1, double y1, double r1,
+    static Grafo aleta(double x0, double y0, double r0, double x1, double y1, double r1,
                              double vx, double vy, int base, int punta, double desvanece) {
-        Composicion c = new Composicion().mezcla(Mezcla.RGB);
+        Grafo c = new Grafo().mezcla(Mezcla.RGB);
         var a = nodo(c, x0, y0, r0, base, radioAleta(base, desvanece));
         var b = nodo(c, x1, y1, r1, punta, radioAleta(punta, desvanece));
         c.arista(a, b).tiradores(new Gota.Vec(vx, vy), null);

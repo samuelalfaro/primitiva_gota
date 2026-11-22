@@ -27,7 +27,7 @@ public class BallenaV3 {
 
         long t0 = System.nanoTime();
 
-        Composicion ballena = new Composicion().suavizado(2.8);
+        Grafo ballena = new Grafo().suavizado(2.8);
 
         // Cola (grado 3) → 3 sectores
         var cola = ballena.nodo(215, 360, 36)
@@ -81,7 +81,7 @@ public class BallenaV3 {
         Plotter.raster(im).plot(Gota.lineal(pu, 5.0, pu2, 5.0, Perfil.recto()), Colores.cuatroColores(0xFF0A1A2A, 0xFF0A1A2A, 0xFF0A1A2A, 0xFF0A1A2A, Mezcla.RGB));
 
         // Boca
-        Composicion boca = new Composicion().suavizado(1.1);
+        Grafo boca = new Grafo().suavizado(1.1);
         var b0 = boca.nodo(755, 335, 4.8).color(C_SOMBRA);
         var b1 = boca.nodo(798, 350, 3.4).color(C_SOMBRA);
         boca.arista(b0, b1).tiradores(new Gota.Vec(24, 9), new Gota.Vec(-15, 2));
@@ -96,17 +96,17 @@ public class BallenaV3 {
 
     static void dibujarChorro(BufferedImage im, double x, double y) {
         int agua = 0xFFB0D8EC, clara = 0xFFE0F2FA;
-        Composicion c = new Composicion().suavizado(0.9);
+        Grafo c = new Grafo().suavizado(0.9);
         var a = c.nodo(x, y, 5.8).color(agua);
         var b = c.nodo(x - 3, y - 100, 2.6).color(clara);
         c.arista(a, b).tiradores(new Gota.Vec(0, -38), new Gota.Vec(2, 16));
         c.render(im);
-        Composicion c2 = new Composicion().suavizado(0.9);
+        Grafo c2 = new Grafo().suavizado(0.9);
         var a2 = c2.nodo(x - 9, y + 6, 4.4).color(agua);
         var b2 = c2.nodo(x - 42, y - 82, 2.1).color(clara);
         c2.arista(a2, b2).tiradores(new Gota.Vec(-14, -32), new Gota.Vec(9, 14));
         c2.render(im);
-        Composicion c3 = new Composicion().suavizado(0.9);
+        Grafo c3 = new Grafo().suavizado(0.9);
         var a3 = c3.nodo(x + 9, y + 6, 4.4).color(agua);
         var b3 = c3.nodo(x + 36, y - 80, 2.1).color(clara);
         c3.arista(a3, b3).tiradores(new Gota.Vec(14, -30), new Gota.Vec(-7, 13));

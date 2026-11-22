@@ -14,7 +14,7 @@ public enum Solape {
      * solución única que da la costura. Deja costuras duras donde dos tramos compiten.
      */
     PLANO {
-        @Override void capas(Geometria g, Coordenadas c, double x, double y, Consumer<Capa> out) {
+        @Override void capas(Camino g, Coordenadas c, double x, double y, Consumer<Capa> out) {
             double cob = g.mascara().cobertura(x, y);
             if (cob > 0) out.accept(new Capa(cob, c.punto(x, y, () -> c.costurado(x, y))));
         }
@@ -27,11 +27,11 @@ public enum Solape {
      * trazo) por debajo del punto medio con la capa siguiente; la última, la mayor de todas, tapas finales incluidas.
      */
     TRAZO {
-        @Override void capas(Geometria g, Coordenadas c, double x, double y, Consumer<Capa> out) {
-            List<Geometria.Hebra> hs = g.mascara().hebras(x, y);
+        @Override void capas(Camino g, Coordenadas c, double x, double y, Consumer<Capa> out) {
+            List<Camino.Hebra> hs = g.mascara().hebras(x, y);
             Memo memo = new Memo(c, x, y);
             for (int h = 0; h < hs.size(); h++) {            // t creciente: la posterior tapa a la anterior
-                Geometria.Hebra hb = hs.get(h);
+                Camino.Hebra hb = hs.get(h);
                 double cob = hb.cobertura();
                 if (cob <= 0) continue;
                 final double limite = h == hs.size() - 1 ? Double.POSITIVE_INFINITY : 0.5 * (hb.t() + hs.get(h + 1).t());
@@ -127,7 +127,7 @@ public enum Solape {
     public record Capa(double cobertura, Punto punto) {}
 
     /** Entrega, de abajo a arriba, las capas que se pintan en el píxel (x, y). */
-    abstract void capas(Geometria g, Coordenadas c, double x, double y, Consumer<Capa> out);
+    abstract void capas(Camino g, Coordenadas c, double x, double y, Consumer<Capa> out);
 
     /** Las coordenadas con las que se ve el píxel como un todo: la solución única en PLANO, la más tardía del trazo en TRAZO. */
     abstract Coordenadas.Costurado ganador(Coordenadas c, double x, double y);

@@ -252,7 +252,7 @@ public class TapasDisco {
     // ---------- Composición ----------
 
     static void composicion() throws Exception {
-        Composicion[] cs = { ComposicionPruebas.cadena(), ComposicionPruebas.estrella(0) };
+        Grafo[] cs = { ComposicionPruebas.cadena(), ComposicionPruebas.estrella(0) };
         int W = 440, H = 400, FONDO = 0xFFF4F1EA;
         BufferedImage out = new BufferedImage(W * 2, H, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(datos(out), FONDO);

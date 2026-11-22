@@ -11,7 +11,7 @@ import java.util.Random;
 import javax.imageio.ImageIO;
 
 /**
- * Prueba de fuego de {@link Composicion#alisar()} y {@link Composicion.Arista#altura}: una única composición cerrada
+ * Prueba de fuego de {@link Grafo#alisar()} y {@link Composicion.Arista#altura}: una única composición cerrada
  * de puntos, radios y colores aleatorios (semilla fija, replicable), con muchos cruces de la cinta consigo misma.
  * <ul>
  * <li>A: por defecto (tiradores automáticos, TRAZO).</li>
@@ -54,14 +54,14 @@ public class TrenzaAleatoria {
         }
     }
 
-    record Trenza(Composicion c, Composicion.Arista[] aristas, int cruces, boolean alternan) {}
+    record Trenza(Grafo c, Grafo.Arista[] aristas, int cruces, boolean alternan) {}
 
     static Trenza construye(Datos d, boolean alisa, boolean alturas) {
         int n = d.x().length;
-        Composicion c = new Composicion().mezcla(Mezcla.RGB);
-        var nodos = new Composicion.Nodo[n];
+        Grafo c = new Grafo().mezcla(Mezcla.RGB);
+        var nodos = new Grafo.Nodo[n];
         for (int i = 0; i < n; i++) nodos[i] = c.nodo(d.x()[i], d.y()[i], d.r()[i]).centro(d.color()[i]);
-        var aristas = new Composicion.Arista[n];
+        var aristas = new Grafo.Arista[n];
         for (int i = 0; i < n; i++) aristas[i] = c.arista(nodos[i], nodos[(i + 1) % n]);
         c.relajar();
         if (alisa || alturas) c.alisar();
@@ -111,7 +111,7 @@ public class TrenzaAleatoria {
     }
 
     /** Cruces de la espina consigo misma (aristas no contiguas), como pares de posiciones tau = índice de arista + fracción de arco. */
-    static double[][] cruces(Composicion c, int n) {
+    static double[][] cruces(Grafo c, int n) {
         var g = c.gotas();
         final int S = 48;
         double[][][] pt = new double[n][S + 1][3];                     // x, y, fracción de arco
@@ -148,7 +148,7 @@ public class TrenzaAleatoria {
     }
 
     /** Salto máximo de curvatura en los nodos, relativo a la curvatura máxima. */
-    static double salto(Composicion c) {
+    static double salto(Grafo c) {
         var g = c.gotas();
         int n = g.size();
         double e = 1e-5, s = 0, kmax = 1e-9;            // e pequeño: con 1e-3 las puntas dan saltos falsos de hasta el 15 %
@@ -160,7 +160,7 @@ public class TrenzaAleatoria {
         return s / kmax;
     }
 
-    static BufferedImage pinta(Composicion c) {
+    static BufferedImage pinta(Grafo c) {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), FONDO);
         c.render(im, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
