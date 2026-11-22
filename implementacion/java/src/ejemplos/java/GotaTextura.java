@@ -1,3 +1,12 @@
+import pintado.Plotter;
+import coordenadas.Solape;
+import color.Relleno;
+import color.Texturas;
+import coordenadas.Opciones;
+import coordenadas.Tira;
+import coordenadas.Coordenadas;
+import forma.Perfil;
+import forma.Gota;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;

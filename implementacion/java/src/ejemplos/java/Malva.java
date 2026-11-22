@@ -1,3 +1,8 @@
+import composicion.Grafo;
+import coordenadas.Solape;
+import color.Mezcla;
+import color.Degradado;
+import coordenadas.Opciones;
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;

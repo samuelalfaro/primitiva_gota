@@ -1,3 +1,9 @@
+import composicion.Grafo;
+import coordenadas.Solape;
+import color.Mezcla;
+import color.Degradado;
+import coordenadas.Opciones;
+import forma.Gota;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.io.File;

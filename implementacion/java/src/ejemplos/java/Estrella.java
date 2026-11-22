@@ -1,3 +1,8 @@
+import composicion.Grafo;
+import coordenadas.Solape;
+import color.Mezcla;
+import color.Degradado;
+import coordenadas.Opciones;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;

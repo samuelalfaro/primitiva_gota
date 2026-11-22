@@ -1,3 +1,12 @@
+import composicion.ComposicionPruebas;
+import composicion.Grafo;
+import pintado.Plotter;
+import color.Relleno;
+import color.Mezcla;
+import color.Texturas;
+import color.Colores;
+import forma.Perfil;
+import forma.Gota;
 import java.awt.Graphics2D;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;

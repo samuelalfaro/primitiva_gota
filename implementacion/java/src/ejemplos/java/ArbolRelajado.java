@@ -1,3 +1,4 @@
+import composicion.Grafo;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;

@@ -54,7 +54,7 @@
                         <goals><goal>java</goal></goals>
                         <configuration>
                             <classpathScope>test</classpathScope>
-                            <mainClass>Todas</mainClass>
+                            <mainClass>common.Todas</mainClass>
                             <arguments>
                                 <argument>${project.build.outputDirectory}${path.separator}${project.build.testOutputDirectory}</argument>
                                 <argument>${suites.niveles}</argument>

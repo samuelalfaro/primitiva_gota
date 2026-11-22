@@ -1,3 +1,11 @@
+import composicion.Grafo;
+import pintado.Plotter;
+import coordenadas.Solape;
+import color.Mezcla;
+import color.Colores;
+import coordenadas.Opciones;
+import forma.Perfil;
+import forma.Gota;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;

@@ -1,3 +1,7 @@
+import composicion.ComposicionPruebas;
+import composicion.Grafo;
+import color.Mezcla;
+import color.Texturas;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.io.File;

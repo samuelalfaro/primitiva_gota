@@ -1,3 +1,5 @@
+import composicion.Grafo;
+import color.Mezcla;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;

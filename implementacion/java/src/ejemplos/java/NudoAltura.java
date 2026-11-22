@@ -1,3 +1,7 @@
+import composicion.Grafo;
+import coordenadas.Solape;
+import color.Mezcla;
+import coordenadas.Opciones;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
