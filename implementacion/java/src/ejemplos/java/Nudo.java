@@ -15,9 +15,9 @@ public class Nudo {
     static int color(double t) { return Color.HSBtoRGB((float) t, 0.6f, 0.9f); }
     static Degradado radio(int c) { return x -> RGB.mezclar(c, 0xFF1A1030, (float) (0.40 * x * x)); }
 
-    static Composicion nudo(int n) {
-        Composicion c = new Composicion().mezcla(RGB);
-        Composicion.Nodo prev = null, primero = null;
+    static Grafo nudo(int n) {
+        Grafo c = new Grafo().mezcla(RGB);
+        Grafo.Nodo prev = null, primero = null;
         for (int i = 0; i < n; i++) {
             double t = 2 * Math.PI * i / n;
             double x = CX + 75 * (Math.sin(t) + 2 * Math.sin(2 * t)), y = CY + 75 * (Math.cos(t) - 2 * Math.cos(2 * t));
