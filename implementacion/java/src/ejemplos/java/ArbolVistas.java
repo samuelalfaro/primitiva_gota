@@ -57,12 +57,29 @@ public final class ArbolVistas {
      * dar a cada nodo un color distinto y ver qué rama queda encima de cuál (diagnóstico).
      */
     static Composicion construye(ArbolParametrico3D.Modelo m, ArbolParametrico3D.Proyeccion cam, boolean conAltura, boolean porNodo) {
+        return construye(m, cam, conAltura, porNodo, 0);
+    }
+
+    /**
+     * Como {@link #construye(ArbolParametrico3D.Modelo, ArbolParametrico3D.Proyeccion, boolean, boolean)} con niebla por
+     * profundidad: el color de cada nodo se mezcla con el fondo según lo lejos que está de la cámara (0 = sin niebla;
+     * 1 = el punto más lejano se funde del todo con el fondo). Es el clásico "depth cue" del 3D primitivo.
+     */
+    static Composicion construye(ArbolParametrico3D.Modelo m, ArbolParametrico3D.Proyeccion cam, boolean conAltura, boolean porNodo, double niebla) {
+        double zMin = Double.POSITIVE_INFINITY, zMax = Double.NEGATIVE_INFINITY;
+        for (var p : m.puntos()) {
+            double z = cam.aplicar(p).profundidad();
+            zMin = Math.min(zMin, z);
+            zMax = Math.max(zMax, z);
+        }
         Composicion c = new Composicion().mezcla(Mezcla.RGB);
         var nodos = new Composicion.Nodo[m.puntos().size()];
         int[] color = new int[nodos.length];
         for (var p : m.puntos()) {
             var q = cam.aplicar(p);
             color[p.id()] = porNodo ? java.awt.Color.HSBtoRGB((float) ((p.id() * 0.618034) % 1.0), 0.85f, 0.9f) | 0xFF000000 : p.color();
+            if (niebla > 0 && zMax > zMin)      // la profundidad crece hacia la cámara: lejos = zMin
+                color[p.id()] = Mezcla.RGB.mezclar(color[p.id()], FONDO, niebla * (zMax - q.profundidad()) / (zMax - zMin));
             nodos[p.id()] = c.nodo(q.x(), q.y(), p.radio() * q.escala()).centro(color[p.id()]);
         }
         for (var r : m.ramas()) {
@@ -94,10 +111,28 @@ public final class ArbolVistas {
         System.out.println("arbol_vistas_diagnostico.png (filas: yaw y yaw + 180; columnas: sin altura | con altura)");
     }
 
+    /** Niebla por profundidad: columnas = sin niebla | 0.6 | 0.9, con altura + relajar + alisar, en perspectiva. */
+    static void niebla(ArbolParametrico3D.Modelo m, double yaw, double pitch) throws Exception {
+        BufferedImage hoja = new BufferedImage(3 * W, H, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = hoja.createGraphics();
+        var cam = camara(m, yaw, pitch, 900);
+        double[] k = { 0, 0.6, 0.9 };
+        for (int col = 0; col < 3; col++) {
+            Composicion c = construye(m, cam, true, false, k[col]);
+            c.relajar();
+            c.alisar();
+            g.drawImage(pinta(c), col * W, 0, null);
+        }
+        g.dispose();
+        ImageIO.write(hoja, "png", new File("arbol_niebla.png"));
+        System.out.println("arbol_niebla.png (niebla 0 | 0.6 | 0.9)");
+    }
+
     public static void main(String[] args) throws Exception {
         ArbolParametrico3D.Parametros p = new ArbolParametrico3D.Parametros();
         double yaw = args.length > 0 ? Double.parseDouble(args[0]) : 35, pitch = args.length > 1 ? Double.parseDouble(args[1]) : 20;
         ArbolParametrico3D.Modelo m = ArbolParametrico3D.crear(p);
+        if (args.length > 2 && args[2].equals("niebla")) { niebla(m, yaw, pitch); return; }
         if (args.length > 2 && args[2].equals("diagnostico")) { diagnostico(m, yaw, pitch); return; }
         BufferedImage hoja = new BufferedImage(4 * W, 2 * H, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = hoja.createGraphics();
