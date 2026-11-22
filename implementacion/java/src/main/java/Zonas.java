@@ -33,14 +33,14 @@ final class Zonas {
     /** Una solución posible para un píxel y su clave de orden: t en la banda, -rho en la tapa inicial, 1 + rho en la final. */
     record Candidato(double clave, Coordenadas.Costurado c) {}
 
-    private final Geometria g;
+    private final Camino g;
     private final Costura modo;
     private final Cortes cortes;
     private final Fr[] tabla = new Fr[NS + 1];
     private final double[][][] dist = new double[2][2][NW + 1], fase = new double[2][2][NW + 1];   // curva de cada extremo y lado
     private volatile Ortogonal ort;
 
-    Zonas(Geometria g, Costura modo, Cortes cortes) {
+    Zonas(Camino g, Costura modo, Cortes cortes) {
         this.g = g;
         this.modo = modo;
         this.cortes = cortes;

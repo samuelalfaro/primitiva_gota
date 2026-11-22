@@ -36,9 +36,9 @@ public class Serpiente {
         disco(im, 690, 90, 42, 0xFFFFF6C9, 0xFFFFC857);
     }
 
-    static Composicion cuerpo(int n) {
-        Composicion c = new Composicion();
-        Composicion.Nodo prev = null;
+    static Grafo cuerpo(int n) {
+        Grafo c = new Grafo();
+        Grafo.Nodo prev = null;
         for (int i = 0; i < n; i++) {
             double t = (double) i / (n - 1);
             double[] p = punto(t);
@@ -74,7 +74,7 @@ public class Serpiente {
         double[] h = punto(1), h0 = punto(1 - 0.02);
         double ang = Math.atan2(h[1] - h0[1], h[0] - h0[0]), ca = Math.cos(ang), sa = Math.sin(ang);
         // sombra bajo la serpiente: el mismo cuerpo, aplastado y oscuro, desplazado
-        Composicion lengua = new Composicion();
+        Grafo lengua = new Grafo();
         var l0 = lengua.nodo(h[0] + ca * 28, h[1] + sa * 28, 2.4).color(0xFFD32F2F);
         var l1 = lengua.nodo(h[0] + ca * 64, h[1] + sa * 64, 2).color(0xFFD32F2F);
         var l2 = lengua.nodo(h[0] + ca * 86 - sa * 14, h[1] + sa * 86 + ca * 14, 1.2).color(0xFFD32F2F);
@@ -83,7 +83,7 @@ public class Serpiente {
         lengua.arista(l1, l2);
         lengua.arista(l1, l3);
         lengua.render(im);
-        Composicion cu = cuerpo(n);
+        Grafo cu = cuerpo(n);
         cu.render(im);
         cu.render(im, ROMBOS);
         // ojos

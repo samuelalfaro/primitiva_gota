@@ -76,9 +76,9 @@ public class PezAbisal {
      * Cadena de gotas: por cada punto un nodo con volumen lomo, entre nodos una arista con espina en LCH;
      * con {@code puntaQueSeApaga} las dos últimas secciones se apagan en alfa, como membrana que se disuelve.
      */
-    static void cadena(Composicion c, double[] xs, double[] ys, double[] rs, int col0, int col1, boolean puntaQueSeApaga) {
+    static void cadena(Grafo c, double[] xs, double[] ys, double[] rs, int col0, int col1, boolean puntaQueSeApaga) {
         int n = xs.length;
-        Composicion.Nodo prev = null;
+        Grafo.Nodo prev = null;
         for (int i = 0; i < n; i++) {
             double t = n == 1 ? 0 : i / (double) (n - 1);
             int col = mezcla(col0, col1, t);
@@ -90,7 +90,7 @@ public class PezAbisal {
                 : v -> oscuro(cc, 0.34 * v * v);
             var nd = c.nodo(xs[i], ys[i], rs[i]).centro(col).radio(rad);
             if (prev != null) {
-                final Composicion.Nodo p = prev;
+                final Grafo.Nodo p = prev;
                 colPrev = mezcla(col0, col1, Math.max(0, t - 1.0 / (n - 1)));
                 final int a = colPrev, b = col;
                 c.arista(p, nd).espina(Degradado.entre(a, b, Mezcla.LCH));
@@ -120,7 +120,7 @@ public class PezAbisal {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         fondo(im);
 
-        Composicion c = new Composicion().mezcla(RGB);
+        Grafo c = new Grafo().mezcla(RGB);
 
         // ----- cuerpo: cadena por la línea media, de la nariz al pedúnculo; normal arriba (lomo), contra abajo (vientre)
         final int N = 16;
@@ -134,7 +134,7 @@ public class PezAbisal {
         int col0Cuerpo = LOMO;
         var cabeza = c.nodo(xs[0], ys[0], rs[0]).centro(col0Cuerpo)
             .radio(v -> oscuro(col0Cuerpo, 0.34 * v * v));
-        Composicion.Nodo prev = cabeza;
+        Grafo.Nodo prev = cabeza;
         for (int i = 1; i < N; i++) {
             double t = i / (double) (N - 1);
             final int col = mezcla(LOMO, COLA, t);

@@ -10,5 +10,5 @@ public interface Mascara {
     double cobertura(double x, double y);
 
     /** Las pasadas del camino que cubren (aunque sea en parte) el píxel (x, y), en orden de t creciente. */
-    java.util.List<Geometria.Hebra> hebras(double x, double y);
+    java.util.List<Camino.Hebra> hebras(double x, double y);
 }

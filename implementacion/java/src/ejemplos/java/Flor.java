@@ -14,8 +14,8 @@ public class Flor {
     }
 
     /** Tallo: base - nudo - cima, con la misma tangente a los dos lados del nudo (G1). */
-    static Composicion tallo() {
-        Composicion c = new Composicion();
+    static Grafo tallo() {
+        Grafo c = new Grafo();
         var base = c.nodo(258, 665, 8).centro(0xFF9CCC65).sectores(0xFF33691E);
         var nudo = c.nodo(246, 500, 9).centro(0xFFC5E1A5).lados(0xFF33691E, 0xFF7CB342);
         var cima = c.nodo(250, 250, 8).centro(0xFF9CCC65).sectores(0xFF558B2F);
@@ -28,8 +28,8 @@ public class Flor {
     }
 
     /** Seis pétalos anchos y solapados de un nodo central; cada pétalo es una gota con la punta elíptica. */
-    static Composicion flor(double rPetalo) {
-        Composicion c = new Composicion();
+    static Grafo flor(double rPetalo) {
+        Grafo c = new Grafo();
         double cx = 250, cy = 235;
         var centro = c.nodo(cx, cy, 24).centro(0xFFFFD54F)
                 .sectores(0xFFFF6FA5, 0xFFFF8FB8, 0xFFE63C8A, 0xFFFF7BAA, 0xFFD81B60, 0xFFF06292);
@@ -55,7 +55,7 @@ public class Flor {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), FONDO);
         // la hoja nace en el nudo del tallo, sube a la derecha, y se pinta antes que el tallo para que éste tape su base
-        Composicion hoja = Hoja.limbo(new Hoja.Tr(246, 505, Math.toRadians(-48), 0.34), 3.6);
+        Grafo hoja = Hoja.limbo(new Hoja.Tr(246, 505, Math.toRadians(-48), 0.34), 3.6);
         hoja.render(im);
         Hoja.venas(hoja, 1.0, 0.55).render(im);
         tallo().render(im);

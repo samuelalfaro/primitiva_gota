@@ -56,8 +56,8 @@ public class FuncionesDemo {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(((java.awt.image.DataBufferInt) im.getRaster().getDataBuffer()).getData(), 0xFFF4F1EA);
         double[][] p = camino(n);
-        Composicion c = new Composicion().mezcla(Mezcla.RGB);
-        Composicion.Nodo prev = null;
+        Grafo c = new Grafo().mezcla(Mezcla.RGB);
+        Grafo.Nodo prev = null;
         for (int i = 0; i < n; i++) {
             double t = (double) i / (n - 1);
             var nd = c.nodo(p[i][0], p[i][1], p[i][2]).centro(pn.centro(t)).radio(pn.radio(t, pn.centro(t)));

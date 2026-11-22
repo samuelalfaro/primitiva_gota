@@ -56,7 +56,7 @@ public final class ArbolVistas {
      * cuando conAltura y no porNodo), para poder quitar la altura (solo manda el orden del recorrido, TRAZO por s) o
      * dar a cada nodo un color distinto y ver qué rama queda encima de cuál (diagnóstico).
      */
-    static Composicion construye(ArbolParametrico3D.Modelo m, ArbolParametrico3D.Proyeccion cam, boolean conAltura, boolean porNodo) {
+    static Grafo construye(ArbolParametrico3D.Modelo m, ArbolParametrico3D.Proyeccion cam, boolean conAltura, boolean porNodo) {
         return construye(m, cam, conAltura, porNodo, 0);
     }
 
@@ -65,15 +65,15 @@ public final class ArbolVistas {
      * profundidad: el color de cada nodo se mezcla con el fondo según lo lejos que está de la cámara (0 = sin niebla;
      * 1 = el punto más lejano se funde del todo con el fondo). Es el clásico "depth cue" del 3D primitivo.
      */
-    static Composicion construye(ArbolParametrico3D.Modelo m, ArbolParametrico3D.Proyeccion cam, boolean conAltura, boolean porNodo, double niebla) {
+    static Grafo construye(ArbolParametrico3D.Modelo m, ArbolParametrico3D.Proyeccion cam, boolean conAltura, boolean porNodo, double niebla) {
         double zMin = Double.POSITIVE_INFINITY, zMax = Double.NEGATIVE_INFINITY;
         for (var p : m.puntos()) {
             double z = cam.aplicar(p).profundidad();
             zMin = Math.min(zMin, z);
             zMax = Math.max(zMax, z);
         }
-        Composicion c = new Composicion().mezcla(Mezcla.RGB);
-        var nodos = new Composicion.Nodo[m.puntos().size()];
+        Grafo c = new Grafo().mezcla(Mezcla.RGB);
+        var nodos = new Grafo.Nodo[m.puntos().size()];
         int[] color = new int[nodos.length];
         for (var p : m.puntos()) {
             var q = cam.aplicar(p);
@@ -91,7 +91,7 @@ public final class ArbolVistas {
         return c;
     }
 
-    static BufferedImage pinta(Composicion c) {
+    static BufferedImage pinta(Grafo c) {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), FONDO);
         c.render(im, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
@@ -118,7 +118,7 @@ public final class ArbolVistas {
         var cam = camara(m, yaw, pitch, 900);
         double[] k = { 0, 0.6, 0.9 };
         for (int col = 0; col < 3; col++) {
-            Composicion c = construye(m, cam, true, false, k[col]);
+            Grafo c = construye(m, cam, true, false, k[col]);
             c.relajar();
             c.alisar();
             g.drawImage(pinta(c), col * W, 0, null);
@@ -144,7 +144,7 @@ public final class ArbolVistas {
         for (int fila = 0; fila < 2; fila++) {
             var cam = camara(m, yaw, pitch, dist[fila]);
             for (int col = 0; col < 4; col++) {
-                Composicion c = col == 0 ? construye(m, cam, false, false) : m.proyectar(cam);
+                Grafo c = col == 0 ? construye(m, cam, false, false) : m.proyectar(cam);
                 if (col >= 2) c.relajar();
                 if (col >= 3) c.alisar();
                 g.drawImage(pinta(c), col * W, fila * H, null);

@@ -6,7 +6,7 @@
 public interface Tira {
 
     /** Los cortes de v para esta geometría. */
-    Cortes cortes(Geometria g);
+    Cortes cortes(Camino g);
 
     /** Tapa trasera, cuerpo y tapa delantera en proporción 1 : 2 : 1 (v1 = 1/4, v3 = 3/4). */
     Tira POR_DEFECTO = new Pesos(1, 2, 1);
@@ -33,11 +33,11 @@ public interface Tira {
     static Tira fija(double c1, double c3) { return new Fija(new Cortes(c1, c3, true)); }
 
     record Fija(Cortes cortes) implements Tira {
-        @Override public Cortes cortes(Geometria g) { return cortes; }
+        @Override public Cortes cortes(Camino g) { return cortes; }
     }
 
     record PorLongitud(Tira base) implements Tira {
-        @Override public Cortes cortes(Geometria g) {
+        @Override public Cortes cortes(Camino g) {
             Cortes c = base.cortes(g);
             return new Cortes(c.c1(), c.c3(), true);
         }
@@ -49,7 +49,7 @@ public interface Tira {
                 throw new IllegalArgumentException("los pesos de la tira deben ser finitos y > 0");
         }
 
-        @Override public Cortes cortes(Geometria g) {
+        @Override public Cortes cortes(Camino g) {
             double s = wTapa1 + wCuerpo + wTapa2, c1 = wTapa1 / s, c3 = (wTapa1 + wCuerpo) / s;
             return new Cortes(c1, c3);
         }
@@ -58,7 +58,7 @@ public interface Tira {
     record Proporcional() implements Tira {
         private static final Proporcional INSTANCIA = new Proporcional();
 
-        @Override public Cortes cortes(Geometria g) {
+        @Override public Cortes cortes(Camino g) {
             double largo = 0, px = g.cx(0), py = g.cy(0);
             for (int i = 1; i <= 400; i++) {
                 double x = g.cx(i / 400.0), y = g.cy(i / 400.0), dx = px - x, dy = py - y;

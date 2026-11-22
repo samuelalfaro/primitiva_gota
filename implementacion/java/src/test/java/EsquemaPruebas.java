@@ -40,7 +40,7 @@ public class EsquemaPruebas {
     }
 
     /** El arco de cada tapa sale del centro hacia fuera según la tangente: contra ella en la inicial, a favor en la final. */
-    static void arcosHaciaFuera(String nombre, Geometria g) {
+    static void arcosHaciaFuera(String nombre, Camino g) {
         for (int e = 0; e < 2; e++) {
             double[] m = Trazos.mitadTapa(g, e);
             double tx = g.dcx(e), ty = g.dcy(e), n = Math.hypot(tx, ty);

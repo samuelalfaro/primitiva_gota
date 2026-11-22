@@ -24,8 +24,8 @@ public class Hoja {
         static Tr identidad() { return new Tr(BX, BY, EJE, 1); }
     }
 
-    static Composicion limbo(Tr t, double radioBase) {
-        Composicion c = new Composicion();
+    static Grafo limbo(Tr t, double radioBase) {
+        Grafo c = new Grafo();
         var base = c.nodo(t.X(226, 655), t.Y(226, 655), radioBase).centro(0xFFC5E1A5).sectores(0xFF4E8F34);
         var medio = c.nodo(t.X(262, 410), t.Y(262, 410), 112 * t.esc()).centro(0xFFE6EE9C).lados(0xFF1B5E20, 0xFF9CCC65).ajusteLateral(0.3);
         var punta = c.nodo(t.X(318, 70), t.Y(318, 70), 5 * t.esc()).centro(0xFFDCEDC8).sectores(0xFF5E9B38).ajusteLateral(0.3);
@@ -38,9 +38,9 @@ public class Hoja {
      * Venas: nervio central siguiendo el eje del limbo y pares de ramas que salen a unos 62° y acaban a unos 22° del
      * eje (curvadas hacia la punta). El largo sigue al ancho de la hoja (radio del limbo). rv0 y rv1 son los radios del nervio.
      */
-    static Composicion venas(Composicion limbo, double rv0, double rv1) {
+    static Grafo venas(Grafo limbo, double rv0, double rv1) {
         List<Gota> gs = limbo.gotas();
-        Composicion c = new Composicion().suavizado(1.5);
+        Grafo c = new Grafo().suavizado(1.5);
         int vena = 0xFFEFF7C2;
         int n = 9;
         Point2D[] pt = new Point2D[n];
@@ -56,7 +56,7 @@ public class Hoja {
             tx[i] = (b.getX() - a.getX()) / d;
             ty[i] = (b.getY() - a.getY()) / d;
         }
-        Composicion.Nodo[] m = new Composicion.Nodo[n];
+        Grafo.Nodo[] m = new Grafo.Nodo[n];
         for (int i = 0; i < n; i++) m[i] = c.nodo(pt[i].getX(), pt[i].getY(), rv0 + (rv1 - rv0) * i / (n - 1)).color(vena);
         for (int i = 0; i + 1 < n; i++) c.arista(m[i], m[i + 1]);
         double ini = Math.toRadians(62), fin = Math.toRadians(22), med = Math.toRadians(45);
@@ -82,7 +82,7 @@ public class Hoja {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), FONDO);
         long t0 = System.nanoTime();
-        Composicion l = limbo(Tr.identidad(), 6);
+        Grafo l = limbo(Tr.identidad(), 6);
         l.render(im);
         venas(l, 2.4, 0.9).render(im);
         System.out.printf("render: %.1f s%n", (System.nanoTime() - t0) / 1e9);
