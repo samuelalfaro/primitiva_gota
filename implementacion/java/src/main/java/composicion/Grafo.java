@@ -14,6 +14,10 @@ import coordenadas.Tira;
 import coordenadas.Coordenadas;
 import forma.Perfil;
 import forma.Gota;
+import geometria.Geometria;
+import geometria.Tinta;
+import java.awt.Shape;
+import java.awt.geom.Area;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
@@ -26,6 +30,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Consumer;
 import java.util.function.DoubleUnaryOperator;
 
 /**
@@ -59,7 +66,7 @@ import java.util.function.DoubleUnaryOperator;
  *       entre ramas. Las puntas son la media de los colores de los lados: no hay color de extremo.</li>
  * </ul>
  */
-public final class Grafo {
+public final class Grafo implements Geometria {
 
     // ---------- Modelo ----------
 
@@ -228,6 +235,10 @@ public final class Grafo {
     private double[] sTotal;              // s máxima de cada componente
     private List<Relleno> rellenos;
     private Rectangle2D.Double bounds;
+    private String label;
+    private double altura = 0;
+    /** Lo que el pintado calcula por opciones (opciones por gota y rellenos ligados a ellas); se descarta al modificar. */
+    private final ConcurrentMap<Opciones, Prep> preps = new ConcurrentHashMap<>();
 
     // ---------- Construcción ----------
 
@@ -288,7 +299,7 @@ public final class Grafo {
     public List<Nodo> nodos() { return Collections.unmodifiableList(nodos); }
     public List<Arista> aristas() { return Collections.unmodifiableList(aristas); }
 
-    private void invalida() { gotas = null; rellenos = null; bounds = null; invertida = null; }
+    private void invalida() { gotas = null; rellenos = null; bounds = null; invertida = null; preps.clear(); }
 
     // ---------- Consulta ----------
 
@@ -296,7 +307,64 @@ public final class Grafo {
 
     public Gota gota(Arista e) { construye(); return gotas.get(e.id); }
 
-    public Rectangle2D bounds() { construye(); return (Rectangle2D) bounds.clone(); }
+    /**
+     * Rectángulo que contiene todo lo que se pinta: la unión de los límites de las gotas, ensanchada por el
+     * {@link #suavizado(double) suavizado}, que extiende la unión más allá de ellas.
+     */
+    @Override public Rectangle2D bounds() {
+        construye();
+        return new Rectangle2D.Double(bounds.getMinX() - suaviza, bounds.getMinY() - suaviza,
+                bounds.getWidth() + 2 * suaviza, bounds.getHeight() + 2 * suaviza);
+    }
+
+    /** Contorno de la unión dura de las gotas (el suavizado solo afecta al pintado y a la sdf). */
+    @Override public Shape silueta() {
+        construye();
+        Area a = new Area();
+        for (Gota g : gotas) a.add(new Area(Pintada.de(g, Relleno.solido(0)).silueta()));
+        return a;
+    }
+
+    @Override public String label() { return label; }
+
+    /** Metadato de depuración. */
+    public Grafo label(String label) { this.label = label; return this; }
+
+    @Override public double altura() { return altura; }
+
+    /** Nivel de esta composición respecto a otras geometrías de un grupo (por defecto 0). No es la altura de las aristas. */
+    public Grafo altura(double altura) {
+        if (!Double.isFinite(altura)) throw new IllegalArgumentException("altura no válida");
+        this.altura = altura;
+        return this;
+    }
+
+    /**
+     * Una capa por píxel: la gota que manda, con el color lateral de los nodos y la cobertura de la unión. Es lo que pinta
+     * {@code Plotter.plot(grafo, op)}; los {@code render} con textura siguen su propio camino.
+     */
+    @Override public void capas(double x, double y, Opciones op, Consumer<Tinta> out) {
+        construye();
+        final Prep pr = preps.computeIfAbsent(op, o -> prepara(rellenos, o));
+        double[] ev = evalua(x, y, op, pr.ops());
+        if (ev[1] < 0) return;
+        final int k = (int) ev[1];
+        out.accept(new Tinta(pr.rel().get(k).argb(Coordenadas.punto(gotas.get(k), x, y, pr.ops()[k])), ev[0], altura));
+    }
+
+    /** Opciones de cada gota y relleno de cada gota ligado a ellas, para unas opciones de pintado. */
+    private record Prep(Opciones[] ops, List<Relleno> rel) {}
+
+    private Prep prepara(List<Relleno> rellenos, Opciones op) {
+        final List<Relleno> rel = new ArrayList<>();
+        final Opciones[] ops = new Opciones[gotas.size()];
+        for (int i = 0; i < gotas.size(); i++) {
+            Cortes k = cortesDe(i, op);
+            ops[i] = reparto == Reparto.GLOBAL ? op.conTira(Tira.fija(k.c1(), k.c3())) : op;    // GLOBAL: v corre por toda la composición
+            rel.add(rellenos.get(i).para(gotas.get(i), ops[i]));
+        }
+        return new Prep(ops, rel);
+    }
 
     /** Pertenencia exacta a la unión dura (el suavizado solo afecta al pintado y a la sdf). */
     public boolean contiene(double x, double y) {
@@ -574,13 +642,9 @@ public final class Grafo {
         final double marg = 2 + suaviza;
         final Plotter.Raster.Zona z = raster.zona(bounds.getMinX(), bounds.getMaxX(), bounds.getMinY(), bounds.getMaxY(), marg);
         if (z == null) return;
-        final List<Relleno> rel = new ArrayList<>();
-        final Opciones[] ops = new Opciones[gotas.size()];
-        for (int i = 0; i < gotas.size(); i++) {
-            Cortes k = cortesDe(i, op);
-            ops[i] = reparto == Reparto.GLOBAL ? op.conTira(Tira.fija(k.c1(), k.c3())) : op;    // GLOBAL: v corre por toda la composición
-            rel.add(rellenos.get(i).para(gotas.get(i), ops[i]));
-        }
+        final Prep pr = prepara(rellenos, op);
+        final List<Relleno> rel = pr.rel();
+        final Opciones[] ops = pr.ops();
         raster.recorre(z, (i, j) -> {
             double x = i + 0.5, y = j + 0.5;
             double[] ev = evalua(x, y, op, ops);

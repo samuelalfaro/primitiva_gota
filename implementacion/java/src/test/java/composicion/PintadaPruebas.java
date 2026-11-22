@@ -94,6 +94,19 @@ public class PintadaPruebas {
                     && Pintada.de(k.gota(), k.relleno()).label() == null, "");
         }
 
+        // la silueta coincide con la máscara de la gota (el lazo, que se cruza, tiene una tolerancia mayor)
+        for (Caso k : casos()) {
+            Shape forma = Pintada.de(k.gota(), k.relleno()).silueta();
+            java.util.Random r = new java.util.Random(3);
+            int n = 6000, mal = 0;
+            for (int i = 0; i < n; i++) {
+                double x = r.nextDouble() * W, y = r.nextDouble() * H;
+                if (forma.contains(x, y) != k.gota().mascara().contiene(x, y)) mal++;
+            }
+            double tol = k.nombre().startsWith("lazo") ? 0.015 : 0.001;
+            comprueba(k.nombre() + ": la silueta coincide con la máscara (<= " + 100 * tol + " %)", mal <= tol * n, mal + "/" + n);
+        }
+
         // capas: en PLANO una por píxel; en TRAZO, al menos una donde hay lazo
         Caso lazo = casos().get(3);
         Pintada pl = Pintada.de(lazo.gota(), lazo.relleno());
