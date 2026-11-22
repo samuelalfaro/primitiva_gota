@@ -174,29 +174,16 @@ final class Zonas {
         return a;
     }
 
-    /** Longitud de arco de la espina hasta t, entre 0 y la longitud total. */
-    double longitud(double t) {
-        double[] a = acumulada();
-        double f = Utils.acota(t, 0, 1) * NS;
-        int i = Math.min(NS - 1, (int) f);
-        return a[i] + (a[i + 1] - a[i]) * (f - i);
-    }
-
-    private double vBanda(double t) {
-        double tm = g.tm();
-        if (V_LONGITUD) {
-            double l = longitud(t), lm = longitud(tm), lt = longitud(1);
-            if (lm > 1e-12 && lt - lm > 1e-12)
-                return t < tm ? cortes.c1() + (cortes.c2() - cortes.c1()) * l / lm : cortes.c2() + (cortes.c3() - cortes.c2()) * (l - lm) / (lt - lm);
-        }
-        return t < tm ? cortes.c1() + (cortes.c2() - cortes.c1()) * t / tm : cortes.c2() + (cortes.c3() - cortes.c2()) * (t - tm) / (1 - tm);
+    /** v en el cuerpo: lineal entre c1 y c3, en t o en la longitud de arco según los cortes. */
+    private double vCuerpo(double t) {
+        return cortes.c1() + (cortes.c3() - cortes.c1()) * (cortes.porLongitud() ? g.fraccion(t) : t);
     }
 
     private Coordenadas.Costurado enBanda(double t, double w, int s) {
-        double v = vBanda(t);
+        double v = vCuerpo(t);
         return new Coordenadas.Costurado(t, new Coordenadas.Uv(0.5 + 0.5 * s * Utils.acota(w, 0, 1), Utils.acota(v, 0, 1)));
     }
-
+    
     /** Raíces de t en las que el punto está sobre la costilla (recta) de algún lado: {t, w, s}. */
     private List<double[]> raices(double x, double y) {
         List<double[]> out = new ArrayList<>();
@@ -442,7 +429,7 @@ final class Zonas {
                 h = salida(f, side == 1 ? 1 : -1);      // celda a caballo de un pliegue: la interpolación mezclaría una salida disparada con una normal
             if (estricto && Math.abs(Sp) > h * 1.02) return null;
             double q = Utils.acota(Sp / h, -1, 1);
-            double v = vBanda(t);
+            double v = vCuerpo(t);
             return new Candidato(t, new Coordenadas.Costurado(t, new Coordenadas.Uv(0.5 + 0.5 * q, Utils.acota(v, 0, 1))));
         }
     }
