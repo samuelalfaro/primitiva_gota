@@ -1,3 +1,5 @@
+import composicion.Grafo;
+import forma.Gota;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;

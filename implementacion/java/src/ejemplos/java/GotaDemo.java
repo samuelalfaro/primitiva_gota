@@ -1,3 +1,7 @@
+import pintado.Plotter;
+import color.Relleno;
+import forma.Perfil;
+import forma.Gota;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;

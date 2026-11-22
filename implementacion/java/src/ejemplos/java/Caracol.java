@@ -1,3 +1,10 @@
+import composicion.Grafo;
+import pintado.Plotter;
+import color.Mezcla;
+import color.Texturas;
+import color.Colores;
+import forma.Perfil;
+import forma.Gota;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.io.File;

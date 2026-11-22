@@ -1,3 +1,5 @@
+import composicion.Grafo;
+import color.Mezcla;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
