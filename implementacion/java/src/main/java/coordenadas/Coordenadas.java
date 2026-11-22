@@ -1,10 +1,9 @@
 package coordenadas;
 
 import forma.Camino;
-import forma.Gota;
 
 /**
- * Coordenadas intrínsecas de los píxeles de una {@link Gota}, comunes a los colores ({@link Colores}) y a las texturas
+ * Coordenadas intrínsecas de los píxeles de una {@link forma.Gota}, comunes a los colores ({@link Colores}) y a las texturas
  * ({@link Texturas}): ambos se calculan sobre las mismas coordenadas, que la gota deduce de la posición del píxel.
  * <ul>
  *   <li>{@link Muestra}: (t, rho, axial, lateral) respecto al círculo de la familia que lo cubre;</li>
@@ -37,23 +36,23 @@ public final class Coordenadas {
 
     Coordenadas(Camino g, Costura modo, Cortes cortes) { this.g = g; this.modo = modo; this.cortes = cortes; }
 
-    // ---------- Las coordenadas de una gota (la gota solo guarda la caché) ----------
+    // ---------- Las coordenadas de una gota (el camino solo guarda la memoria, {@link Camino#cache()}) ----------
 
     private record Clave(Costura costura, Tira tira) {}
 
     /** Las coordenadas de la gota para unas opciones: se crean al pedirlas, una por combinación de costura y tira. */
-    public static Coordenadas de(Gota g, Opciones op) {
-        return g.cacheCoordenadas().computeIfAbsent(new Clave(op.costura(), op.tira()),
+    public static Coordenadas de(Camino g, Opciones op) {
+        return (Coordenadas) g.cache().computeIfAbsent(new Clave(op.costura(), op.tira()),
                 k -> new Coordenadas(g, op.costura(), op.tira().cortes(g)));
     }
 
     /** Coordenadas del píxel como un todo, según el solape y la costura. */
-    private static Costurado ganador(Gota g, double x, double y, Opciones op) {
+    private static Costurado ganador(Camino g, double x, double y, Opciones op) {
         return op.solape().ganador(de(g, op), x, y);
     }
 
     /** El punto (x, y) visto desde la gota: su muestra y sus coordenadas de tira se calculan al pedirlas, una sola vez. */
-    public static Punto punto(Gota g, double x, double y, Opciones op) {
+    public static Punto punto(Camino g, double x, double y, Opciones op) {
         return de(g, op).punto(x, y, () -> ganador(g, x, y, op));
     }
 
@@ -61,12 +60,12 @@ public final class Coordenadas {
      * Muestra del píxel: el círculo de la familia al que la costura (ver {@link Costura}) asigna el punto.
      * Es la misma t de la que salen las coordenadas de la tira ({@link #uv}), así que colores y texturas coinciden.
      */
-    public static Muestra parametros(Gota g, double x, double y, Opciones op) {
+    public static Muestra parametros(Camino g, double x, double y, Opciones op) {
         return muestra(g, x, y, ganador(g, x, y, op).t());
     }
 
     /** Coordenadas de textura de la tira en el punto (valores en [0, 1] dentro de la gota). */
-    public static Uv uv(Gota g, double x, double y, Opciones op) { return ganador(g, x, y, op).uv(); }
+    public static Uv uv(Camino g, double x, double y, Opciones op) { return ganador(g, x, y, op).uv(); }
 
     /** Muestra del círculo en el que el píxel está más centrado (mínimo de rho): decide qué gota manda en una composición. */
     public static Muestra porRho(Camino g, double x, double y, Solape solape) {

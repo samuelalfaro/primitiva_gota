@@ -6,11 +6,18 @@ import java.util.List;
 /**
  * Consulta de solo lectura de la geometría de una gota: el camino (una Bézier cúbica de centros), los radios
  * a lo largo del parámetro t en [0, 1] y su máscara ({@link Mascara}).
- * Es lo único que necesitan {@link Coordenadas} y las zonas de la tira para repartir el interior de la gota, y también lo que
+ * Es lo único que necesitan {@link coordenadas.Coordenadas} y las zonas de la tira para repartir el interior de la gota, y también lo que
  * necesitaría cualquier otro dibujo de la primitiva (por ejemplo, un modo de alambre).
  * Todas las coordenadas están en el espacio de la imagen.
  */
 public interface Camino {
+    /**
+     * Memoria donde quien consulta el camino guarda cálculos derivados de él (por ejemplo, las coordenadas de la tira
+     * para unas opciones). El camino no sabe qué hay dentro: las claves y los valores son de quien la usa, y la memoria
+     * vive y muere con el camino. Debe admitir acceso concurrente.
+     */
+    java.util.concurrent.ConcurrentMap<Object, Object> cache();
+
     /** Centro del círculo de la familia en t. */
     double cx(double t);
     double cy(double t);
