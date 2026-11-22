@@ -23,10 +23,10 @@ import java.util.Objects;
  * pintar en un {@link Graphics2D} ({@link #render}) o para escribir un SVG ({@link PlotterSvg}). El estilo de cada rol se define
  * una sola vez, en {@link Rol}.
  *
- * Solo conoce {@link Geometria}: no depende de Gota, de Composicion ni del render sólido. La envolvente sale de los
+ * Solo conoce {@link Camino}: no depende de Gota, de Composicion ni del render sólido. La envolvente sale de los
  * puntos de contacto de la familia (los que usa {@code Zonas}, visibles en el paquete de forma provisional) y de los
  * arcos de los extremos; no de una malla. De ella, la silueta ({@link Rol#CONTORNO}) son los tramos que
- * {@link Geometria#contiene} confirma como borde real: un punto de la envolvente es borde si un punto apenas más hacia
+ * {@link Camino#contiene} confirma como borde real: un punto de la envolvente es borde si un punto apenas más hacia
  * fuera queda fuera de la gota. El resto (la parte de la envolvente que queda dentro, en lazos, cuellos y pliegues) es
  * {@link Rol#OCULTA}, opcional. Donde no hay contacto (casos degenerados) se ve lo que hace hoy el modelo.
  */
@@ -160,10 +160,10 @@ final class Trazos {
 
     private static final int SEGMENTOS_ARCO = 64;
 
-    public static List<Trazo> trazos(Geometria geo) { return trazos(geo, Ajustes.POR_DEFECTO); }
+    public static List<Trazo> trazos(Camino geo) { return trazos(geo, Ajustes.POR_DEFECTO); }
 
     /** Los trazos del alambre, del fondo al frente: secciones, camino, contorno, contactos, puntos. */
-    public static List<Trazo> trazos(Geometria geo, Ajustes aj) {
+    public static List<Trazo> trazos(Camino geo, Ajustes aj) {
         List<Trazo> out = new ArrayList<>();
         boolean recto = rectoOIgnorado(geo);          // sin curva que enseñar: nada de tiradores ni semiejes, sino flechas
         int n = aj.secciones();
@@ -222,7 +222,7 @@ final class Trazos {
      * true si el camino no tiene curva que enseñar: la forma es rígida (el camino se descarta y la espina es la recta de los
      * centros) o los cuatro puntos de control están alineados (camino recto).
      */
-    static boolean rectoOIgnorado(Geometria geo) {
+    static boolean rectoOIgnorado(Camino geo) {
         if (geo.arcos() != null) return true;
         double x0 = geo.cx(0), y0 = geo.cy(0), ux = geo.cx(1) - x0, uy = geo.cy(1) - y0, L = Math.hypot(ux, uy);
         double[] px = { geo.dcx(0) / 3, geo.cx(1) - geo.dcx(1) / 3 - x0 }, py = { geo.dcy(0) / 3, geo.cy(1) - geo.dcy(1) / 3 - y0 };
@@ -298,13 +298,13 @@ final class Trazos {
     }
 
     /** Tangente del camino en el extremo e (0: inicio, 1: final), o null si el camino está parado. */
-    private static double[] tangente(Geometria geo, int e) {
+    private static double[] tangente(Camino geo, int e) {
         double x = geo.dcx(e), y = geo.dcy(e), n = Math.hypot(x, y);
         return n > 1e-9 ? new double[] { x / n, y / n } : null;
     }
 
     /** Dirección en la que sale la tapa e: contra la tangente del camino en la inicial, a favor en la final; null si está parado. */
-    private static double[] haciaFuera(Geometria geo, int e) {
+    private static double[] haciaFuera(Camino geo, int e) {
         double[] t = tangente(geo, e);
         return t == null ? null : new double[] { (e == 0 ? -1 : 1) * t[0], (e == 0 ? -1 : 1) * t[1] };
     }
@@ -326,7 +326,7 @@ final class Trazos {
     }
 
     /** {ángulo inicial, barrido} del arco de la tapa e, o null si su radio es 0. */
-    private static double[] arcoTapa(Geometria geo, Zonas zonas, int e) {
+    private static double[] arcoTapa(Camino geo, Zonas zonas, int e) {
         Zonas.Fr f = zonas.marco(e), o = zonas.marco(1 - e);
         if (!(f.r() > 1e-9)) return null;
         double[] c = { f.cx(), f.cy() }, otro = { o.cx(), o.cy() };
@@ -335,7 +335,7 @@ final class Trazos {
     }
 
     /** Los arcos de las tapas entre sus dos contactos, saliendo de cada centro hacia fuera según la tangente. */
-    private static void tapas(Geometria geo, Zonas zonas, List<Trazo> out) {
+    private static void tapas(Camino geo, Zonas zonas, List<Trazo> out) {
         for (int e = 0; e < 2; e++) {
             double[] bs = arcoTapa(geo, zonas, e);
             if (bs == null) continue;
@@ -351,7 +351,7 @@ final class Trazos {
     }
 
     /** El punto medio del arco de la tapa e (0 o 1); null si el radio es 0. Para las pruebas. */
-    static double[] mitadTapa(Geometria geo, int e) {
+    static double[] mitadTapa(Camino geo, int e) {
         Zonas zonas = new Zonas(geo, Costura.ORTOGONAL, Tira.POR_DEFECTO.cortes(geo));
         double[] bs = arcoTapa(geo, zonas, e);
         if (bs == null) return null;
@@ -399,7 +399,7 @@ final class Trazos {
         }
     }
 
-    public static void render(Graphics2D g, Geometria geo) { render(g, trazos(geo)); }
+    public static void render(Graphics2D g, Camino geo) { render(g, trazos(geo)); }
 
     // ---------- Piezas ----------
 
@@ -408,7 +408,7 @@ final class Trazos {
     }
 
     /** Sección de la familia en t: el círculo de centro c(t) y radio r(t). */
-    private static Shape seccion(Geometria geo, double t) {
+    private static Shape seccion(Camino geo, double t) {
         double r = geo.rad(t);
         return new Ellipse2D.Double(geo.cx(t) - r, geo.cy(t) - r, 2 * r, 2 * r);
     }
@@ -568,7 +568,7 @@ final class Trazos {
     }
 
     /** true si el punto es borde de la gota: un punto apenas más hacia fuera queda fuera. */
-    private static boolean borde(Geometria geo, Punto p) {
+    private static boolean borde(Camino geo, Punto p) {
         double n = Math.hypot(p.nx(), p.ny());
         if (n < 1e-300) return false;
         return !geo.mascara().contiene(p.x() + p.eps() * p.nx() / n, p.y() + p.eps() * p.ny() / n);
@@ -576,14 +576,14 @@ final class Trazos {
 
     /**
      * Reparte la envolvente en tramos de borde ({@link Rol#CONTORNO}) y ocultos ({@link Rol#OCULTA}). Los cambios se
-     * localizan por bisección sobre el parámetro del tramo. Si la geometría tiene silueta rígida ({@link Geometria#arcos}), el
+     * localizan por bisección sobre el parámetro del tramo. Si la geometría tiene silueta rígida ({@link Camino#arcos}), el
      * contorno son sus cuatro arcos y no hay envolvente oculta que mostrar.
      */
-    private static void silueta(Geometria geo, Zonas zonas, Ajustes aj, List<Trazo> out) {
-        List<Geometria.Arco> arcos = geo.arcos();
+    private static void silueta(Camino geo, Zonas zonas, Ajustes aj, List<Trazo> out) {
+        List<Camino.Arco> arcos = geo.arcos();
         if (arcos != null) {                      // forma rígida: el contorno es la silueta que la Geometria da, no la envolvente
             Path2D contorno = new Path2D.Double();
-            for (Geometria.Arco a : arcos) contorno.append(a.forma(), contorno.getCurrentPoint() != null);
+            for (Camino.Arco a : arcos) contorno.append(a.forma(), contorno.getCurrentPoint() != null);
             contorno.closePath();
             out.add(new Trazo(Rol.CONTORNO, contorno));
             return;

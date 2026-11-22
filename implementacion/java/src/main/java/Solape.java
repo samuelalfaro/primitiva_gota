@@ -14,7 +14,7 @@ public enum Solape {
      * solución única que da la costura. Deja costuras duras donde dos tramos compiten.
      */
     PLANO {
-        @Override void capas(Geometria g, Coordenadas c, double x, double y, Consumer<Capa> out) {
+        @Override void capas(Camino g, Coordenadas c, double x, double y, Consumer<Capa> out) {
             double cob = g.mascara().cobertura(x, y);
             if (cob > 0) out.accept(new Capa(cob, c.punto(x, y, () -> c.costurado(x, y))));
         }
@@ -27,7 +27,7 @@ public enum Solape {
      * trazo) por debajo del punto medio con la capa siguiente; la última, la mayor de todas, tapas finales incluidas.
      */
     TRAZO {
-        @Override void capas(Geometria g, Coordenadas c, double x, double y, Consumer<Capa> out) {
+        @Override void capas(Camino g, Coordenadas c, double x, double y, Consumer<Capa> out) {
             capasTrazo(g, c, x, y, java.util.List.of(), out);
         }
 
@@ -47,11 +47,11 @@ public enum Solape {
     PONDERADO {
         static final double K = Double.parseDouble(System.getProperty("solape.k", "6"));
 
-        @Override void capas(Geometria g, Coordenadas c, double x, double y, Consumer<Capa> out) {
-            List<Geometria.Hebra> hs = g.mascara().hebras(x, y);
+        @Override void capas(Camino g, Coordenadas c, double x, double y, Consumer<Capa> out) {
+            List<Camino.Hebra> hs = g.mascara().hebras(x, y);
             Memo memo = new Memo(c, x, y);
             for (int h = 0; h < hs.size(); h++) {
-                Geometria.Hebra hb = hs.get(h);
+                Camino.Hebra hb = hs.get(h);
                 double cob = hb.cobertura();
                 if (cob <= 0) continue;
                 double w = 1;
@@ -76,12 +76,12 @@ public enum Solape {
     PONDERADO_UV {
         static final double K = Double.parseDouble(System.getProperty("solape.k", "6"));
 
-        @Override void capas(Geometria g, Coordenadas c, double x, double y, Consumer<Capa> out) {
-            List<Geometria.Hebra> hs = g.mascara().hebras(x, y);
+        @Override void capas(Camino g, Coordenadas c, double x, double y, Consumer<Capa> out) {
+            List<Camino.Hebra> hs = g.mascara().hebras(x, y);
             Memo memo = new Memo(c, x, y);
             double t = 0, u = 0, v = 0, cob = 0; boolean hay = false;
             for (int h = 0; h < hs.size(); h++) {
-                Geometria.Hebra hb = hs.get(h);
+                Camino.Hebra hb = hs.get(h);
                 double cb = hb.cobertura();
                 if (cb <= 0) continue;
                 final double limite = h == hs.size() - 1 ? Double.POSITIVE_INFINITY : 0.5 * (hb.t() + hs.get(h + 1).t());
@@ -110,7 +110,7 @@ public enum Solape {
      * cruce (ver {@link Pliegue}) y una sola capa; fuera de esa zona, y con cualquier otra costura, se comporta como TRAZO.
      */
     PLIEGUE {
-        @Override void capas(Geometria g, Coordenadas c, double x, double y, Consumer<Capa> out) {
+        @Override void capas(Camino g, Coordenadas c, double x, double y, Consumer<Capa> out) {
             Coordenadas.Costurado p = c.pliegue(x, y);
             double cob = p == null ? 0 : g.mascara().cobertura(x, y);
             if (p != null && cob > 0) { out.accept(new Capa(cob, c.punto(x, y, () -> p))); return; }
@@ -143,14 +143,14 @@ public enum Solape {
     public record Capa(double cobertura, Punto punto) {}
 
     /** Entrega, de abajo a arriba, las capas que se pintan en el píxel (x, y). */
-    abstract void capas(Geometria g, Coordenadas c, double x, double y, Consumer<Capa> out);
+    abstract void capas(Camino g, Coordenadas c, double x, double y, Consumer<Capa> out);
 
     /** TRAZO; con zona de pliegue, los candidatos de la mitad interior con t dentro de [ta, tb] no cuentan (los sustituye la polar). */
-    private static void capasTrazo(Geometria g, Coordenadas c, double x, double y, List<Pliegue> zona, Consumer<Capa> out) {
-        List<Geometria.Hebra> hs = g.mascara().hebras(x, y);
+    private static void capasTrazo(Camino g, Coordenadas c, double x, double y, List<Pliegue> zona, Consumer<Capa> out) {
+        List<Camino.Hebra> hs = g.mascara().hebras(x, y);
         Memo memo = new Memo(c, x, y, zona);
         for (int h = 0; h < hs.size(); h++) {            // t creciente: la posterior tapa a la anterior
-            Geometria.Hebra hb = hs.get(h);
+            Camino.Hebra hb = hs.get(h);
             double cob = hb.cobertura();
             if (cob <= 0) continue;
             final double limite = h == hs.size() - 1 ? Double.POSITIVE_INFINITY : 0.5 * (hb.t() + hs.get(h + 1).t());

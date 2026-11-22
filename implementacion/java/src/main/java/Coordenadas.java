@@ -25,12 +25,12 @@ public final class Coordenadas {
     /** Posición t sobre el camino y coordenadas de la tira de un píxel, según el modo de costura de la gota. */
     record Costurado(double t, Uv uv) {}
 
-    private final Geometria g;
+    private final Camino g;
     private final Costura modo;
     private final Cortes cortes;
     private volatile Zonas zonas;
 
-    Coordenadas(Geometria g, Costura modo, Cortes cortes) { this.g = g; this.modo = modo; this.cortes = cortes; }
+    Coordenadas(Camino g, Costura modo, Cortes cortes) { this.g = g; this.modo = modo; this.cortes = cortes; }
 
     // ---------- Las coordenadas de una gota (la gota solo guarda la caché) ----------
 
@@ -64,9 +64,9 @@ public final class Coordenadas {
     static Uv uv(Gota g, double x, double y, Opciones op) { return ganador(g, x, y, op).uv(); }
 
     /** Muestra del círculo en el que el píxel está más centrado (mínimo de rho): decide qué gota manda en una composición. */
-    static Muestra porRho(Geometria g, double x, double y, Solape solape) {
+    static Muestra porRho(Camino g, double x, double y, Solape solape) {
         if (solape == Solape.TRAZO) {   // la capa más tardía que contiene el punto
-            java.util.List<Geometria.Hebra> hs = g.hebras(x, y, 0);
+            java.util.List<Camino.Hebra> hs = g.hebras(x, y, 0);
             if (!hs.isEmpty()) return muestra(g, x, y, hs.get(hs.size() - 1).t());
         }
         return muestra(g, x, y, g.minimizar(x, y, true)[0]);
@@ -127,7 +127,7 @@ public final class Coordenadas {
     Muestra muestra(double x, double y, double t) { return muestra(g, x, y, t); }
 
     /** La muestra solo depende de la geometría, no de la costura. */
-    static Muestra muestra(Geometria g, double x, double y, double t) {
+    static Muestra muestra(Camino g, double x, double y, double t) {
         double dx = x - g.cx(t), dy = y - g.cy(t);
         double r = Math.max(g.escala(t, dx, dy), 1e-9);
         double[] tg = g.tangente(t);

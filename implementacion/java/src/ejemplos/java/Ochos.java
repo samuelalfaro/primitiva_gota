@@ -16,7 +16,7 @@ public class Ochos {
     static int mezcla(int a, int b, double t) { return RGB.mezclar(a, b, Math.max(0, Math.min(1, t))); }
     static Degradado radio(int c) { return x -> mezcla(c, 0xFF14202B, 0.45 * x * x); }
 
-    static Composicion.Nodo nd(Composicion c, double x, double y, double r, int col) {
+    static Grafo.Nodo nd(Grafo c, double x, double y, double r, int col) {
         return c.nodo(x, y, r).centro(col).radio(radio(col));
     }
 
@@ -31,8 +31,8 @@ public class Ochos {
     // ---------- A: nodo 0 con dos pétalos ----------
     static final int M = 0xFFF2E6B0;
 
-    static Composicion ochoDePetalos() {
-        Composicion c = new Composicion().mezcla(RGB);
+    static Grafo ochoDePetalos() {
+        Grafo c = new Grafo().mezcla(RGB);
         var n0 = nd(c, 260, 260, 20, M);
         int[] tono = { 0xFFE94F7B, 0xFF4F7BE9 };
         double[] ang = { -90, 90 };
@@ -41,7 +41,7 @@ public class Ochos {
             double cx = 260 + 112 * Math.cos(th), cy = 260 + 112 * Math.sin(th);
             final int kk = k;
             java.util.function.DoubleFunction<Integer> col = t -> mezcla(M, tono[kk], Math.pow(Math.sin(Math.PI * t), 0.8));
-            Composicion.Nodo prev = n0;
+            Grafo.Nodo prev = n0;
             for (int j = 1; j <= 3; j++) {
                 double fi = th + Math.PI + Math.toRadians(60 + 120 * (j - 1));
                 final int jj = j;
@@ -55,10 +55,11 @@ public class Ochos {
     }
 
     // ---------- B: el círculo que se cruza (lemniscata) ----------
-    static Composicion lemniscata() {
-        Composicion c = new Composicion().mezcla(RGB);
+    static Grafo lemniscata() {
+        Grafo c = new Grafo().mezcla(RGB);
         int n = 10;
-        Composicion.Nodo primero = null, prev = null;
+        Grafo.Nodo primero = null;
+        Grafo.Nodo prev = null;
         for (int j = 0; j < n; j++) {
             double t = (j + 0.5) * 2 * Math.PI / n, d = 1 + Math.sin(t) * Math.sin(t);
             double x = 260 + 215 * Math.cos(t) / d, y = 260 + 215 * Math.sin(t) * Math.cos(t) / d * 1.35;
@@ -72,8 +73,8 @@ public class Ochos {
     }
 
     // ---------- C: la Y que se cierra en otro nodo ----------
-    static Composicion lente() {
-        Composicion c = new Composicion().mezcla(RGB);
+    static Grafo lente() {
+        Grafo c = new Grafo().mezcla(RGB);
         int verde = 0xFF2E7D32, mc = 0xFFCFE8A0, jc = 0xFFF2E6B0, cola = 0xFFD98E2B, rosa = 0xFFE94F7B, azul = 0xFF4F7BE9;
         var n0 = nd(c, 260, 500, 9, verde);
         var m = nd(c, 260, 390, 20, mc);
@@ -90,7 +91,7 @@ public class Ochos {
         return c;
     }
 
-    static BufferedImage pinta(Composicion c, Solape s) {
+    static BufferedImage pinta(Grafo c, Solape s) {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), 0xFFF4F1EA);
         c.render(im, Opciones.POR_DEFECTO.conSolape(s));
@@ -100,7 +101,7 @@ public class Ochos {
     public static void main(String[] args) throws Exception {
         BufferedImage hoja = new BufferedImage(W * 3, H * 2, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = hoja.createGraphics();
-        Composicion[] cs = { ochoDePetalos(), lemniscata(), lente() };
+        Grafo[] cs = { ochoDePetalos(), lemniscata(), lente() };
         for (int i = 0; i < 3; i++) {
             g.drawImage(pinta(cs[i], Solape.PLANO), i * W, 0, null);
             g.drawImage(pinta(cs[i], Solape.TRAZO), i * W, H, null);

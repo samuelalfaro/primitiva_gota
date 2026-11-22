@@ -43,13 +43,13 @@ import java.util.function.DoubleUnaryOperator;
  *       entre ramas. Las puntas son la media de los colores de los lados: no hay color de extremo.</li>
  * </ul>
  */
-public final class Composicion {
+public final class Grafo {
 
     // ---------- Modelo ----------
 
-    /** Sección compartida. Se obtiene con {@link Composicion#nodo(double, double, double)}. */
+    /** Sección compartida. Se obtiene con {@link Grafo#nodo(double, double, double)}. */
     public static final class Nodo {
-        private final Composicion dueña;
+        private final Grafo dueña;
         private final int id;
         private final double x, y, radio;
         private Integer centro;
@@ -59,7 +59,7 @@ public final class Composicion {
         private Degradado fNormal, fContra;
         private final List<Arista[]> pasos = new ArrayList<>();
 
-        private Nodo(Composicion dueña, int id, double x, double y, double radio) {
+        private Nodo(Grafo dueña, int id, double x, double y, double radio) {
             this.dueña = dueña; this.id = id; this.x = x; this.y = y; this.radio = radio;
         }
 
@@ -71,7 +71,7 @@ public final class Composicion {
          * Declara que las aristas e1 y e2, que llegan a este nodo, se continúan por él: su tangente en el nodo es la de
          * Catmull-Rom entre sus vecinos (G1 entre las dos), como en un nodo de grado 2. Pensado para nodos de grado 3 o
          * más, donde sin esto cada arista sale hacia su vecino. Un nodo puede tener varias parejas, sin repetir aristas;
-         * un tirador explícito de la arista manda sobre la pareja. Ver también {@link Composicion#relajar()}.
+         * un tirador explícito de la arista manda sobre la pareja. Ver también {@link Grafo#relajar()}.
          */
         public Nodo paso(Arista e1, Arista e2) {
             if (e1 == null || e2 == null) throw new NullPointerException("paso: arista nula");
@@ -157,9 +157,9 @@ public final class Composicion {
         private Nodo cambia() { dueña.invalida(); return this; }
     }
 
-    /** Gota entre dos nodos. Se obtiene con {@link Composicion#arista(Nodo, Nodo)}. */
+    /** Gota entre dos nodos. Se obtiene con {@link Grafo#arista(Nodo, Nodo)}. */
     public static final class Arista {
-        private final Composicion dueña;
+        private final Grafo dueña;
         private final int id;
         private final Nodo a, b;
         private Gota.Vec va, vb;
@@ -167,7 +167,7 @@ public final class Composicion {
         private DoubleUnaryOperator altura;
         private Gota.Vec ava, avb;                  // tiradores de alisar(): solo si no hay tiradores explícitos
 
-        private Arista(Composicion dueña, int id, Nodo a, Nodo b) { this.dueña = dueña; this.id = id; this.a = a; this.b = b; }
+        private Arista(Grafo dueña, int id, Nodo a, Nodo b) { this.dueña = dueña; this.id = id; this.a = a; this.b = b; }
 
         public Nodo a() { return a; }
         public Nodo b() { return b; }
@@ -235,7 +235,7 @@ public final class Composicion {
     }
 
     /** Radio (px) de la unión suave de distancias en los cruces; 0 = unión dura (por defecto). */
-    public Composicion suavizado(double px) {
+    public Grafo suavizado(double px) {
         if (!(px >= 0) || !Double.isFinite(px)) throw new IllegalArgumentException("suavizado no válido");
         suaviza = px;
         invalida();
@@ -243,17 +243,17 @@ public final class Composicion {
     }
 
     /** Mezcla de color (por defecto LCH). Ojo: el arco corto del tono puede dejar un salto con tonos opuestos. */
-    public Composicion mezcla(Mezcla m) { mezcla = Objects.requireNonNull(m, "mezcla"); invalida(); return this; }
+    public Grafo mezcla(Mezcla m) { mezcla = Objects.requireNonNull(m, "mezcla"); invalida(); return this; }
 
     /** Igualar la pendiente del radio en las uniones (por defecto sí). */
 
-    public Composicion ajustarPendientes(boolean si) { ajustaPendientes = si; invalida(); return this; }
+    public Grafo ajustarPendientes(boolean si) { ajustaPendientes = si; invalida(); return this; }
 
     /** Cómo se reparte la textura (el eje v de la tira) entre las gotas de la composición. */
     public enum Reparto {
         /** Cada gota usa su propia tira de las {@link Opciones} (por defecto 1 : 2 : 1): v empieza de nuevo en cada arista. */
         POR_GOTA,
-        /** v corre por toda la composición según la s de cada gota ({@link Composicion#cortes}): la textura continúa de una gota a la siguiente. */
+        /** *  v corre por toda la composición según la s de cada gota ({@link Grafo#cortes}): la textura continúa de una gota a la siguiente. */
         GLOBAL
     }
 
@@ -261,7 +261,7 @@ public final class Composicion {
      * Reparto de la textura entre las gotas (por defecto {@link Reparto#GLOBAL}). Solo afecta a la v de textura y color lateral: la forma, el
      * orden del recorrido y el solape por s de TRAZO no dependen de él.
      */
-    public Composicion reparto(Reparto r) { reparto = Objects.requireNonNull(r, "reparto"); invalida(); return this; }
+    public Grafo reparto(Reparto r) { reparto = Objects.requireNonNull(r, "reparto"); invalida(); return this; }
 
     public int grado(Nodo n) {
         int g = 0;
@@ -348,7 +348,7 @@ public final class Composicion {
      * coordenadas (color y textura por bandas) pueden. Es una función de ayuda: comprueba con {@link #plegadas()} y
      * deja esas aristas con tiradores explícitos si hace falta.
      */
-    public Composicion alisar() {
+    public Grafo alisar() {
         for (Arista e : aristas) { e.ava = null; e.avb = null; }
         Set<Arista> hechas = new HashSet<>();
         // cadenas abiertas: se empieza por una arista con un extremo sin continuación
@@ -464,7 +464,7 @@ public final class Composicion {
     }
 
     /** {@link #relajar(double)} con 120°. */
-    public Composicion relajar() { return relajar(120); }
+    public Grafo relajar() { return relajar(120); }
 
     /**
      * Da tangente continua (G1) por los nodos de grado 3 o más sin tener que calcular los tiradores a mano: en cada
@@ -473,7 +473,7 @@ public final class Composicion {
      * ramas sin pareja siguen saliendo hacia su vecino. Heurística opt-in: se corrige con {@link Nodo#paso} o con
      * tiradores explícitos. Hay que llamarla con la topología terminada (las aristas añadidas después no entran).
      */
-    public Composicion relajar(double minGrados) {
+    public Grafo relajar(double minGrados) {
         for (Nodo n : nodos) {
             if (grado(n) < 3 || !n.pasos.isEmpty()) continue;
             List<Arista> ramas = new ArrayList<>();

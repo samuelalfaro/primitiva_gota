@@ -24,8 +24,8 @@ public class Trebol {
 
     static Degradado radio(int c) { return x -> mezcla(c, 0xFF12301A, 0.45 * x * x); }
 
-    static Composicion trebol() {
-        Composicion c = new Composicion().mezcla(RGB);
+    static Grafo trebol() {
+        Grafo c = new Grafo().mezcla(RGB);
         int base = 0xFF2E7D32;
         var n0 = c.nodo(350, 700, 9).centro(base).radio(radio(base));
         var m = c.nodo(350, 430, 20).centro(M).radio(radio(M));
@@ -34,7 +34,7 @@ public class Trebol {
         for (int k = 0; k < 3; k++) {
             double th = Math.toRadians(angulo[k]);
             double cx = 350 + 118 * Math.cos(th), cy = 430 + 118 * Math.sin(th);
-            Composicion.Nodo prev = m;
+            Grafo.Nodo prev = m;
             for (int j = 1; j <= 3; j++) {
                 double fi = th + Math.PI + Math.toRadians(-60 + 0) + (j - 1) * Math.toRadians(120) + Math.toRadians(0);
                 fi = th + Math.PI + Math.toRadians(60 + 120 * (j - 1));

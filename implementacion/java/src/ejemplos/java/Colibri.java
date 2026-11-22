@@ -19,9 +19,9 @@ public class Colibri {
     }
 
     /** Cadena de nodos por los puntos dados (x, y, r); el primero y el último con un solo color. */
-    static Composicion cadena(double[][] p, int centro, int extremoIni, int extremoFin, int contra, int normal, double ajuste) {
-        Composicion c = new Composicion();
-        Composicion.Nodo prev = null;
+    static Grafo cadena(double[][] p, int centro, int extremoIni, int extremoFin, int contra, int normal, double ajuste) {
+        Grafo c = new Grafo();
+        Grafo.Nodo prev = null;
         for (int i = 0; i < p.length; i++) {
             var nd = c.nodo(p[i][0], p[i][1], p[i][2]).centro(centro);
             if (i == 0) nd.sectores(extremoIni); else if (i == p.length - 1) nd.sectores(extremoFin); else nd.lados(contra, normal).ajusteLateral(ajuste);
@@ -50,7 +50,7 @@ public class Colibri {
     }
 
     /** La firma como composición: puntos de la spline cada ~paso píxeles, con la presión según la dirección vertical del trazo. */
-    static Composicion firma(double x0, double y0, double esc, double paso) {
+    static Grafo firma(double x0, double y0, double esc, double paso) {
         List<double[]> pts = new ArrayList<>();
         int n = CLAUDE.length;
         for (int i = 0; i < n - 1; i++) {
@@ -87,8 +87,8 @@ public class Colibri {
 
     // ---------- colibrí ----------
 
-    static Composicion ala(double x0, double y0, double r0, double x1, double y1, double r1, double vx, double vy, int c) {
-        Composicion k = new Composicion();
+    static Grafo ala(double x0, double y0, double r0, double x1, double y1, double r1, double vx, double vy, int c) {
+        Grafo k = new Grafo();
         var a = k.nodo(x0, y0, r0).centro(c).sectores(c);
         var b = k.nodo(x1, y1, r1).centro(c).sectores(c);
         k.arista(a, b).tiradores(new Gota.Vec(vx, vy), null);
@@ -102,17 +102,17 @@ public class Colibri {
         disco(im, 430, -380, 1200, 0xFFEAF3C8, 0xFF2E5D3A);                   // el fondo: una gota enorme
         disco(im, 700, 110, 46, 0xFFFFF7CF, 0xFFF4E39A);                       // un halo de luz
         // hojas y flor
-        Composicion hoja = Hoja.limbo(new Hoja.Tr(40, 560, Math.toRadians(-62), 0.42), 3.6);
+        Grafo hoja = Hoja.limbo(new Hoja.Tr(40, 560, Math.toRadians(-62), 0.42), 3.6);
         hoja.render(im);
         Hoja.venas(hoja, 0.8, 0.5).render(im);
-        Composicion tallo = new Composicion();
+        Grafo tallo = new Grafo();
         var t0n = tallo.nodo(40, 570, 6).centro(0xFF558B2F).sectores(0xFF33691E);
         var t1n = tallo.nodo(70, 420, 5.5).centro(0xFF7CB342).lados(0xFF33691E, 0xFF8BC34A);
         var t2n = tallo.nodo(98, 300, 5).centro(0xFF7CB342).sectores(0xFF558B2F);
         tallo.arista(t0n, t1n);
         tallo.arista(t1n, t2n);
         tallo.render(im);
-        Composicion flor = new Composicion();
+        Grafo flor = new Grafo();
         var fb = flor.nodo(98, 300, 7).centro(0xFFFFB74D).sectores(0xFFE65100);
         var fo = flor.nodo(138, 218, 40).centro(0xFFFFEE58).sectores(0xFFD32F2F);
         flor.arista(fb, fo).tiradores(new Gota.Vec(10, -40), new Gota.Vec(-22, 18));
@@ -124,7 +124,7 @@ public class Colibri {
         for (double[] f : new double[][] { { 470, 478, 520, 548, 8 }, { 462, 480, 468, 556, 8 }, { 466, 478, 560, 520, 8 } })
             ala(f[0], f[1], 10, f[2], f[3], 3.5, 8, 30, 0xFF1F6F57).render(im);
         double[][] cuerpo = { { 208, 238, 1.5 }, { 262, 262, 2.8 }, { 296, 286, 20 }, { 334, 326, 28 }, { 386, 384, 38 }, { 432, 434, 30 }, { 466, 474, 12 } };
-        Composicion c = cadena(cuerpo, 0xFF3BB37A, 0xFF1A1A1A, 0xFF1F6F57, 0xFFE8E4D2, 0xFF2E9E6B, 0.42);
+        Grafo c = cadena(cuerpo, 0xFF3BB37A, 0xFF1A1A1A, 0xFF1F6F57, 0xFFE8E4D2, 0xFF2E9E6B, 0.42);
         c.render(im);
         // garganta rubí: otro trazo sobre el lado del vientre de la cabeza
         double[][] garg = { { 292, 298, 6 }, { 312, 326, 14 }, { 332, 352, 10 } };

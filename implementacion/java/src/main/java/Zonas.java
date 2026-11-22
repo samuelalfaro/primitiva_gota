@@ -35,7 +35,7 @@ final class Zonas {
     /** Una solución posible para un píxel y su clave de orden: t en la banda, -rho en la tapa inicial, 1 + rho en la final. */
     record Candidato(double clave, Coordenadas.Costurado c) {}
 
-    private final Geometria g;
+    private final Camino g;
     private final Costura modo;
     private final Cortes cortes;
     private final Fr[] tabla = new Fr[NS + 1];
@@ -44,7 +44,7 @@ final class Zonas {
     private volatile java.util.List<Pliegue> pliegues = java.util.List.of();
     private volatile boolean pliegueCalculado;
 
-    Zonas(Geometria g, Costura modo, Cortes cortes) {
+    Zonas(Camino g, Costura modo, Cortes cortes) {
         this.g = g;
         this.modo = modo;
         this.cortes = cortes;

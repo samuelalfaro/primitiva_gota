@@ -36,7 +36,7 @@ public final class ArbolParametrico {
 
     private final Parametros p;
     private final Random azar;
-    private final Composicion composicion = new Composicion();
+    private final Grafo composicion = new Grafo();
 
     private ArbolParametrico(Parametros parametros) {
         this.p = parametros;
@@ -52,7 +52,7 @@ public final class ArbolParametrico {
         return mezcla(MADERA_BASE, MADERA_PUNTA, t);
     }
 
-    private Composicion.Nodo nodo(double x, double y, double radio, int nivel) {
+    private Grafo.Nodo nodo(double x, double y, double radio, int nivel) {
         return composicion.nodo(x, y, Math.max(0.8, radio)).centro(color(nivel));
     }
 
@@ -65,7 +65,7 @@ public final class ArbolParametrico {
      * genera recursivamente sus ramas hijas.
      */
     private void crecer(
-            Composicion.Nodo origen,
+            Grafo.Nodo origen,
             double x, double y,
             double angulo,
             double longitud,
@@ -77,7 +77,7 @@ public final class ArbolParametrico {
         double yFin = y + Math.sin(anguloReal) * longitud;
 
         double radioFin = Math.max(0.8, radio * p.reduccionRadio);
-        Composicion.Nodo fin = nodo(xFin, yFin, radioFin, nivel + 1);
+        Grafo.Nodo fin = nodo(xFin, yFin, radioFin, nivel + 1);
 
         // Tiradores automáticos: la geometría de la curva pertenece a Composicion.
         composicion.arista(origen, fin)
@@ -102,12 +102,12 @@ public final class ArbolParametrico {
         }
     }
 
-    static Composicion crear(Parametros p) {
+    static Grafo crear(Parametros p) {
         ArbolParametrico arbol = new ArbolParametrico(p);
         double x = W * 0.5;
         double y = H - 45;
 
-        Composicion.Nodo raiz = arbol.nodo(x, y, p.radio, 0);
+        Grafo.Nodo raiz = arbol.nodo(x, y, p.radio, 0);
         arbol.crecer(raiz, x, y, -Math.PI / 2,
                 p.altura, p.radio, 0);
 

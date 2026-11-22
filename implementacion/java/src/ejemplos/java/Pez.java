@@ -23,9 +23,9 @@ public class Pez {
     }
 
     /** Alga: cadena de nodos en zigzag con el radio decreciente. */
-    static Composicion alga(double x, double y, double alto, double onda, int c1, int c2) {
-        Composicion c = new Composicion();
-        Composicion.Nodo prev = null;
+    static Grafo alga(double x, double y, double alto, double onda, int c1, int c2) {
+        Grafo c = new Grafo();
+        Grafo.Nodo prev = null;
         int n = 6;
         for (int i = 0; i < n; i++) {
             double t = (double) i / (n - 1);
@@ -38,10 +38,10 @@ public class Pez {
     }
 
     /** Cuerpo: de la cola al morro, el lomo (lado N, arriba) azul y el vientre naranja. */
-    static Composicion cuerpo() {
-        Composicion c = new Composicion();
+    static Grafo cuerpo() {
+        Grafo c = new Grafo();
         double[][] p = { { 178, 262, 8 }, { 262, 250, 33 }, { 360, 232, 58 }, { 456, 228, 61 }, { 535, 240, 40 }, { 592, 256, 12 } };
-        Composicion.Nodo prev = null;
+        Grafo.Nodo prev = null;
         for (int i = 0; i < p.length; i++) {
             var nd = c.nodo(p[i][0], p[i][1], p[i][2]).centro(PLATA);
             if (i == 0) nd.sectores(VIENTRE); else if (i == p.length - 1) nd.sectores(0xFFE08A3A); else nd.lados(VIENTRE, LOMO).ajusteLateral(0.38);
@@ -52,8 +52,8 @@ public class Pez {
     }
 
     /** Cola: dos lóbulos que parten del pedúnculo. */
-    static Composicion cola() {
-        Composicion c = new Composicion();
+    static Grafo cola() {
+        Grafo c = new Grafo();
         var raiz = c.nodo(182, 261, 7).centro(ALETA2).sectores(ALETA, OSC);
         var arriba = c.nodo(92, 168, 24).centro(ALETA2).sectores(ALETA);
         var abajo = c.nodo(96, 352, 24).centro(ALETA2).sectores(ALETA);
@@ -62,8 +62,8 @@ public class Pez {
         return c;
     }
 
-    static Composicion aleta(double x0, double y0, double r0, double x1, double y1, double r1, double vx, double vy, double asp) {
-        Composicion c = new Composicion();
+    static Grafo aleta(double x0, double y0, double r0, double x1, double y1, double r1, double vx, double vy, double asp) {
+        Grafo c = new Grafo();
         var a = c.nodo(x0, y0, r0).centro(ALETA2).sectores(OSC);
         var b = c.nodo(x1, y1, r1).centro(ALETA2).sectores(ALETA);
         c.arista(a, b).tiradores(new Gota.Vec(vx, vy), null);
@@ -95,12 +95,12 @@ public class Pez {
         cola().render(im);
         aleta(385, 200, 36, 318, 104, 3.5, -10, -50, 1.0).render(im);               // dorsal
         aleta(415, 282, 26, 372, 358, 3, -6, 30, 1.0).render(im);                // ventral
-        Composicion cuerpo = cuerpo();
+        Grafo cuerpo = cuerpo();
         cuerpo.render(im);
         cuerpo.render(im, ESCAMAS);
         aleta(486, 270, 17, 420, 330, 3, -25, 14, 1.0).render(im);               // pectoral
         // agalla
-        Composicion ag = new Composicion();
+        Grafo ag = new Grafo();
         var g0 = ag.nodo(522, 205, 2.2).color(OSC);
         var g1 = ag.nodo(516, 272, 2.2).color(OSC);
         ag.arista(g0, g1).tiradores(new Gota.Vec(-26, 18), null);
