@@ -27,13 +27,13 @@ public class Malva {
 
     static Degradado radio(int c) { return x -> mezcla(c, 0xFF3A1236, 0.40 * x * x); }
 
-    static Composicion malva() {
-        Composicion c = new Composicion().mezcla(RGB);
+    static Grafo malva() {
+        Grafo c = new Grafo().mezcla(RGB);
         var m = c.nodo(CX, CY, 20).centro(M).radio(radio(M));
         for (int k = 0; k < 5; k++) {
             double th = Math.toRadians(-90 + 72 * k);
             double cx = CX + 128 * Math.cos(th), cy = CY + 128 * Math.sin(th);
-            Composicion.Nodo prev = m;
+            Grafo.Nodo prev = m;
             for (int j = 1; j <= 3; j++) {
                 double fi = th + Math.PI + Math.toRadians(60 + 120 * (j - 1));
                 double px = cx + 82 * Math.cos(fi), py = cy + 82 * Math.sin(fi);

@@ -30,8 +30,8 @@ public class ComposicionPruebas {
         return r;
     }
 
-    static Composicion cadena() {
-        Composicion c = new Composicion();
+    static Grafo cadena() {
+        Grafo c = new Grafo();
         var n0 = c.nodo(60, 330, 14).centro(aclara(0xFFE8523A)).sectores(0xFFE8523A);
         var n1 = c.nodo(150, 210, 30).centro(aclara(0xFFF2A33A)).lados(0xFFE8523A, 0xFF2D6CDF);
         var n2 = c.nodo(260, 190, 24).centro(aclara(0xFF4FA36B)).lados(0xFFF2A33A, 0xFF1FA39A);
@@ -42,8 +42,8 @@ public class ComposicionPruebas {
         return c;
     }
 
-    static Composicion ciclo() {
-        Composicion c = new Composicion();
+    static Grafo ciclo() {
+        Grafo c = new Grafo();
         var a = c.nodo(210, 70, 22).centro(aclara(0xFFE8523A)).lados(0xFFE8523A, 0xFF2D6CDF);
         var b = c.nodo(350, 300, 30).centro(aclara(0xFF4FA36B)).lados(0xFFF2A33A, 0xFF8E44AD);
         var d = c.nodo(70, 320, 18).centro(aclara(0xFF3A7FD6)).lados(0xFFD7263D, 0xFF1FA39A);
@@ -53,8 +53,8 @@ public class ComposicionPruebas {
         return c;
     }
 
-    static Composicion estrella(double suave) {
-        Composicion c = new Composicion().suavizado(suave);
+    static Grafo estrella(double suave) {
+        Grafo c = new Grafo().suavizado(suave);
         var centro = c.nodo(210, 225, 34).centro(aclara(0xFFF2A33A)).sectores(0xFFD7263D, 0xFF2D6CDF, 0xFFF2C14E);
         double[] ang = { -100, 20, 140 }, dist = { 150, 160, 150 }, curva = { 28, -25, 30 }, rr = { 12, 15, 10 };
         int[] col = { 0xFFE8523A, 0xFF4FA36B, 0xFF3A7FD6 };
@@ -68,7 +68,7 @@ public class ComposicionPruebas {
         return c;
     }
 
-    static BufferedImage pinta(Composicion c) {
+    static BufferedImage pinta(Grafo c) {
         BufferedImage img = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         int[] d = ((DataBufferInt) img.getRaster().getDataBuffer()).getData();
         java.util.Arrays.fill(d, FONDO);
@@ -80,7 +80,7 @@ public class ComposicionPruebas {
 
     /** Las tres composiciones con la API (sin prototipo de referencia: ya no hay otro modelo de color con el que compararlas). */
     static void galeria() throws Exception {
-        Composicion[] cs = { cadena(), ciclo(), estrella(18) };
+        Grafo[] cs = { cadena(), ciclo(), estrella(18) };
         String[] n = { "cadena", "ciclo O", "estrella Y suave" };
         BufferedImage fila = new BufferedImage(W * 3, H, BufferedImage.TYPE_INT_ARGB);
         for (int i = 0; i < 3; i++) {
@@ -102,30 +102,31 @@ public class ComposicionPruebas {
 
     static void reglas() {
         comprueba("un lazo sin los dos tiradores se rechaza al construir", lanza(IllegalStateException.class, () -> {
-            Composicion c = new Composicion();
+            Grafo c = new Grafo();
             var a = c.nodo(0, 0, 10);
             c.arista(a, a).tiradores(new Gota.Vec(50, 0), null);
             c.gotas();
         }), "");
         comprueba("nodo de otra composición se rechaza", lanza(IllegalArgumentException.class, () -> {
-            Composicion c1 = new Composicion(), c2 = new Composicion();
+            Grafo c1 = new Grafo();
+            Grafo c2 = new Grafo();
             c1.arista(c1.nodo(0, 0, 5), c2.nodo(10, 0, 5));
         }), "");
         comprueba("nodo sin aristas se rechaza", lanza(IllegalStateException.class, () -> {
-            Composicion c = new Composicion();
+            Grafo c = new Grafo();
             c.arista(c.nodo(0, 0, 5), c.nodo(10, 0, 5));
             c.nodo(50, 50, 5);
             c.gotas();
         }), "");
         comprueba("sectores con número distinto al de ramas se rechaza", lanza(IllegalStateException.class, () -> {
-            Composicion c = new Composicion();
+            Grafo c = new Grafo();
             var a = c.nodo(0, 0, 10).sectores(1, 2, 3); var b = c.nodo(100, 0, 10);
             c.arista(a, b);
             c.gotas();
         }), "");
         String msg = "";
         try {
-            Composicion c = new Composicion();
+            Grafo c = new Grafo();
             var a = c.nodo(0, 0, 10).sectores(1, 2, 3); var b = c.nodo(100, 0, 10); var d = c.nodo(0, 100, 10);
             c.arista(a, b); c.arista(a, d);
             c.gotas();
@@ -133,7 +134,7 @@ public class ComposicionPruebas {
         comprueba("el error de sectores dice cuántas ramas hay, en qué orden y hacia qué nodos", msg.contains("recibió 3 colores") && msg.contains("2 ramas")
                 && msg.contains("ángulo de salida creciente") && msg.contains("1.ª sale a -45° (arista hacia el nodo 1)") && msg.contains("2.ª sale a 135° (arista hacia el nodo 2)"), msg);
         comprueba("lados() en un nodo de grado 1 se rechaza", lanza(IllegalStateException.class, () -> {
-            Composicion c = new Composicion();
+            Grafo c = new Grafo();
             var a = c.nodo(0, 0, 10).lados(1, 2); var b = c.nodo(100, 0, 10);
             c.arista(a, b);
             c.gotas();
@@ -142,13 +143,13 @@ public class ComposicionPruebas {
 
     // ---------- geometría ----------
 
-    static boolean unionContiene(Composicion c, double x, double y) { return c.contiene(x, y); }
+    static boolean unionContiene(Grafo c, double x, double y) { return c.contiene(x, y); }
 
-    static void discos(String nombre, Composicion c) {
+    static void discos(String nombre, Grafo c) {
         boolean todos = true, unidos = true;
-        for (Composicion.Nodo n : c.nodos()) {
+        for (Grafo.Nodo n : c.nodos()) {
             if (c.grado(n) == 1) continue;
-            for (Composicion.Arista e : c.aristas()) {
+            for (Grafo.Arista e : c.aristas()) {
                 if (e.a() != n && e.b() != n) continue;
                 Gota g = c.gota(e);
                 for (int s = 0; s < 72; s++) {
@@ -165,10 +166,10 @@ public class ComposicionPruebas {
         comprueba(nombre + ": el disco de cada nodo está dentro de la unión", unidos, "");
     }
 
-    static void tapas(String nombre, Composicion c) {
-        for (Composicion.Arista e : c.aristas()) {
+    static void tapas(String nombre, Grafo c) {
+        for (Grafo.Arista e : c.aristas()) {
             for (int lado = 0; lado < 2; lado++) {
-                Composicion.Nodo n = lado == 0 ? e.a() : e.b();
+                Grafo.Nodo n = lado == 0 ? e.a() : e.b();
                 if (c.grado(n) != 1) continue;
                 Gota g = c.gota(e);
                 double t0 = lado == 0 ? 0 : 1, t1 = lado == 0 ? 1e-4 : 1 - 1e-4;
@@ -194,7 +195,7 @@ public class ComposicionPruebas {
     }
 
     static void anillo() {
-        Composicion c = new Composicion();
+        Grafo c = new Grafo();
         var a = c.nodo(100, 200, 25).color(0xFFE8523A);
         var b = c.nodo(300, 200, 25).color(0xFF3A7FD6);
         c.arista(a, b);
@@ -220,7 +221,7 @@ public class ComposicionPruebas {
         return (c >>> 24) < 200 ? -1 : (c >> 16) & 255;
     }
 
-    static BufferedImage conV(Composicion c, Opciones op) {
+    static BufferedImage conV(Grafo c, Opciones op) {
         BufferedImage img = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         c.render(img, V_ROJO, op);
         return img;
@@ -236,8 +237,8 @@ public class ComposicionPruebas {
     static void topografias() {
         Opciones op = Opciones.POR_DEFECTO;
         // Tira: 0 1 2 3
-        Composicion ch = cadena();
-        List<Composicion.Arista> es = ch.aristas();
+        Grafo ch = cadena();
+        List<Grafo.Arista> es = ch.aristas();
         double acum = 0;
         boolean ord = ch.orden(ch.nodos().get(0)) == 0;
         for (int i = 0; i < es.size(); i++) {
@@ -253,7 +254,7 @@ public class ComposicionPruebas {
         comprueba("tira: la v pintada no salta en los nodos (máx. salto <= 6/255)", sj <= 6, "salto " + sj);
 
         // Reparto POR_GOTA: cada gota vuelve a usar su tira, v se reinicia en cada arista y el orden no cambia
-        Composicion pg = cadena().reparto(Composicion.Reparto.POR_GOTA);
+        Grafo pg = cadena().reparto(Grafo.Reparto.POR_GOTA);
         boolean tiras = true;
         for (int i = 0; i < 3; i++) {
             Cortes kk = pg.cortes(pg.aristas().get(i), op);
@@ -275,7 +276,7 @@ public class ComposicionPruebas {
         comprueba("el reparto apenas cambia el color sin textura (el degradado va por longitud en GLOBAL y por t en POR_GOTA)", difMax <= 6, "dif. máx. " + difMax + "/255");
 
         // La misma tira con las aristas escritas al revés: mismo orden, mismos cortes, las gotas van en el sentido del recorrido
-        Composicion rv = new Composicion();
+        Grafo rv = new Grafo();
         var r0 = rv.nodo(60, 330, 14).color(0xFFE8523A);
         var r1 = rv.nodo(150, 210, 30).color(0xFFF2A33A);
         var r2 = rv.nodo(260, 190, 24).color(0xFF4FA36B);
@@ -294,8 +295,8 @@ public class ComposicionPruebas {
         comprueba("tira escrita al revés: la v pintada no salta en los nodos", sr <= 6, "salto " + sr);
 
         // Círculo: 0 1 2 Z0
-        Composicion ci = ciclo();
-        List<Composicion.Arista> ce = ci.aristas();
+        Grafo ci = ciclo();
+        List<Grafo.Arista> ce = ci.aristas();
         comprueba("círculo: solo la última arista es un cierre (Z0)", !ci.cierra(ce.get(0)) && !ci.cierra(ce.get(1)) && ci.cierra(ce.get(2)), "");
         Cortes c0 = ci.cortes(ce.get(0), op), c2 = ci.cortes(ce.get(2), op);
         comprueba("círculo: el cuerpo usa la banda [1/4, 3/4] de la textura y la v queda en una costura al cerrar", Math.abs(c0.c1() - 0.25) < 1e-9 && Math.abs(c2.c3() - 0.75) < 1e-9, String.format("%.4f %.4f", c0.c1(), c2.c3()));
@@ -304,7 +305,7 @@ public class ComposicionPruebas {
         comprueba("círculo: la v pintada no salta en los nodos que no son el cierre", sc <= 6, "salto " + sc);
 
         // Y: tronco 0 M y dos ramas M N1, M N2
-        Composicion y = new Composicion();
+        Grafo y = new Grafo();
         var y0 = y.nodo(60, 330, 14).color(0xFFE8523A);
         var ym = y.nodo(180, 220, 28).centro(0xFFF2A33A).sectores(0xFFD7263D, 0xFF2D6CDF, 0xFFF2C14E);
         var y1 = y.nodo(330, 90, 12).color(0xFF3A7FD6);
@@ -323,7 +324,7 @@ public class ComposicionPruebas {
         comprueba("Y: la v pintada no salta del tronco a ninguna rama", sy <= 8, "salto " + sy);
 
         // Y lobulada sin palo (el 8): dos pétalos 0 a b Z0 y 0 c d Z0 con el nodo 0 de grado 4
-        Composicion o = new Composicion();
+        Grafo o = new Grafo();
         var n0 = o.nodo(210, 200, 16).centro(0xFFF2A33A).sectores(0xFFD7263D, 0xFF2D6CDF, 0xFFF2C14E, 0xFF4FA36B);
         var pa = o.nodo(110, 100, 16).color(0xFFE8523A);
         var pb = o.nodo(110, 300, 16).color(0xFF8E44AD);
@@ -332,7 +333,7 @@ public class ComposicionPruebas {
         o.arista(n0, pa); o.arista(pa, pb); var cierra1 = o.arista(pb, n0);
         o.arista(n0, pc); o.arista(pc, pd); var cierra2 = o.arista(pd, n0);
         boolean cierres = true;
-        for (Composicion.Arista e : o.aristas()) cierres &= o.cierra(e) == (e == cierra1 || e == cierra2);
+        for (Grafo.Arista e : o.aristas()) cierres &= o.cierra(e) == (e == cierra1 || e == cierra2);
         comprueba("8 (dos pétalos en el nodo 0): los dos pétalos terminan con un cierre Z0", cierres && o.orden(n0) == 0, "");
         boolean sinError = true;
         try {
@@ -341,14 +342,15 @@ public class ComposicionPruebas {
         comprueba("8: se pinta con PLANO y con TRAZO", sinError, "");
 
         // Solape por s: dos gotas que se cruzan sin nodo en el cruce (círculo que se cruza) y TRAZO deja encima la de mayor s
-        Composicion x = new Composicion();
+        Grafo x = new Grafo();
         var x0 = x.nodo(80, 100, 20).color(0xFFE8523A);
         var x1 = x.nodo(340, 300, 20).color(0xFF2D6CDF);
         var x2 = x.nodo(340, 100, 20).color(0xFF4FA36B);
         var x3 = x.nodo(80, 300, 20).color(0xFFF2A33A);
         x.arista(x0, x1); x.arista(x1, x2); x.arista(x2, x3);
         Gota gx0 = x.gotas().get(0), gx2 = x.gotas().get(2);
-        Composicion.Arista ex0 = x.aristas().get(0), ex2 = x.aristas().get(2);
+        Grafo.Arista ex0 = x.aristas().get(0);
+        Grafo.Arista ex2 = x.aristas().get(2);
         Cortes kx0 = x.cortes(ex0, op), kx2 = x.cortes(ex2, op);
         Opciones ox0 = op.conTira(Tira.fija(kx0.c1(), kx0.c3())), ox2 = op.conTira(Tira.fija(kx2.c1(), kx2.c3()));
         BufferedImage ixT = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB), ixP = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
@@ -375,8 +377,8 @@ public class ComposicionPruebas {
     static final int FA = 0xFFE8523A, FB = 0xFF2D6CDF, FC = 0xFF4FA36B;
 
     /** Cadena de tres nodos con un color por nodo; el nodo 0 de más, y la arista (n1, n2) escrita al derecho o al revés. */
-    static Composicion trio(boolean alReves, java.util.function.Consumer<Composicion.Arista> sobreArista01) {
-        Composicion c = new Composicion();
+    static Grafo trio(boolean alReves, java.util.function.Consumer<Grafo.Arista> sobreArista01) {
+        Grafo c = new Grafo();
         var n0 = c.nodo(70, 300, 20).color(FA);
         var n1 = c.nodo(200, 170, 30).color(FB);
         var n2 = c.nodo(340, 90, 18).color(FC);
@@ -411,7 +413,7 @@ public class ComposicionPruebas {
         comprueba("una espina no lineal cambia la imagen", difMax(base, recto) > 8, "dif. máx. " + difMax(base, recto));
 
         // radio(f) simétrico: un anillo de color en cada nodo, sin tocar el color del centro
-        Composicion c = new Composicion();
+        Grafo c = new Grafo();
         var a = c.nodo(100, 210, 40).centro(FA).radio(x -> m.mezclar(FA, FB, Math.abs(Math.sin(x * Math.PI * 3))));
         var b = c.nodo(320, 210, 40).color(FC);
         c.arista(a, b);
@@ -423,13 +425,13 @@ public class ComposicionPruebas {
                 (datos(anillos)[210 * W + 100 + 20] != datos(anillos)[210 * W + 100]), "");
 
         // errores: función que no sale del color del centro; radios() fuera del grado 2
-        Composicion mal = new Composicion();
+        Grafo mal = new Grafo();
         var n0 = mal.nodo(100, 200, 30).centro(FA).radio(x -> 0xFF000000);
         var n1 = mal.nodo(300, 200, 30).color(FB);
         mal.arista(n0, n1);
         comprueba("una función que no empieza en el color del centro lanza IllegalArgumentException",
                 lanza(IllegalArgumentException.class, mal::gotas), "");
-        Composicion y = new Composicion();
+        Grafo y = new Grafo();
         var c0 = y.nodo(200, 200, 20).color(FA).radios(Degradado.constante(FA), Degradado.constante(FA));
         y.arista(c0, y.nodo(300, 200, 10).color(FB));
         y.arista(c0, y.nodo(100, 200, 10).color(FB));
@@ -438,21 +440,22 @@ public class ComposicionPruebas {
     }
 
     static void quiebros() {
-        Composicion ch = cadena();
+        Grafo ch = cadena();
         double q1 = ch.quiebro(ch.nodos().get(1)), q2 = ch.quiebro(ch.nodos().get(2));
         comprueba("cadena: quiebro < 0.5° en las dos uniones", q1 < 0.5 && q2 < 0.5, String.format("%.2f° / %.2f°", q1, q2));
-        Composicion sin = cadena().ajustarPendientes(false);
+        Grafo sin = cadena().ajustarPendientes(false);
         double s1 = sin.quiebro(sin.nodos().get(1));
         comprueba("cadena: sin el ajuste el quiebro de la unión 1 es mayor que con él", s1 > q1 + 1, String.format("%.2f° frente a %.2f°", s1, q1));
         // el ajuste de pendientes es del radio: no mueve los centros (los tiradores siguen siendo d/3)
-        Composicion con = cadena(), sin2 = cadena().ajustarPendientes(false);
+        Grafo con = cadena();
+        Grafo sin2 = cadena().ajustarPendientes(false);
         boolean igual = true;
         for (int i = 0; i < con.gotas().size(); i++)
             for (double t : new double[] { 0.2, 0.5, 0.8 })
                 igual &= con.gotas().get(i).centro(t).distance(sin2.gotas().get(i).centro(t)) < 1e-9;
         comprueba("cadena: el ajuste de pendientes no mueve los centros de las gotas", igual, "");
         // radio con un máximo en un nodo: cada gota es monótona y la pendiente en el nodo es 0
-        Composicion mx = new Composicion();
+        Grafo mx = new Grafo();
         var m0 = mx.nodo(60, 200, 10); var m1 = mx.nodo(160, 200, 40); var m2 = mx.nodo(260, 200, 10);
         mx.arista(m0, m1); mx.arista(m1, m2);
         Gota ga = mx.gotas().get(0), gb = mx.gotas().get(1);
@@ -461,10 +464,10 @@ public class ComposicionPruebas {
         comprueba("radio con máximo en el nodo central: gotas monótonas, r' = 0 y quiebro < 0.5°",
                   mono && Math.abs(ga.drad(1)) < 1e-9 && Math.abs(gb.drad(0)) < 1e-9 && mx.quiebro(m1) < 0.5,
                   String.format("r'=%.4f / %.4f, quiebro %.2f°", ga.drad(1), gb.drad(0), mx.quiebro(m1)));
-        Composicion ci = ciclo();
+        Grafo ci = ciclo();
         boolean ok = true;
         StringBuilder sb = new StringBuilder();
-        for (Composicion.Nodo n : ci.nodos()) { double q = ci.quiebro(n); sb.append(String.format("%.2f° ", q)); if (q >= 1) ok = false; }
+        for (Grafo.Nodo n : ci.nodos()) { double q = ci.quiebro(n); sb.append(String.format("%.2f° ", q)); if (q >= 1) ok = false; }
         comprueba("ciclo O: quiebro < 1° en las tres uniones", ok, sb.toString());
     }
 
@@ -472,7 +475,7 @@ public class ComposicionPruebas {
 
     static void coherencia() {
         Random rnd = new Random(7);
-        Composicion c = estrella(0);
+        Grafo c = estrella(0);
         var bb = c.bounds();
         int mal = 0, n = 3000;
         for (int i = 0; i < n; i++) {
@@ -482,7 +485,8 @@ public class ComposicionPruebas {
         }
         comprueba("sdf < 0 equivale a contiene (unión dura), 3000 puntos", mal == 0, "discrepancias " + mal);
 
-        Composicion suave = estrella(18), dura = estrella(0);
+        Grafo suave = estrella(18);
+        Grafo dura = estrella(0);
         int menos = 0, mas = 0, cambiaContiene = 0;
         for (int i = 0; i < n; i++) {
             double x = bb.getMinX() + rnd.nextDouble() * bb.getWidth(), y = bb.getMinY() + rnd.nextDouble() * bb.getHeight();
@@ -496,7 +500,7 @@ public class ComposicionPruebas {
     }
 
     static void invalidacion() {
-        Composicion c = new Composicion();
+        Grafo c = new Grafo();
         var a = c.nodo(50, 50, 10).color(0xFFFF0000);
         var b = c.nodo(150, 50, 10).color(0xFF0000FF);
         c.arista(a, b);
@@ -506,7 +510,7 @@ public class ComposicionPruebas {
         c.arista(b, d);
         comprueba("modificar la composición reconstruye las gotas", n1 == 1 && c.gotas().size() == 2, "");
         comprueba("tras añadir un nodo la unión cubre el nuevo extremo", !antes && c.contiene(150, 150), "");
-        Composicion f = new Composicion();
+        Grafo f = new Grafo();
         var centro = f.nodo(210, 225, 34).color(0xFFF2A33A);
         double a0 = Math.toRadians(-100);
         var punta = f.nodo(210 + Math.cos(a0) * 150, 225 + Math.sin(a0) * 150, 12).color(0xFFE8523A);
@@ -516,9 +520,10 @@ public class ComposicionPruebas {
     }
 
     static void tiradoresExplicitos() {
-        Composicion auto = new Composicion(), man = new Composicion();
+        Grafo auto = new Grafo();
+        Grafo man = new Grafo();
         for (int k = 0; k < 2; k++) {
-            Composicion c = k == 0 ? auto : man;
+            Grafo c = k == 0 ? auto : man;
             var a = c.nodo(0, 0, 10).color(1);
             var b = c.nodo(200, 0, 10).color(2);
             var e = c.arista(a, b);
@@ -532,8 +537,8 @@ public class ComposicionPruebas {
 
     // ---------- el ocho: dos lazos que comparten un único nodo ----------
 
-    static Composicion ocho() {
-        Composicion c = new Composicion();
+    static Grafo ocho() {
+        Grafo c = new Grafo();
         double s = Math.sqrt(0.5), L = 200;
         // Ramas del nodo en orden de ángulo: arriba-izq (-135°), arriba-der (-45°), abajo-der (45°), abajo-izq (135°).
         // Sectores: arriba = interior del lazo superior, derecha = exterior, abajo = interior del inferior, izquierda = exterior.
@@ -551,7 +556,7 @@ public class ComposicionPruebas {
     }
 
     static void pruebaOcho() throws Exception {
-        Composicion c = ocho();
+        Grafo c = ocho();
         var n = c.nodos().get(0);
         List<Gota> g = c.gotas();
         comprueba("ocho: dos gotas sobre un único nodo de grado 4",
@@ -579,7 +584,7 @@ public class ComposicionPruebas {
     }
 
     static void opciones() {
-        Composicion c = cadena();
+        Grafo c = cadena();
         BufferedImage a = lienzo(), b = lienzo();
         c.render(a);
         c.render(b, Opciones.POR_DEFECTO);
@@ -603,7 +608,7 @@ public class ComposicionPruebas {
     }
 
     /** Color y textura en una sola pasada (ComposicionColor.Modo). */
-    static void colorYTextura(Composicion c, Texturas.Textura tex) {
+    static void colorYTextura(Grafo c, Texturas.Textura tex) {
         Opciones op = Opciones.POR_DEFECTO;
         BufferedImage r = lienzo(), t = lienzo();
         c.render(r, tex, ComposicionColor.Modo.REPLACE, op);
@@ -640,9 +645,9 @@ public class ComposicionPruebas {
     // ---------- altura de las aristas ----------
 
     /** Dos cintas que se cruzan en (210, 210): roja de (150,150) a (360,360) (s = 85 en el cruce) y azul de (360,60) a (60,360) (s = 212): sin altura gana la azul. */
-    static Composicion cruz(Double alturaRoja, Double alturaAzul) {
+    static Grafo cruz(Double alturaRoja, Double alturaAzul) {
         final int ROJO = 0xFFE8283A, AZUL = 0xFF2850E8;
-        Composicion c = new Composicion().mezcla(Mezcla.RGB);
+        Grafo c = new Grafo().mezcla(Mezcla.RGB);
         var r = c.arista(c.nodo(150, 150, 14).centro(ROJO), c.nodo(360, 360, 14).centro(ROJO));
         var a = c.arista(c.nodo(360, 60, 14).centro(AZUL), c.nodo(60, 360, 14).centro(AZUL));
         if (alturaRoja != null) r.altura(x -> alturaRoja);
@@ -650,7 +655,7 @@ public class ComposicionPruebas {
         return c;
     }
 
-    static boolean rojoEncima(Composicion c) {
+    static boolean rojoEncima(Grafo c) {
         BufferedImage im = lienzo();
         c.render(im, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
         int p = datos(im)[210 * W + 210];
@@ -663,7 +668,7 @@ public class ComposicionPruebas {
         comprueba("altura: la arista azul más alta queda encima", !rojoEncima(cruz(0.0, 1.0)), "");
         comprueba("altura: la declarada queda por encima de la no declarada (roja)", rojoEncima(cruz(-5.0, null)), "");
         comprueba("altura: con alturas iguales manda el orden del recorrido", !rojoEncima(cruz(2.0, 2.0)), "");
-        Composicion c = new Composicion();
+        Grafo c = new Grafo();
         var n0 = c.nodo(60, 60, 10); var n1 = c.nodo(200, 80, 10); var n2 = c.nodo(340, 60, 10);
         c.arista(n0, n1).altura(x -> 0);
         c.arista(n1, n2).altura(x -> 1);
@@ -674,17 +679,17 @@ public class ComposicionPruebas {
     // ---------- paso y relajar ----------
 
     /** Cinta de cuatro nodos con una rama en el nodo 2 (grado 3). Las aristas se crean en este orden: 0-1, 1-2, 2-3, 2-4. */
-    static Composicion cintaConRama() {
-        Composicion c = new Composicion();
+    static Grafo cintaConRama() {
+        Grafo c = new Grafo();
         double[][] p = { { 40, 330 }, { 150, 150 }, { 260, 250 }, { 370, 360 }, { 235, 430 } };
-        var n = new Composicion.Nodo[p.length];
+        var n = new Grafo.Nodo[p.length];
         for (int i = 0; i < p.length; i++) n[i] = c.nodo(p[i][0], p[i][1], 16).centro(0xFF4FA36B);
         c.arista(n[0], n[1]); c.arista(n[1], n[2]); c.arista(n[2], n[3]); c.arista(n[2], n[4]);
         return c;
     }
 
     /** Ángulo (grados) entre la tangente de llegada de la gota 1 y la de salida de la gota 2 en el nodo 2. */
-    static double quiebroCinta(Composicion c) {
+    static double quiebroCinta(Grafo c) {
         var g = c.gotas();
         double e = 1e-4;
         Point2D a1 = g.get(1).centro(1 - e), a2 = g.get(1).centro(1), b1 = g.get(2).centro(0), b2 = g.get(2).centro(e);
@@ -695,7 +700,7 @@ public class ComposicionPruebas {
     static void pasos() {
         double sin = quiebroCinta(cintaConRama());
         comprueba("relajar: sin relajar la cinta quiebra en el nodo de grado 3", sin > 1, String.format("%.2f°", sin));
-        Composicion r = cintaConRama().relajar();
+        Grafo r = cintaConRama().relajar();
         double con = quiebroCinta(r);
         comprueba("relajar: con relajar() la cinta es G1 en el nodo (< 0,05°)", con < 0.05, String.format("%.4f°", con));
         comprueba("relajar: idempotente (segunda llamada sin error ni cambios)", Math.abs(quiebroCinta(r.relajar()) - con) < 1e-9, "");
@@ -705,7 +710,7 @@ public class ComposicionPruebas {
         comprueba("relajar: la rama sin pareja no cambia", rt.distance(st) < 1e-9 && rs.distance(ss) < 1e-9, "");
         comprueba("relajar con umbral 179°: no empareja nada (cinta a menos de 179°)", quiebroCinta(cintaConRama().relajar(179.9)) > 1, "");
         // paso manual a otra pareja, mismos efectos que relajar() en la pareja natural
-        Composicion m = new Composicion();
+        Grafo m = new Grafo();
         var a = m.nodo(0, 0, 10).centro(0xFF000000); var b = m.nodo(120, 80, 10).centro(0xFF000000); var d = m.nodo(240, 0, 10).centro(0xFF000000);
         var ab = m.arista(a, b); var bd = m.arista(b, d);
         comprueba("paso: arista de otra composición o que no llega: IllegalArgumentException", lanza(IllegalArgumentException.class, () -> b.paso(ab, m.arista(a, d))), "");
@@ -716,13 +721,13 @@ public class ComposicionPruebas {
     }
 
     static void rigidas() {
-        Composicion c = new Composicion();
+        Grafo c = new Grafo();
         var a = c.nodo(0, 0, 20).centro(0xFF000000); var b = c.nodo(30, 0, 20).centro(0xFF000000);
         var d = c.nodo(130, 0, 20).centro(0xFF000000); var e = c.nodo(150, 10, 20).centro(0xFF000000);
         var ab = c.arista(a, b); var bd = c.arista(b, d); var de = c.arista(d, e);
-        List<Composicion.Arista> r = c.rigidas();
+        List<Grafo.Arista> r = c.rigidas();
         comprueba("rigidas: detecta las gotas de trayectoria <= r1 + r2 (la 1.ª y la 3.ª)", r.size() == 2 && r.contains(ab) && r.contains(de) && !r.contains(bd), r.size() + " rígidas");
-        Composicion s = new Composicion();
+        Grafo s = new Grafo();
         var x = s.nodo(0, 0, 10).centro(0xFF000000); var y = s.nodo(60, 0, 10).centro(0xFF000000);
         s.arista(x, y);
         comprueba("rigidas: lista vacía si todas superan r1 + r2", s.rigidas().isEmpty(), "");
@@ -748,9 +753,9 @@ public class ComposicionPruebas {
         return salto / kmax;
     }
 
-    static Composicion trebolDeNodos(int N) {
-        Composicion c = new Composicion();
-        var n = new Composicion.Nodo[N];
+    static Grafo trebolDeNodos(int N) {
+        Grafo c = new Grafo();
+        var n = new Grafo.Nodo[N];
         for (int i = 0; i < N; i++) {
             double t = 2 * Math.PI * i / N;
             n[i] = c.nodo(210 + 48 * (Math.sin(t) + 2 * Math.sin(2 * t)), 210 + 48 * (Math.cos(t) - 2 * Math.cos(2 * t)), 8).centro(0xFF336699);
@@ -765,9 +770,9 @@ public class ComposicionPruebas {
         comprueba("alisar: sin alisar la curvatura salta en los nodos (> 5 %)", antes > 0.05, String.format("%.1f %%", 100 * antes));
         comprueba("alisar: con alisar() la curvatura es continua en los nodos (< 1 %) en una cadena cerrada", despues < 0.01, String.format("%.3f %%", 100 * despues));
         // cadena abierta: curvatura nula en los extremos (spline natural) y continua dentro
-        Composicion o = new Composicion();
+        Grafo o = new Grafo();
         double[][] p = { { 40, 300 }, { 120, 150 }, { 220, 120 }, { 320, 220 }, { 400, 330 } };
-        var n = new Composicion.Nodo[p.length];
+        var n = new Grafo.Nodo[p.length];
         for (int i = 0; i < p.length; i++) n[i] = o.nodo(p[i][0], p[i][1], 10).centro(0xFF336699);
         for (int i = 0; i + 1 < p.length; i++) o.arista(n[i], n[i + 1]);
         var g = o.alisar().gotas();
@@ -775,12 +780,12 @@ public class ComposicionPruebas {
         comprueba("alisar: cadena abierta, curvatura nula en el extremo (natural)", Math.abs(k0) < 1e-3, String.format("%.5f", k0));
         comprueba("alisar: cadena abierta, curvatura continua en los nodos interiores (< 1 %)", saltoCurvatura(g, false) < 0.01, String.format("%.3f %%", 100 * saltoCurvatura(g, false)));
         // idempotente
-        Composicion c = trebolDeNodos(30).alisar();
+        Grafo c = trebolDeNodos(30).alisar();
         Point2D m1 = c.gotas().get(5).centro(0.5);
         Point2D m2 = c.alisar().gotas().get(5).centro(0.5);
         comprueba("alisar: idempotente", m1.distance(m2) < 1e-9, "");
         // un tirador explícito queda fuera y manda
-        Composicion x = new Composicion();
+        Grafo x = new Grafo();
         var a = x.nodo(40, 200, 10).centro(0xFF336699); var b = x.nodo(160, 120, 10).centro(0xFF336699);
         var d = x.nodo(280, 200, 10).centro(0xFF336699); var f = x.nodo(400, 120, 10).centro(0xFF336699);
         x.arista(a, b); x.arista(b, d).tiradores(new Gota.Vec(10, 60), new Gota.Vec(-10, 60)); x.arista(d, f);
@@ -788,17 +793,17 @@ public class ComposicionPruebas {
         Point2D con = x.alisar().gotas().get(1).centro(0.5);
         comprueba("alisar: la arista con tiradores explícitos no cambia", sin.distance(con) < 1e-9, "");
         // junto con relajar(): la cinta con rama sigue G1 en el nodo de grado 3 y renderiza
-        Composicion r = cintaConRama().relajar().alisar();
+        Grafo r = cintaConRama().relajar().alisar();
         comprueba("alisar + relajar: la cinta es G1 en el nodo de grado 3 (< 0,05°)", quiebroCinta(r) < 0.05, String.format("%.4f°", quiebroCinta(r)));
         comprueba("alisar + relajar: renderiza", datos(pintaEn(r)) != null, "");
-        Composicion anillo = new Composicion();
+        Grafo anillo = new Grafo();
         var u = anillo.nodo(100, 100, 12).centro(0xFF336699); var w = anillo.nodo(300, 100, 12).centro(0xFF336699);
         anillo.arista(u, w); anillo.arista(w, u);
         Point2D ant = anillo.gotas().get(0).centro(0.5);
         comprueba("alisar: el anillo de dos nodos se deja como está", ant.distance(anillo.alisar().gotas().get(0).centro(0.5)) < 1e-9, "");
     }
 
-    static BufferedImage pintaEn(Composicion c) {
+    static BufferedImage pintaEn(Grafo c) {
         BufferedImage im = lienzo();
         c.render(im);
         return im;

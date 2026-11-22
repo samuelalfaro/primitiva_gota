@@ -56,8 +56,8 @@ public class SerpienteEnroscada {
         double[] u = nodos.get(nodos.size() - 1), z = pts.get(pts.size() - 1);
         if (Math.hypot(z[0] - u[0], z[1] - u[1]) > sp * 0.6) nodos.add(z); else nodos.set(nodos.size() - 1, z);
         int n = nodos.size();
-        Composicion c = new Composicion();
-        Composicion.Nodo prev = null;
+        Grafo c = new Grafo();
+        Grafo.Nodo prev = null;
         for (int i = 0; i < n; i++) {
             double t = (double) i / (n - 1);
             double r = 3 + 27 * suave(0.0, 0.22, t) - 6 * suave(0.88, 0.96, t);
@@ -80,7 +80,7 @@ public class SerpienteEnroscada {
             disco(im, ex, ey, 6.5, 0xFFFFE066, 0xFFE0A800);
             disco(im, ex + ca * 1.5, ey + sa * 1.5, 2.8, 0xFF111111, 0xFF000000);
         }
-        Composicion lengua = new Composicion();
+        Grafo lengua = new Grafo();
         var l0 = lengua.nodo(h[0] + ca * 30, h[1] + sa * 30, 2.2).color(0xFFD32F2F);
         var l1 = lengua.nodo(h[0] + ca * 62, h[1] + sa * 62, 1.8).color(0xFFD32F2F);
         var l2 = lengua.nodo(h[0] + ca * 82 - sa * 13, h[1] + sa * 82 + ca * 13, 1.2).color(0xFFD32F2F);

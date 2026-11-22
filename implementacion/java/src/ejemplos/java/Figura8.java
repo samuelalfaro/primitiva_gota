@@ -4,8 +4,8 @@ import javax.imageio.ImageIO;
 import java.io.File;
 
 public class Figura8 {
-    static Composicion ocho(double rC, double rT, double sol) {
-        Composicion c = new Composicion().suavizado(0);
+    static Grafo ocho(double rC, double rT, double sol) {
+        Grafo c = new Grafo().suavizado(0);
         double a = 70, b = 55;
         var C = c.nodo(240, 150, rC).centro(0xFFFBF3E0).sectores(0xFF3A7FD6, 0xFF4FA36B, 0xFFE8523A, 0xFF8E44AD);
         var L = c.nodo(380, 150, rT).centro(0xFFFBF3E0).lados(0xFF4FA36B, 0xFFF2C14E);   // dentro del lóbulo, fuera
@@ -21,7 +21,7 @@ public class Figura8 {
         BufferedImage out = new BufferedImage(960, 300, BufferedImage.TYPE_INT_ARGB);
         int i = 0;
         for (double[] rr : new double[][] { {18, 18}, {26, 14} }) {
-            Composicion c = ocho(rr[0], rr[1], 0);
+            Grafo c = ocho(rr[0], rr[1], 0);
             BufferedImage img = new BufferedImage(480, 300, BufferedImage.TYPE_INT_ARGB);
             java.util.Arrays.fill(((DataBufferInt) img.getRaster().getDataBuffer()).getData(), 0xFFF4F1EA);
             long t0 = System.nanoTime();

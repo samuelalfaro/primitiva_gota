@@ -54,9 +54,9 @@ public class Pulpo_by_Grok {
     }
 
     /** Tentáculo: cadena ondulada desde (x0,y0) en dirección ang, con largo y radios. */
-    static void tentaculo(Composicion c, double x0, double y0, double ang, double largo,
+    static void tentaculo(Grafo c, double x0, double y0, double ang, double largo,
                           double r0, double r1, int col0, int col1, int nSeg, double ondAmp) {
-        Composicion.Nodo prev = null;
+        Grafo.Nodo prev = null;
         int colPrev = col0;
         for (int i = 0; i < nSeg; i++) {
             double t = (double) i / (nSeg - 1);
@@ -86,7 +86,7 @@ public class Pulpo_by_Grok {
     static BufferedImage dibuja() {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         fondo(im);
-        Composicion c = new Composicion().mezcla(RGB);
+        Grafo c = new Grafo().mezcla(RGB);
 
         // --- cabeza (manto) ---
         double cx = 350, cy = 250;

@@ -5,8 +5,8 @@ import java.io.File;
 import javax.imageio.ImageIO;
 
 /**
- * El {@link ArbolParametrico} con las ayudas de Composicion: por defecto | {@link Composicion#relajar()} |
- * {@link Composicion#relajar()} + {@link Composicion#alisar()}. En cada bifurcación (nodo de grado 3) relajar() hace
+ * El {@link ArbolParametrico} con las ayudas de Composicion: por defecto | {@link Grafo#relajar()} |
+ * {@link Grafo#relajar()} + {@link Grafo#alisar()}. En cada bifurcación (nodo de grado 3) relajar() hace
  * que el tronco continúe con tangente suave por la hija que mejor sigue su dirección; la otra sale lateral.
  * Escribe arbol_relajado.png y, por la salida estándar, las aristas rígidas y plegadas de cada modo.
  */
@@ -19,7 +19,7 @@ public class ArbolRelajado {
         Graphics2D g = hoja.createGraphics();
         String[] nombre = { "por defecto", "relajar()", "relajar() + alisar()" };
         for (int m = 0; m < 3; m++) {
-            Composicion c = ArbolParametrico.crear(p);
+            Grafo c = ArbolParametrico.crear(p);
             if (m >= 1) c.relajar();
             if (m >= 2) c.alisar();
             BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);

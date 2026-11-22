@@ -20,8 +20,8 @@ public class EstrellaArbol {
     static Degradado radio(int c) { return x -> mezcla(c, 0xFF4A1440, 0.40 * x * x); }
 
     /** largo = distancia de los lóbulos a M; ancho = separación lateral de los lóbulos; rl = radio del lóbulo. */
-    static Composicion estrella(int n, double largo, double ancho, double rl) {
-        Composicion c = new Composicion().mezcla(RGB);
+    static Grafo estrella(int n, double largo, double ancho, double rl) {
+        Grafo c = new Grafo().mezcla(RGB);
         var m = c.nodo(CX, CY, 9).centro(M).radio(radio(M));
         for (int k = 0; k < n; k++) {
             double th = -Math.PI / 2 + 2 * Math.PI * k / n, ct = Math.cos(th), st = Math.sin(th);
@@ -39,7 +39,7 @@ public class EstrellaArbol {
         return c;
     }
 
-    static BufferedImage pinta(Composicion comp, boolean boton) {
+    static BufferedImage pinta(Grafo comp, boolean boton) {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), 0xFFF4F1EA);
         comp.render(im, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));

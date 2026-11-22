@@ -26,7 +26,7 @@ public class BallenaV2 {
 
         long t0 = System.nanoTime();
 
-        Composicion cuerpo = new Composicion().suavizado(3.0);
+        Grafo cuerpo = new Grafo().suavizado(3.0);
         var n0 = cuerpo.nodo(210, 355, 34).centro(C_CUERPO).sectores(C_SOMBRA);
         var n1 = cuerpo.nodo(310, 320, 58).centro(C_CUERPO).lados(C_SOMBRA, C_VIENTRE).ajusteLateral(0.36);
         var n2 = cuerpo.nodo(460, 295, 78).centro(C_CUERPO).lados(C_SOMBRA, C_VIENTRE).ajusteLateral(0.40);
@@ -40,27 +40,27 @@ public class BallenaV2 {
         cuerpo.render(im);
 
         // Flukes
-        Composicion flukeS = new Composicion().suavizado(2.0);
+        Grafo flukeS = new Grafo().suavizado(2.0);
         var fs0 = flukeS.nodo(200, 330, 26).centro(C_CUERPO).sectores(C_SOMBRA);
         var fs1 = flukeS.nodo(95, 230, 14).centro(C_CUERPO).sectores(C_PUNTA);
         flukeS.arista(fs0, fs1).tiradores(new Gota.Vec(-40, -50), new Gota.Vec(28, 22));
         flukeS.render(im);
 
-        Composicion flukeI = new Composicion().suavizado(2.0);
+        Grafo flukeI = new Grafo().suavizado(2.0);
         var fi0 = flukeI.nodo(200, 380, 24).centro(C_CUERPO).sectores(C_SOMBRA);
         var fi1 = flukeI.nodo(100, 465, 13).centro(C_CUERPO).sectores(C_PUNTA);
         flukeI.arista(fi0, fi1).tiradores(new Gota.Vec(-35, 48), new Gota.Vec(25, -18));
         flukeI.render(im);
 
         // Dorsal
-        Composicion dorsal = new Composicion().suavizado(1.6);
+        Grafo dorsal = new Grafo().suavizado(1.6);
         var d0 = dorsal.nodo(455, 225, 13).centro(C_CUERPO).sectores(C_SOMBRA);
         var d1 = dorsal.nodo(485, 165, 7).centro(C_CUERPO).sectores(C_PUNTA);
         dorsal.arista(d0, d1).tiradores(new Gota.Vec(10, -38), new Gota.Vec(-6, 16));
         dorsal.render(im);
 
         // Pectoral
-        Composicion pectoral = new Composicion().suavizado(1.8);
+        Grafo pectoral = new Grafo().suavizado(1.8);
         var p0 = pectoral.nodo(555, 360, 19).centro(C_CUERPO).sectores(C_SOMBRA);
         var p1 = pectoral.nodo(510, 460, 12).centro(C_CUERPO).sectores(C_PUNTA);
         pectoral.arista(p0, p1).tiradores(new Gota.Vec(-22, 50), new Gota.Vec(14, -20));
@@ -75,7 +75,7 @@ public class BallenaV2 {
         Plotter.raster(im).plot(Gota.lineal(pu, 4.8, pu2, 4.8, Perfil.recto()), Colores.cuatroColores(0xFF0A1A2A, 0xFF0A1A2A, 0xFF0A1A2A, 0xFF0A1A2A, Mezcla.RGB));
 
         // Boca
-        Composicion boca = new Composicion().suavizado(1.2);
+        Grafo boca = new Grafo().suavizado(1.2);
         var b0 = boca.nodo(745, 330, 4.5).color(C_SOMBRA);
         var b1 = boca.nodo(785, 345, 3.2).color(C_SOMBRA);
         boca.arista(b0, b1).tiradores(new Gota.Vec(22, 8), new Gota.Vec(-14, 2));
@@ -90,17 +90,17 @@ public class BallenaV2 {
 
     static void dibujarChorro(BufferedImage im, double x, double y) {
         int agua = 0xFFB0D8EC, clara = 0xFFE0F2FA;
-        Composicion c = new Composicion().suavizado(0.9);
+        Grafo c = new Grafo().suavizado(0.9);
         var a = c.nodo(x, y, 5.5).color(agua);
         var b = c.nodo(x - 4, y - 95, 2.8).color(clara);
         c.arista(a, b).tiradores(new Gota.Vec(0, -35), new Gota.Vec(2, 18));
         c.render(im);
-        Composicion c2 = new Composicion().suavizado(0.9);
+        Grafo c2 = new Grafo().suavizado(0.9);
         var a2 = c2.nodo(x - 8, y + 5, 4.2).color(agua);
         var b2 = c2.nodo(x - 38, y - 80, 2.2).color(clara);
         c2.arista(a2, b2).tiradores(new Gota.Vec(-12, -30), new Gota.Vec(8, 15));
         c2.render(im);
-        Composicion c3 = new Composicion().suavizado(0.9);
+        Grafo c3 = new Grafo().suavizado(0.9);
         var a3 = c3.nodo(x + 8, y + 5, 4.2).color(agua);
         var b3 = c3.nodo(x + 32, y - 78, 2.2).color(clara);
         c3.arista(a3, b3).tiradores(new Gota.Vec(12, -28), new Gota.Vec(-6, 14));

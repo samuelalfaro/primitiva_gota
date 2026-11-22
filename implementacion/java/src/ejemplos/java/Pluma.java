@@ -41,7 +41,7 @@ public class Pluma {
         double qy = p[1] + N[1] * L * Math.cos(ang) + T[1] * L * Math.sin(ang);
         int base = mezcla(0xFF1F6B3A, 0xFF0E7C7B, t);
         int punta = mezcla(0xFFE0B63A, 0xFF59C2A5, t * 0.8);
-        Composicion c = new Composicion().mezcla(RGB);
+        Grafo c = new Grafo().mezcla(RGB);
         var a = c.nodo(p[0], p[1], 3.6).centro(base).radio(fade(base, 0.9));
         var b = c.nodo(qx, qy, 1.5).centro(punta).radio(fade(punta, 0.9));
         c.arista(a, b).tiradores(new Gota.Vec(N[0] * L * 0.45 + T[0] * L * 0.2, N[1] * L * 0.45 + T[1] * L * 0.2), null);
@@ -82,8 +82,8 @@ public class Pluma {
         }
         ojo(im, 366, 238);
         // raquis: una gota fina clara por encima de las barbas
-        Composicion c = new Composicion().mezcla(RGB);
-        Composicion.Nodo prev = null;
+        Grafo c = new Grafo().mezcla(RGB);
+        Grafo.Nodo prev = null;
         int m = 9;
         for (int i = 0; i < m; i++) {
             double t = 0.0 + 0.93 * i / (m - 1);
