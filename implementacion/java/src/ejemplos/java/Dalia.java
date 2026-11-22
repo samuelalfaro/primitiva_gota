@@ -28,15 +28,15 @@ public class Dalia {
 
     static Degradado radio(int c) { return x -> mezcla(c, 0xFF3A1236, 0.40 * x * x); }
 
-    static Composicion dalia(int n) {
-        Composicion c = new Composicion().mezcla(RGB);
+    static Grafo dalia(int n) {
+        Grafo c = new Grafo().mezcla(RGB);
         var m = c.nodo(CX, CY, 14).centro(M).radio(radio(M));
         double lr = DIST * Math.sin(Math.PI / n) * 1.25;        // radio del lazo
         double[] rad = { 0.55 * 0.35 * lr, 0.35 * lr, 0.55 * 0.35 * lr };   // estrecho - ancho (punta) - estrecho
         for (int k = 0; k < n; k++) {
             double th = Math.toRadians(-90) + 2 * Math.PI * k / n;
             double cx = CX + DIST * Math.cos(th), cy = CY + DIST * Math.sin(th);
-            Composicion.Nodo prev = m;
+            Grafo.Nodo prev = m;
             for (int j = 1; j <= 3; j++) {
                 double fi = th + Math.PI + Math.toRadians(60 + 120 * (j - 1));
                 double px = cx + lr * Math.cos(fi), py = cy + lr * Math.sin(fi);

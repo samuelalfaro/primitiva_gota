@@ -7,9 +7,9 @@ import java.awt.image.BufferedImage;
  *  - c(t): Bézier cúbica; sus extremos son los centros de los círculos.
  *  - r(t): cúbica de Bézier monótona de r1 a r2, definida por sus tangentes en los extremos (véase {@link Perfil}).
  * Un punto p pertenece a la envolvente si existe t con |p - c(t)|^2 - r(t)^2 <= 0. Ese polinomio (grado 6) se evalúa en base
- * de Bernstein en {@link Silueta.Envolvente}; la minimización de |p - c(t)| - r(t) está en {@link Geometria} y las coordenadas en {@link Coordenadas}.
+ * de Bernstein en {@link Silueta.Envolvente}; la minimización de |p - c(t)| - r(t) está en {@link Camino} y las coordenadas en {@link Coordenadas}.
  */
-public final class Gota implements Geometria {
+public final class Gota implements Camino {
 
     /** Vector relativo (tirador respecto a su centro). */
     public record Vec(double x, double y) {}
@@ -214,11 +214,11 @@ public final class Gota implements Geometria {
         return 0.5 * (lo + hi);
     }
 
-    @Override public java.util.List<Geometria.Arco> arcos() {
+    @Override public java.util.List<Camino.Arco> arcos() {
         if (silueta == null) return null;
         java.util.List<java.awt.geom.Path2D.Double> t = silueta.tramos();
-        return java.util.List.of(new Geometria.Arco(false, t.get(0)), new Geometria.Arco(true, t.get(1)),
-                                 new Geometria.Arco(false, t.get(2)), new Geometria.Arco(true, t.get(3)));
+        return java.util.List.of(new Camino.Arco(false, t.get(0)), new Camino.Arco(true, t.get(1)),
+                                 new Camino.Arco(false, t.get(2)), new Camino.Arco(true, t.get(3)));
     }
 
     /** Longitud de la costilla en NL + 1 valores de t (la silueta es simétrica: sirve para los dos lados). */
@@ -265,7 +265,7 @@ public final class Gota implements Geometria {
     private static final Mascara VACIA = new Mascara() {
         @Override public boolean contiene(double x, double y) { return false; }
         @Override public double cobertura(double x, double y) { return 0; }
-        @Override public java.util.List<Geometria.Hebra> hebras(double x, double y) { return java.util.List.of(); }
+        @Override public java.util.List<Camino.Hebra> hebras(double x, double y) { return java.util.List.of(); }
     };
 
     /** Caché de coordenadas de esta gota (la usa {@link Coordenadas#de}). */

@@ -100,7 +100,7 @@ public final class ArbolParametrico3D {
          * resultante ya está lista para que quien la use decida si aplica
          * relajar(), alisar() u otras operaciones.</p>
          */
-        public Composicion proyectar(Proyeccion proyeccion) {
+        public Grafo proyectar(Proyeccion proyeccion) {
             if (proyeccion == null) throw new NullPointerException("proyeccion");
 
             Map<Punto3D, Proyectado> vista = new IdentityHashMap<>();
@@ -111,12 +111,12 @@ public final class ArbolParametrico3D {
                 vista.put(p, q);
             }
 
-            Composicion c = new Composicion().mezcla(Mezcla.RGB);
-            Map<Punto3D, Composicion.Nodo> nodos = new IdentityHashMap<>();
+            Grafo c = new Grafo().mezcla(Mezcla.RGB);
+            Map<Punto3D, Grafo.Nodo> nodos = new IdentityHashMap<>();
 
             for (Punto3D p : puntos) {
                 Proyectado q = vista.get(p);
-                Composicion.Nodo n = c.nodo(q.x(), q.y(), p.radio() * q.escala())
+                Grafo.Nodo n = c.nodo(q.x(), q.y(), p.radio() * q.escala())
                         .centro(p.color());
                 nodos.put(p, n);
             }

@@ -25,8 +25,8 @@ public class Estrella {
     static Degradado radio(int c) { return x -> mezcla(c, 0xFF4A1440, 0.40 * x * x); }
 
     /** n pétalos de L lóbulos; largo = distancia de la punta a M; ancho = semiancho de la punta; rt, rn, rb = radios de lóbulo, muesca y base. */
-    static Composicion estrella(int n, int L, double largo, double ancho, double rt, double rn, double rb) {
-        Composicion c = new Composicion().mezcla(RGB);
+    static Grafo estrella(int n, int L, double largo, double ancho, double rt, double rn, double rb) {
+        Grafo c = new Grafo().mezcla(RGB);
         var m = c.nodo(CX, CY, 12).centro(M).radio(radio(M));
         // contorno del pétalo en coordenadas locales (u hacia fuera, v lateral): base izq, lóbulos con muescas, base der
         java.util.List<double[]> pts = new java.util.ArrayList<>();   // {u, v, radio}
@@ -41,7 +41,7 @@ public class Estrella {
         int N = pts.size();
         for (int k = 0; k < n; k++) {
             double th = -Math.PI / 2 + 2 * Math.PI * k / n, ct = Math.cos(th), st = Math.sin(th);
-            Composicion.Nodo prev = m;
+            Grafo.Nodo prev = m;
             for (int j = 1; j <= N; j++) {
                 double[] p = pts.get(j - 1);
                 double x = CX + p[0] * ct - p[1] * st, y = CY + p[0] * st + p[1] * ct;
@@ -57,7 +57,7 @@ public class Estrella {
         return c;
     }
 
-    static BufferedImage pinta(Composicion comp) {
+    static BufferedImage pinta(Grafo comp) {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), 0xFFF4F1EA);
         comp.render(im, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));

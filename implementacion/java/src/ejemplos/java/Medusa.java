@@ -34,7 +34,7 @@ public class Medusa {
         disco(im, x, y, r, v -> conAlfa(c, brillo * (1 - v * v)));
     }
 
-    static Composicion.Nodo nodo(Composicion c, double x, double y, double r, int col, Degradado f) {
+    static Grafo.Nodo nodo(Grafo c, double x, double y, double r, int col, Degradado f) {
         return c.nodo(x, y, r).centro(col).radio(f);
     }
 
@@ -60,9 +60,9 @@ public class Medusa {
 
     /** Rayo de luz: cadena vertical que se ensancha y se desvanece al bajar. */
     static void rayo(BufferedImage im, double x0, double caida, double brillo) {
-        Composicion c = new Composicion().mezcla(RGB);
+        Grafo c = new Grafo().mezcla(RGB);
         int n = 4;
-        Composicion.Nodo prev = null;
+        Grafo.Nodo prev = null;
         for (int j = 0; j < n; j++) {
             double t = j / (n - 1.0);
             double x = x0 + 90 * t + 26 * Math.sin(t * Math.PI * 0.9);
@@ -86,10 +86,10 @@ public class Medusa {
 
     static int bordeCampana(double t) { return mezcla(CIAN, VIOLETA, Math.pow(Math.sin(Math.PI * t), 0.7)); }
 
-    static Composicion campana(double cx, double cy, double rc) {
-        Composicion c = new Composicion().mezcla(RGB);
+    static Grafo campana(double cx, double cy, double rc) {
+        Grafo c = new Grafo().mezcla(RGB);
         int n = 9;
-        Composicion.Nodo prev = null;
+        Grafo.Nodo prev = null;
         for (int i = 0; i < n; i++) {
             double t = (double) i / (n - 1);
             double a0 = Math.toRadians(196 - 212 * t);
@@ -123,7 +123,7 @@ public class Medusa {
             double a0 = Math.toRadians(196 - 212 * t);
             double x = cx + (rc - 6 * k) * Math.cos(a0), y = cy - (rc - 6 * k) * Math.sin(a0) + 20 * k;
             int col = bordeCampana(t);
-            Composicion c = new Composicion().mezcla(RGB);
+            Grafo c = new Grafo().mezcla(RGB);
             var a = nodo(c, x, y + 6 * k, 7 * k, col, lado(col, 0.8));
             int punta = conAlfa(col, 0.6);
             var b = nodo(c, x + 5 * k * Math.sin(t * 6), y + 26 * k, 1.5 * k, punta, lado(punta, 0.95));
@@ -135,10 +135,10 @@ public class Medusa {
     // ---------- tentaculas y brazos ----------
 
     /** Tentacula: cadena de nodos que ondula y se desvanece con t. */
-    static Composicion tentacula(double x0, double y0, double largo, double fase, int base, int punta, double gr) {
-        Composicion c = new Composicion().mezcla(RGB);
+    static Grafo tentacula(double x0, double y0, double largo, double fase, int base, int punta, double gr) {
+        Grafo c = new Grafo().mezcla(RGB);
         int n = 9;
-        Composicion.Nodo prev = null;
+        Grafo.Nodo prev = null;
         for (int i = 0; i < n; i++) {
             double t = i / (n - 1.0);
             double x = x0 + 30 * Math.sin(t * 2.4 * Math.PI + fase) * t * t;
@@ -161,10 +161,10 @@ public class Medusa {
     }
 
     /** Brazos orales: más gruesos, cálidos y con rulo final. */
-    static Composicion brazo(double x0, double y0, double largo, double fase, int signo) {
-        Composicion c = new Composicion().mezcla(RGB);
+    static Grafo brazo(double x0, double y0, double largo, double fase, int signo) {
+        Grafo c = new Grafo().mezcla(RGB);
         int n = 9;
-        Composicion.Nodo prev = null;
+        Grafo.Nodo prev = null;
         for (int i = 0; i < n; i++) {
             double t = i / (n - 1.0);
             double x = x0 + signo * (46 * Math.sin(t * 1.7 * Math.PI + fase) + 18 * t * t);

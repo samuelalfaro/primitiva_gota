@@ -17,9 +17,9 @@ public class NudoAltura {
         return Color.HSBtoRGB((float) (t / (2 * Math.PI)), 0.75f, 0.95f) | 0xFF000000;
     }
 
-    static Composicion trebol(boolean conAltura) {
-        Composicion c = new Composicion().mezcla(RGB);
-        Composicion.Nodo[] n = new Composicion.Nodo[N];
+    static Grafo trebol(boolean conAltura) {
+        Grafo c = new Grafo().mezcla(RGB);
+        Grafo.Nodo[] n = new Grafo.Nodo[N];
         for (int i = 0; i < N; i++) {
             double t = 2 * Math.PI * i / N;
             double x = W / 2.0 + 96 * (Math.sin(t) + 2 * Math.sin(2 * t));

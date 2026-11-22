@@ -30,7 +30,7 @@ public class Escarabajo_by_Gemini {
         }
     }
 
-    static void pata(Composicion c, double x0, double y0, double x1, double y1,
+    static void pata(Grafo c, double x0, double y0, double x1, double y1,
                      double r0, double r1, double curvaX, double curvaY) {
         var a = c.nodo(x0, y0, r0).centro(PATA_A).radio(x -> mezcla(PATA_A, PATA_B, x));
         var b = c.nodo(x1, y1, r1).centro(PATA_B).radio(x -> mezcla(PATA_B, PATA_A, 0.4 * x));
@@ -39,7 +39,7 @@ public class Escarabajo_by_Gemini {
             .tiradores(new Gota.Vec(curvaX, curvaY), new Gota.Vec(-curvaX * 0.4, -curvaY * 0.4));
     }
 
-    static void antena(Composicion c, double x0, double y0, double dx, double dy) {
+    static void antena(Grafo c, double x0, double y0, double dx, double dy) {
         var base = c.nodo(x0, y0, 3.0).centro(PATA_A).radio(x -> mezcla(PATA_A, PATA_B, x));
         var punta = c.nodo(x0 + dx, y0 + dy, 2.2).centro(PATA_B).radio(x -> mezcla(PATA_B, OJO, 0.35 * x));
         c.arista(base, punta)
@@ -50,7 +50,7 @@ public class Escarabajo_by_Gemini {
     static BufferedImage dibuja() {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         fondo(im);
-        Composicion c = new Composicion().mezcla(RGB);
+        Grafo c = new Grafo().mezcla(RGB);
 
         double cx = 360, cy = 265;
 

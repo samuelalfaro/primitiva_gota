@@ -248,8 +248,8 @@ final class SiluetaCurva implements Mascara {
      * como en {@link Geometria.Hebra}); y las prolongaciones rectas de las tapas, en t = 0 y t = 1. Solo se devuelven las que quedan a menos de
      * media unidad de cubrir el píxel.
      */
-    @Override public List<Geometria.Hebra> hebras(double px, double py) {
-        List<Geometria.Hebra> out = new ArrayList<>(2);
+    @Override public List<Camino.Hebra> hebras(double px, double py) {
+        List<Camino.Hebra> out = new ArrayList<>(2);
         int n = s.length;
         double dx = px - cx[0], dy = py - cy[0], nn = Math.hypot(tx[0], ty[0]), ux = tx[0] / nn, uy = ty[0] / nn;
         double x0 = dx * ux + dy * uy;
@@ -275,11 +275,11 @@ final class SiluetaCurva implements Mascara {
     }
 
     /** Añade la pasada de t y de punto local (x, y) si cubre algo del píxel. */
-    private void anade(List<Geometria.Hebra> out, double t, double x, double y, double j) {
+    private void anade(List<Camino.Hebra> out, double t, double x, double y, double j) {
         double d;
         if (recta.conector() == Silueta.Conector.BIARCO) d = recta.contieneLocal(x, y) ? -1 : 1;     // sin distancia: solo el signo
         else d = -capa(x, y, j);
-        if (d < BANDA) out.add(new Geometria.Hebra(t, d));
+        if (d < BANDA) out.add(new Camino.Hebra(t, d));
     }
 
     /** Distancia con signo al borde de una capa: la recta en (x, y) corregida por el factor {@code j} = |1 + k·y| del doblado en la dirección del camino. */
