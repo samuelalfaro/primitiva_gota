@@ -19,7 +19,8 @@ public class Todas {
     static final String[][] NIVELES = {
          // Lógica y matemática, sin referencias que comparar: segundos.
         {"unitarias",
-          "composicion.ComposicionPruebas"},
+          "composicion.ComposicionPruebas"
+         ,"composicion.PintadaPruebas"},
          //FIXME "SiluetaPruebas" y "SiluetaCurvaPruebas" irían aquí: la primera pasa (136/0), la segunda tiene un
          //FIXME fallo preexistente y documentado (#54, relajo LOCAL del camino en S).
          // Pintados de casos concretos contra referencias: menos de 1 minuto.

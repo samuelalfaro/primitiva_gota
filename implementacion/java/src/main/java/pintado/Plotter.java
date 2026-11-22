@@ -5,6 +5,7 @@ import color.Relleno;
 import coordenadas.Opciones;
 import coordenadas.Coordenadas;
 import forma.Gota;
+import geometria.Geometria;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.awt.image.SinglePixelPackedSampleModel;
@@ -24,6 +25,12 @@ public interface Plotter {
 
     /** Dibuja la gota con el relleno y las opciones dadas. */
     void plot(Gota g, Relleno relleno, Opciones op);
+
+    /**
+     * Dibuja una geometría: por cada píxel de su {@link Geometria#bounds()} (con un margen de 2 píxeles para el
+     * antialiasing) compone, de abajo a arriba y en orden de altura, las capas que ella entrega.
+     */
+    void plot(Geometria g, Opciones op);
 
     /** Dibuja la gota con las opciones por defecto. */
     default void plot(Gota g, Relleno relleno) { plot(g, relleno, Opciones.POR_DEFECTO); }
@@ -84,6 +91,14 @@ public interface Plotter {
             final Coordenadas coord = Coordenadas.de(g, op);
             recorre(z, (i, j) -> solape.capas(g, coord, i + 0.5, j + 0.5,
                     capa -> set(i, j, componer(get(i, j), rel.argb(capa.punto()), capa.cobertura()))));
+        }
+
+        @Override public void plot(Geometria g, Opciones op) {
+            final java.awt.geom.Rectangle2D b = g.bounds();
+            final Zona z = zona(b.getMinX(), b.getMaxX(), b.getMinY(), b.getMaxY(), 2);
+            if (z == null) return;
+            recorre(z, (i, j) -> g.capas(i + 0.5, j + 0.5, op,
+                    t -> set(i, j, componer(get(i, j), t.argb(), t.cobertura()))));
         }
 
         /** Composición alfa src-over, no premultiplicada: src con su cobertura sobre dst. */
