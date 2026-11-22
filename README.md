@@ -17,7 +17,7 @@ flexibilidad de las curvas paramétricas.
 - Forma definida por 2 puntos extremos (centros de las secciones) y 2 puntos de control (para la Bézier).
 - Radio variable a lo largo del camino.
 - Sistema de coordenadas intrínsecas para mapeo de texturas y colores.
-- Composición topológica: cadenas, ciclos, estrellas y figuras complejas.
+- Composición (Grupo) y Composición topológica (Grafo): cadenas, ciclos, estrellas y figuras complejas.
 
 ## 🔷 Especificación Geométrica
 
@@ -68,7 +68,7 @@ $$
 \\rho\\leq1
 $$
 
-En la primitiva actual todas las secciones son círculos, con $a(t)=b(t)=r(t)$, y se recupera el sistema de coordenadas circular. (Las secciones elípticas se retiraron de la primitiva; la última versión que las incluye está en la etiqueta `elipses-v1`.)
+Las secciones son círculos, con $a(t)=b(t)=r(t)$, y se recupera el sistema de coordenadas circular.
 
 ### Modos de las Coordenadas
 
@@ -108,67 +108,6 @@ Donde $w$ es la profundidad normalizada de la tapa: vale 0 en la costura con el 
 
 Esta transformación permite utilizar una misma tira de coordenadas para aplicar tanto colores como texturas.
 
-## 🏗️ Arquitectura
-
-### Estructura del Proyecto
-
-```
-primitiva_gota/
-├── README.md
-├── implementacion/
-│   └── java/
-│       ├── README.md
-│       ├── pom.xml
-│       ├── src/
-│       │   ├── main/java/
-│       │   ├── test/java/
-│       │   └── ejemplos/java/
-│       └── ejemplos.sh
-├── incubator/           documentos y experimentos de trabajo (p. ej. RadiosSuperpuestos)
-└── LICENSE
-```
-
-### Dependencias entre Clases
-
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│                           FLUJO DE DATOS                             │
-├──────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│   Gota (centros, radios y espina) ──implementa──> Geometria          │
-│     └─ mascara() ──> Mascara (pertenencia: Silueta.Envolvente)       │
-│                                                                      │
-│   Geometria + Mascara ──> Coordenadas ──(Zonas, Costura)             │
-│                               ├──> Colores ───┐                      │
-│                               │               ├─> Relleno (Mezcla)   │
-│                               └──> Texturas ──┘                      │
-│                                                                      │
-│   Plotter (raster) pinta una Gota con un Relleno                     │
-│   PlotterAlambre y PlotterSvg dibujan el modo alambre (Trazos)       │
-│   ComposicionColor (combina 2 rellenos)                              │
-│   Composicion (une gotas y las pinta)                                │
-│                                                                      │
-└──────────────────────────────────────────────────────────────────────┘
-```
-
-## 📊 Especificación Técnica Detallada
-
-### Algoritmo de Pertenencia (estado actual)
-
-La pertenencia de un punto a la gota la decide `Mascara`; hoy la implementa `Silueta.Envolvente`, con la familia de círculos:
-
-1. **División recursiva**: la gota se divide en tramos hasta que el polinomio de grado 6 puede evaluarse directamente.
-2. **Evaluación en base de Bernstein**: los polinomios se representan y evalúan en esta base, que facilita la subdivisión recursiva y el control de sus valores en cada intervalo.
-3. **Antialiasing**: banda de 0.5 píxeles con evaluación conservadora.
-4. **Profundidad máxima**: 24 niveles de subdivisión.
-
-### Tipos de Solapamiento
-
-| Tipo | Descripción |
-|------|-------------|
-| `PLANO` | Un único color por píxel (mínimo $\\rho$) |
-| `TRAZO` | Cada tramo es una capa, con antialiasing propio |
-
 ## 🔧 Uso
 
 ### Requisitos
@@ -187,32 +126,6 @@ mvn test
 ```
 
 Las imágenes generadas se guardan en `target/imagenes/`.
-
-### Ejemplos Disponibles
-
-| Ejemplo | Descripción |
-|---------|-------------|
-| `GotaDemo` | Demostración básica de una gota |
-| `Flor` | Composición de gotas formando una flor |
-| `Hoja` | Gota configurada como hoja |
-| `EstrellaTapas` | Estrella con tapas de semidisco |
-| `Figura8` | Dos gotas formando un ocho |
-| `GotaTextura` | Gota con textura aplicada |
-| `GotaPerfil` | Demostración de diferentes perfiles |
-| `GotaColorDemo` | Demostración de modelos de color |
-| `GotaSolape` | Pruebas de solapamiento |
-| `ArcoDemo` | Arcos formados con gotas |
-| `LadosDemo` | Demostración de lados y bordes |
-| `CosturasDemo` | Los tres modos de costura sobre cuatro gotas |
-| `Pez`, `Colibri`, `Caracol` | Dibujos libres con la API de `Composicion` |
-| `Serpiente`, `SerpienteEnroscada` | Cadenas de nodos, la segunda con el camino cruzado consigo mismo |
-| `BallenaV1`, `BallenaV2`, `BallenaV3` | Tres versiones de una ballena |
-| `BalonDemo` | Balón de playa: dos círculos del mismo centro y radio (d = 0) |
-| `SiluetaDemo`, `SiluetaCurvaDemo` | La silueta de tapas y conector, recta y doblada |
-| `SiluetaComplejaDemo`, `SiluetaRelajoDemo`, `SiluetaTrazoDemo` | Caminos complejos que fuerzan el pliegue y su relajo |
-| `AlambreDemo` | Modo alambre con `PlotterAlambre` y `PlotterSvg` |
-| `GotaAdversos`, `CasosDegenerados` | Casos adversos y degenerados de la geometría |
-| `GaleriaTapas` | Galería de tapas |
 
 ## 🔗 Recursos Adicionales
 
