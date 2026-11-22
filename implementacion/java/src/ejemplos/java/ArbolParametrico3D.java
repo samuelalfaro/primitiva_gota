@@ -12,9 +12,10 @@ import java.util.Random;
  * La proyección a pantalla se proporciona después mediante {@link Proyeccion};
  * así la misma geometría puede verse desde distintas cámaras.</p>
  *
- * <p>Convención del mundo: Y crece hacia arriba. Las direcciones de las ramas
- * se construyen en un sistema local ligado a la rama madre; la apertura es
- * relativa a esa dirección, no a los ejes globales.</p>
+ * <p>Convención del mundo: Y crece hacia abajo; las ramas crecen hacia Y
+ * negativa. Las direcciones se construyen en un sistema local ligado a la
+ * rama madre; la apertura es relativa a esa dirección, no a los ejes
+ * globales.</p>
  */
 public final class ArbolParametrico3D {
 
