@@ -3,7 +3,7 @@ package composicion;
 import coordenadas.Solape;
 import color.Mezcla;
 import color.Texturas;
-import color.ComposicionColor;
+import color.Combinacion;
 import color.Degradado;
 import coordenadas.Opciones;
 import coordenadas.Costura;
@@ -624,7 +624,7 @@ public class ComposicionPruebas {
     static void colorYTextura(Grafo c, Texturas.Textura tex) {
         Opciones op = Opciones.POR_DEFECTO;
         BufferedImage r = lienzo(), t = lienzo();
-        c.render(r, tex, ComposicionColor.Modo.REPLACE, op);
+        c.render(r, tex, Combinacion.Modo.REPLACE, op);
         c.render(t, tex, op);
         comprueba("render(tex, REPLACE) == render(tex)", java.util.Arrays.equals(datos(r), datos(t)), "");
 
@@ -633,7 +633,7 @@ public class ComposicionPruebas {
             @Override public int muestrea(double u, double v) { return 0xFFFFFFFF; }
         };
         BufferedImage m = lienzo(), solo = lienzo();
-        c.render(m, blanca, ComposicionColor.Modo.MODULATE, op);
+        c.render(m, blanca, Combinacion.Modo.MODULATE, op);
         c.render(solo, op);
         int difs = 0;
         for (int i = 0; i < datos(m).length; i++) if (datos(m)[i] != datos(solo)[i]) difs++;
@@ -644,15 +644,15 @@ public class ComposicionPruebas {
             @Override public int muestrea(double u, double v) { return 0x00FFFFFF; }
         };
         BufferedImage d = lienzo();
-        c.render(d, clara, ComposicionColor.Modo.DECAL, op);
+        c.render(d, clara, Combinacion.Modo.DECAL, op);
         difs = 0;
         for (int i = 0; i < datos(d).length; i++) if (datos(d)[i] != datos(solo)[i]) difs++;
         comprueba("DECAL con textura transparente == color solo", difs == 0, difs + " píxeles distintos");
 
         BufferedImage mod = lienzo();
-        c.render(mod, tex, ComposicionColor.Modo.MODULATE, op);
+        c.render(mod, tex, Combinacion.Modo.MODULATE, op);
         comprueba("MODULATE con la referencia != REPLACE", !java.util.Arrays.equals(datos(mod), datos(r)), "");
-        comprueba("modo nulo: NullPointerException", lanza(NullPointerException.class, () -> c.render(lienzo(), tex, (ComposicionColor.Modo) null, op)), "");
+        comprueba("modo nulo: NullPointerException", lanza(NullPointerException.class, () -> c.render(lienzo(), tex, (Combinacion.Modo) null, op)), "");
     }
 
     // ---------- altura de las aristas ----------

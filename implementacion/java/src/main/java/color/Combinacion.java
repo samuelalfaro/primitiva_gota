@@ -9,9 +9,9 @@ import java.util.Objects;
  * Composición de rellenos al estilo de glTexEnv: combina un relleno de color (Cf) con otro de textura (Ct) o con cualquier otro relleno. No
  * confundir con {@link Composicion}, que es la composición topológica de gotas.
  */
-public final class ComposicionColor {
+public final class Combinacion {
 
-    private ComposicionColor() {}
+    private Combinacion() {}
 
     // ---------- Color x textura (al estilo de glTexEnv) ----------
 
