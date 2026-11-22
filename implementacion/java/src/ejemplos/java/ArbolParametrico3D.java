@@ -12,9 +12,9 @@ import java.util.Random;
  * La proyección a pantalla se proporciona después mediante {@link Proyeccion};
  * así la misma geometría puede verse desde distintas cámaras.</p>
  *
- * <p>Convención del mundo: Y crece hacia arriba. La inclinación se mide desde
- * el eje vertical (0 = arriba, 90° = horizontal). El ángulo azimutal gira
- * alrededor del eje Y.</p>
+ * <p>Convención del mundo: Y crece hacia arriba. Las direcciones de las ramas
+ * se construyen en un sistema local ligado a la rama madre; la apertura es
+ * relativa a esa dirección, no a los ejes globales.</p>
  */
 public final class ArbolParametrico3D {
 
@@ -29,18 +29,20 @@ public final class ArbolParametrico3D {
         public int ramas = 2;
         public double reduccionLongitud = 0.70;
         public double reduccionRadio = 0.66;
+        /** Separación angular entre dos ramas hijas (en radianes). */
         public double apertura = Math.toRadians(55);
         public double variacionAngular = Math.toRadians(9);
         public double variacionLongitud = 0.12;
         public long semilla = 20261121;
-        /** Inclinación máxima de las ramas respecto de la vertical. */
-        public double inclinacionMaxima = Math.toRadians(78);
         /**
-         * Giro acumulado del azimut por nivel (ángulo áureo por defecto), para que las ramas se abran alrededor del
-         * tronco y no en un solo abanico. Con 0 se obtiene el abanico plano original.
+         * Giro del patrón de ramificación alrededor de la dirección madre.
+         * El ángulo áureo distribuye los planos de bifurcación entre niveles.
          */
         public double giro = Math.toRadians(137.50776);
     }
+
+    /** Vector inmutable en el espacio del árbol. */
+    private record Vector3(double x, double y, double z) {}
 
     /** Un punto del árbol en coordenadas del mundo. */
     public record Punto3D(
@@ -146,13 +148,18 @@ public final class ArbolParametrico3D {
     public static Modelo crear(Parametros p) {
         if (p == null) throw new NullPointerException("parametros");
         if (p.niveles < 0 || p.ramas < 1 || !(p.altura > 0) || !(p.radio > 0)
-                || !(p.inclinacionMaxima >= 0 && p.inclinacionMaxima < Math.PI / 2)) {
+                || !(p.apertura >= 0 && p.apertura < Math.PI)
+                || !(p.variacionAngular >= 0)
+                || !(p.reduccionLongitud > 0)
+                || !(p.reduccionRadio > 0)) {
             throw new IllegalArgumentException("parámetros del árbol no válidos");
         }
 
         ArbolParametrico3D arbol = new ArbolParametrico3D(p);
         Punto3D raiz = arbol.punto(0, 0, 0, p.radio, 0);
-        arbol.crecer(raiz, 0, 0,
+        Vector3 direccionInicial = new Vector3(0, -1, 0);
+        Vector3 ejeLocalInicial = new Vector3(1, 0, 0);
+        arbol.crecer(raiz, direccionInicial, ejeLocalInicial,
                 p.altura, p.radio, 0);
         return new Modelo(arbol.puntos, arbol.ramas);
     }
@@ -177,31 +184,59 @@ public final class ArbolParametrico3D {
         return (azar.nextDouble() * 2 - 1) * amplitud;
     }
 
+    private static double producto(Vector3 a, Vector3 b) {
+        return a.x() * b.x() + a.y() * b.y() + a.z() * b.z();
+    }
+
+    private static Vector3 sumar(Vector3 a, Vector3 b) {
+        return new Vector3(a.x() + b.x(), a.y() + b.y(), a.z() + b.z());
+    }
+
+    private static Vector3 escalar(Vector3 v, double k) {
+        return new Vector3(v.x() * k, v.y() * k, v.z() * k);
+    }
+
+    private static Vector3 restar(Vector3 a, Vector3 b) {
+        return new Vector3(a.x() - b.x(), a.y() - b.y(), a.z() - b.z());
+    }
+
+    private static Vector3 cruz(Vector3 a, Vector3 b) {
+        return new Vector3(
+                a.y() * b.z() - a.z() * b.y(),
+                a.z() * b.x() - a.x() * b.z(),
+                a.x() * b.y() - a.y() * b.x());
+    }
+
+    private static Vector3 normalizar(Vector3 v) {
+        double longitud = Math.sqrt(producto(v, v));
+        if (!(longitud > 1e-12)) {
+            throw new IllegalArgumentException("vector de longitud nula");
+        }
+        return escalar(v, 1 / longitud);
+    }
+
     /**
-     * Genera una rama usando azimut e inclinación. Las hijas se abren en
-     * azimut y aumentan progresivamente su inclinación: el abanico deja de
-     * estar contenido en un único plano, pero conserva el patrón paramétrico.
+     * Genera una rama y sus descendientes.
+     *
+     * <p>direccion es el eje de crecimiento de la rama madre. ejeLocal es
+     * perpendicular a él y, junto con su producto vectorial, define el plano
+     * local en el que se distribuyen las hijas.</p>
      */
     private void crecer(
             Punto3D origen,
-            double azimut,
-            double inclinacion,
+            Vector3 direccion,
+            Vector3 ejeLocal,
             double longitud,
             double radio,
             int nivel) {
 
-        double az = azimut + aleatorio(p.variacionAngular * 0.25);
-        double inc = Math.min(p.inclinacionMaxima,
-                inclinacion + aleatorio(p.variacionAngular * 0.25));
+        Vector3 d = normalizar(direccion);
+        Vector3 u = normalizar(restar(ejeLocal, escalar(d, producto(ejeLocal, d))));
+        Vector3 v = normalizar(cruz(d, u));
 
-        double horizontal = Math.sin(inc);
-        double dx = Math.sin(az) * horizontal;
-        double dy = -Math.cos(inc);
-        double dz = Math.cos(az) * horizontal;
-
-        double x = origen.x() + dx * longitud;
-        double y = origen.y() + dy * longitud;
-        double z = origen.z() + dz * longitud;
+        double x = origen.x() + d.x() * longitud;
+        double y = origen.y() + d.y() * longitud;
+        double z = origen.z() + d.z() * longitud;
 
         double radioFin = Math.max(0.8, radio * p.reduccionRadio);
         Punto3D fin = punto(x, y, z, radioFin, nivel + 1);
@@ -209,24 +244,33 @@ public final class ArbolParametrico3D {
 
         if (nivel >= p.niveles) return;
 
+        // La apertura es el ángulo total entre dos hijas cuando ramas == 2.
+        // Para más ramas, se distribuyen radialmente sobre el mismo cono.
+        double anguloBase = p.apertura * 0.5;
+
         for (int i = 0; i < p.ramas; i++) {
-            double posicion = p.ramas == 1
-                    ? 0
-                    : (double) i / (p.ramas - 1) - 0.5;
-
-            double azimutHija = az
-                    + p.giro * (nivel + 1)
-                    + posicion * p.apertura
+            double fase = p.giro * (nivel + 1)
+                    + 2 * Math.PI * i / p.ramas
                     + aleatorio(p.variacionAngular * 0.45);
+            double angulo = Math.max(0, Math.min(Math.PI * 0.499,
+                    anguloBase + aleatorio(p.variacionAngular * 0.45)));
 
-            double inclinacionHija = Math.min(p.inclinacionMaxima,
-                    inc + p.apertura * 0.5
-                    + aleatorio(p.variacionAngular * 0.45));
+            Vector3 lateral = sumar(escalar(u, Math.cos(fase)),
+                    escalar(v, Math.sin(fase)));
+            Vector3 direccionHija = normalizar(sumar(
+                    escalar(d, Math.cos(angulo)),
+                    escalar(lateral, Math.sin(angulo))));
+
+            // Transporta el eje local a la hija proyectándolo sobre el plano
+            // perpendicular a su nueva dirección: evita reiniciar el marco
+            // contra los ejes globales en cada nivel.
+            Vector3 ejeHija = normalizar(restar(ejeLocal,
+                    escalar(direccionHija, producto(ejeLocal, direccionHija))));
 
             double longitudHija = longitud * p.reduccionLongitud
                     * (1 + aleatorio(p.variacionLongitud));
 
-            crecer(fin, azimutHija, inclinacionHija,
+            crecer(fin, direccionHija, ejeHija,
                     longitudHija, radioFin, nivel + 1);
         }
     }
