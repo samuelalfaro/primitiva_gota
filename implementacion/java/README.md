@@ -33,7 +33,7 @@ src/main/java      la biblioteca
   ComposicionColor.java  composición de rellenos al estilo glTexEnv (color x textura)
   Composicion.java       composición topológica: varias gotas con nodos compartidos (cadena, ciclo, estrella, ocho)
 src/test/java      las suites de pruebas (cada una es un programa con main; terminan con código 1 si algo falla)
-  Todas.java         las ejecuta todas, cada una en su JVM
+  Todas.java         las ejecuta, cada una en su JVM; niveles: unitarias, regresion y estudio
 src/test/resources textura base que usan algunas suites
 src/ejemplos/java  dibujos y demos (Flor, Hoja, Figura8, ...); se compilan con las pruebas para que sigan compilando
 ```
@@ -41,12 +41,14 @@ src/ejemplos/java  dibujos y demos (Flor, Hoja, Figura8, ...); se compilan con l
 ## Uso
 
 ```
-mvn test                 # compila todo y ejecuta las suites (las imágenes quedan en target/imagenes)
+mvn test                 # compila todo y ejecuta los niveles rápidos: unitarias + regresion (los segundos)
+mvn test -Pestudio       # añade las matrices de estudio (el render completo; ~9 min en hardware modesto)
+mvn test -Dsuites.niveles=estudio    # solo un nivel: unitarias, regresion o estudio
 ./ejemplos.sh Flor       # ejecuta un ejemplo; la imagen queda en target/imagenes
 ```
 
 Sin Maven: compilar `src/main/java` en un directorio, `src/test/java` y `src/ejemplos/java` en otro con el primero en el
-classpath, copiar `src/test/resources` a este segundo, y lanzar `Todas <classpath>` o cualquier clase.
+classpath, copiar `src/test/resources` a este segundo, y lanzar `Todas <classpath> [niveles,...]` o cualquier clase.
 
 ## Dependencias entre clases
 
