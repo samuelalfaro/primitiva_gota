@@ -2,6 +2,8 @@ package composicion;
 
 import coordenadas.Costura;
 import coordenadas.Opciones;
+import color.Texturas;
+import color.Combinacion;
 import coordenadas.Solape;
 import geometria.Geometria;
 import java.awt.Shape;
@@ -105,6 +107,46 @@ public class GrafoGeometriaPruebas {
         BufferedImage c = lienzo();
         g.render(c, Opciones.POR_DEFECTO);
         comprueba("al añadir una arista, plot sigue coincidiendo con render", diferencias(b, c)[0] == 0 && diferencias(a, b)[0] > 0, "");
+
+        // la textura es del Grafo: textura(...) + plot == los render con textura de siempre
+        Texturas.Textura tex = Texturas.referenciaLados();
+        Texturas.Textura blanca = new Texturas.Textura() {
+            @Override public double aspecto() { return 0.5; }
+            @Override public int muestrea(double u, double v) { return 0xFFFFFFFF; }
+        };
+        for (Caso k : casos()) {
+            for (Opciones op : new Opciones[] { Opciones.POR_DEFECTO, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO) }) {
+                String n = k.nombre() + " / " + (op.solape() == Solape.TRAZO ? "TRAZO" : "PLANO");
+                BufferedImage r = lienzo(), p = lienzo();
+                k.grafo().render(r, tex, op);
+                Plotter.raster(p).plot(k.grafo().textura(tex), op);
+                comprueba(n + ": textura == render(tex)", diferencias(r, p)[0] == 0, diferencias(r, p)[0] + " distintos");
+                for (Combinacion.Modo m : new Combinacion.Modo[] { Combinacion.Modo.MODULATE, Combinacion.Modo.DECAL, Combinacion.Modo.REPLACE }) {
+                    BufferedImage r2 = lienzo(), p2 = lienzo();
+                    k.grafo().render(r2, tex, m, op);
+                    Plotter.raster(p2).plot(k.grafo().textura(tex, m), op);
+                    comprueba(n + ": textura(" + m + ") == render(tex, " + m + ")", diferencias(r2, p2)[0] == 0, diferencias(r2, p2)[0] + " distintos");
+                }
+                BufferedImage c0 = lienzo(), c1 = lienzo();
+                Plotter.raster(c0).plot(k.grafo().sinTextura(), op);
+                k.grafo().render(c1, op);
+                comprueba(n + ": sinTextura() vuelve al color lateral", diferencias(c0, c1)[0] == 0, "");
+            }
+        }
+        Grafo gt = ComposicionPruebas.cadena();
+        BufferedImage u0 = lienzo(), u1 = lienzo(), u2 = lienzo();
+        Plotter.raster(u0).plot(gt, Opciones.POR_DEFECTO);
+        Plotter.raster(u1).plot(gt.textura(tex), Opciones.POR_DEFECTO);
+        Plotter.raster(u2).plot(gt.textura(tex, Combinacion.Modo.BLEND, 0xFFFF8000), Opciones.POR_DEFECTO);
+        BufferedImage u3 = lienzo(), u4 = lienzo();
+        Plotter.raster(u3).plot(gt.textura(tex, Combinacion.Modo.BLEND, 0xFF0080FF), Opciones.POR_DEFECTO);
+        gt.render(u4, tex, Combinacion.Modo.BLEND, 0xFF0080FF, Opciones.POR_DEFECTO);
+        comprueba("la textura cambia lo que se pinta (invalida la memoria)", diferencias(u0, u1)[0] > 0 && diferencias(u1, u2)[0] > 0, "");
+        comprueba("BLEND con color de entorno == render con entorno", diferencias(u3, u4)[0] == 0 && diferencias(u2, u3)[0] > 0, "");
+        boolean nulo = false, nuloModo = false;
+        try { gt.textura(null); } catch (NullPointerException e) { nulo = true; }
+        try { gt.textura(tex, null); } catch (NullPointerException e) { nuloModo = true; }
+        comprueba("textura nula o modo nulo: NullPointerException", nulo && nuloModo, "");
 
         System.out.printf("%d pruebas, %d fallos%n", pruebas, fallos);
         if (fallos > 0) System.exit(1);

@@ -224,6 +224,9 @@ public final class Grafo implements Geometria {
     private Mezcla mezcla = Mezcla.LCH;
     private boolean ajustaPendientes = true;
     private Reparto reparto = Reparto.GLOBAL;
+    private Texturas.Textura textura;          // null: color lateral de los nodos
+    private Combinacion.Modo modo;             // null con textura: la textura sola (REPLACE)
+    private int entorno = 0xFF000000;          // color de entorno de BLEND
 
     // Resultado de construir (se rehace tras cualquier cambio).
     private List<Gota> gotas;
@@ -271,6 +274,41 @@ public final class Grafo implements Geometria {
 
     /** Mezcla de color (por defecto LCH). Ojo: el arco corto del tono puede dejar un salto con tonos opuestos. */
     public Grafo mezcla(Mezcla m) { mezcla = Objects.requireNonNull(m, "mezcla"); invalida(); return this; }
+
+    /**
+     * Pinta con una textura en lugar del color lateral: cada arista es una tira (u a lo ancho, v a lo largo, tapas de
+     * semidisco). El color lo pone, como en el color lateral, la gota de menor ρ en cada píxel, así que las tapas de los
+     * nodos compartidos desaparecen y solo quedan las de los extremos libres. Se queda configurada hasta {@link #sinTextura()}.
+     */
+    public Grafo textura(Texturas.Textura tex) {
+        textura = Objects.requireNonNull(tex, "textura"); modo = null; invalida(); return this;
+    }
+
+    /**
+     * Textura combinada en una sola pasada con el color lateral de cada gota (Cf), al estilo de glTexEnv
+     * ({@link Combinacion.Modo}). La gota que manda en cada píxel es la misma que con el color solo y la cobertura del borde se
+     * aplica una vez. Con REPLACE da lo mismo que {@link #textura(Texturas.Textura)}.
+     */
+    public Grafo textura(Texturas.Textura tex, Combinacion.Modo m) { return textura(tex, m, 0xFF000000); }
+
+    /** Igual, con el color de entorno Ce de BLEND (su alfa se ignora). */
+    public Grafo textura(Texturas.Textura tex, Combinacion.Modo m, int entorno) {
+        textura = Objects.requireNonNull(tex, "textura"); modo = Objects.requireNonNull(m, "modo"); this.entorno = entorno;
+        invalida();
+        return this;
+    }
+
+    /** Vuelve al color lateral de los nodos. */
+    public Grafo sinTextura() { textura = null; modo = null; invalida(); return this; }
+
+    /** Los rellenos con los que se pinta: los laterales, o la textura (sola o combinada con ellos). */
+    private List<Relleno> rellenosPintado() {
+        if (textura == null) return rellenos;
+        List<Relleno> rs = new ArrayList<>();
+        for (int i = 0; i < gotas.size(); i++)
+            rs.add(modo == null ? Texturas.tira(textura) : Combinacion.combinar(rellenos.get(i), Texturas.tira(textura), modo, entorno));
+        return rs;
+    }
 
     /** Igualar la pendiente del radio en las uniones (por defecto sí). */
 
@@ -343,11 +381,11 @@ public final class Grafo implements Geometria {
 
     /**
      * Una capa por píxel: la gota que manda, con el color lateral de los nodos y la cobertura de la unión. Es lo que pinta
-     * {@code Plotter.plot(grafo, op)}; los {@code render} con textura siguen su propio camino.
+     * {@code Plotter.plot(grafo, op)}, con la {@link #textura(Texturas.Textura) textura} si la hay.
      */
     @Override public void capas(double x, double y, Opciones op, Consumer<Tinta> out) {
         construye();
-        final Prep pr = preps.computeIfAbsent(op, o -> prepara(rellenos, o));
+        final Prep pr = preps.computeIfAbsent(op, o -> prepara(rellenosPintado(), o));
         double[] ev = evalua(x, y, op, pr.ops());
         if (ev[1] < 0) return;
         final int k = (int) ev[1];
