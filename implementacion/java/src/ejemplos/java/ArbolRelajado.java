@@ -1,5 +1,5 @@
 import pintado.Plotter;
-import composicion.Grafo;
+import geometria.composicion.Grafo;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;

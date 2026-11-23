@@ -20,10 +20,10 @@ public class Todas {
          // Lógica y matemática, sin referencias que comparar: segundos.
         {"unitarias",
           "common.ArquitecturaPruebas"
-         ,"composicion.ComposicionPruebas"
+         ,"geometria.composicion.ComposicionPruebas"
          ,"coordenadas.ContornoPruebas"
-         ,"composicion.PintadaPruebas"
-         ,"composicion.GrafoGeometriaPruebas"
+         ,"geometria.composicion.PintadaPruebas"
+         ,"geometria.composicion.GrafoGeometriaPruebas"
          ,"geometria.GrupoPruebas"
          ,"pintado.AlambreSvgGeometriaPruebas"},
          //FIXME "SiluetaPruebas" y "SiluetaCurvaPruebas" irían aquí: la primera pasa (136/0), la segunda tiene un

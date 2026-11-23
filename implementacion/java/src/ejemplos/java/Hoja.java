@@ -1,5 +1,5 @@
 import pintado.Plotter;
-import composicion.Grafo;
+import geometria.composicion.Grafo;
 import forma.Gota;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;

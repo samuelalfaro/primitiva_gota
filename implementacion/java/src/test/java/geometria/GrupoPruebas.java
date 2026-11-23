@@ -1,7 +1,7 @@
 package geometria;
 
-import composicion.Grafo;
-import composicion.Pintada;
+import geometria.composicion.Grafo;
+import geometria.composicion.Pintada;
 import color.Colores;
 import color.Mezcla;
 import coordenadas.Opciones;

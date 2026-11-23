@@ -2,8 +2,8 @@ package pintado;
 
 import color.Colores;
 import color.Mezcla;
-import composicion.Grafo;
-import composicion.Pintada;
+import geometria.composicion.Grafo;
+import geometria.composicion.Pintada;
 import forma.Gota;
 import forma.Perfil;
 import geometria.Grupo;

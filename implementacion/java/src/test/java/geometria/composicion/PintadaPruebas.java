@@ -1,4 +1,4 @@
-package composicion;
+package geometria.composicion;
 
 import color.Colores;
 import color.Relleno;

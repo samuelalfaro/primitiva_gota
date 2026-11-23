@@ -1,4 +1,4 @@
-package composicion;
+package geometria.composicion;
 
 import pintado.Plotter;
 import coordenadas.Solape;

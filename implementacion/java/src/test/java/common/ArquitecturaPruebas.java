@@ -20,16 +20,17 @@ import java.util.stream.Stream;
  * {@code import} y los nombres calificados (fuera de comentarios y cadenas) de {@code src/main/java} y falla si algún
  * paquete usa uno posterior, o si hay un paquete que no está en el orden (hay que decidir dónde va).
  * <p>
- * Orden actual, de abajo a arriba: {@code forma}, {@code coordenadas}, {@code color}, {@code geometria}, {@code pintado},
- * {@code composicion}. {@code utils} queda fuera: todos pueden usarlo y él no puede usar a ninguno. Al mover paquetes hay
- * que actualizar {@link #CAPAS} (por ejemplo, al anidar {@code composicion} en {@code geometria}).
+ * Orden actual, de abajo a arriba: {@code forma}, {@code coordenadas}, {@code color}, {@code geometria},
+ * {@code geometria.composicion} (el subpaquete va por encima del padre: el padre no puede usarlo) y {@code pintado}.
+ * {@code utils} queda fuera: todos pueden usarlo y él no puede usar a ninguno. Al mover paquetes hay que actualizar
+ * {@link #CAPAS}.
  * <p>
  * El directorio de fuentes se toma de {@code -Dgota.fuentes} o, si no, se busca {@code src/main/java} subiendo desde el
  * directorio de trabajo.
  */
 public class ArquitecturaPruebas {
     /** Paquetes de abajo a arriba; un paquete solo puede importar los de índice menor. */
-    static final List<String> CAPAS = List.of("forma", "coordenadas", "color", "geometria", "pintado", "composicion");
+    static final List<String> CAPAS = List.of("forma", "coordenadas", "color", "geometria", "geometria.composicion", "pintado");
     /** Paquetes que cualquiera puede usar y que no usan a ninguno del proyecto. */
     static final Set<String> TRANSVERSALES = Set.of("utils");
 
@@ -87,12 +88,14 @@ public class ArquitecturaPruebas {
     /** Paquete → paquetes del proyecto que usa (por import o por nombre calificado). */
     static Map<String, Set<String>> dependencias(Path raiz) throws IOException {
         Set<String> propios = new TreeSet<>();
-        try (Stream<Path> dirs = Files.list(raiz)) { dirs.filter(Files::isDirectory).forEach(p -> propios.add(p.getFileName().toString())); }
-        Pattern calificado = Pattern.compile("\\b(" + String.join("|", propios) + ")\\.(?:\\*|[A-Z]\\w*)");
+        try (Stream<Path> dirs = Files.walk(raiz)) {
+            dirs.filter(Files::isDirectory).filter(d -> !d.equals(raiz)).forEach(d -> propios.add(raiz.relativize(d).toString().replace(java.io.File.separatorChar, '.')));
+        }
+        Pattern calificado = Pattern.compile("\\b(" + String.join("|", propios).replace(".", "\\.") + ")\\.(?:\\*|[A-Z]\\w*)");
         Map<String, Set<String>> usa = new TreeMap<>();
         for (String pk : propios) usa.put(pk, new TreeSet<>());
         for (String pk : propios) {
-            try (Stream<Path> fs = Files.list(raiz.resolve(pk))) {
+            try (Stream<Path> fs = Files.list(raiz.resolve(pk.replace('.', java.io.File.separatorChar)))) {
                 for (Path f : fs.filter(x -> x.toString().endsWith(".java")).toList()) {
                     String s = sinComentariosNiCadenas(Files.readString(f, StandardCharsets.UTF_8));
                     Matcher m = calificado.matcher(s);

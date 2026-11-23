@@ -1,4 +1,4 @@
-import composicion.Grafo;
+import geometria.composicion.Grafo;
 import color.Mezcla;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;

@@ -1,4 +1,4 @@
-package composicion;
+package geometria.composicion;
 
 import coordenadas.Solape;
 import color.Relleno;

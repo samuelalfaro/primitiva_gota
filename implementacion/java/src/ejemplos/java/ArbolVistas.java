@@ -1,5 +1,5 @@
 import pintado.Plotter;
-import composicion.Grafo;
+import geometria.composicion.Grafo;
 import coordenadas.Solape;
 import color.Mezcla;
 import coordenadas.Opciones;

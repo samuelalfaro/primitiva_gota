@@ -1,4 +1,4 @@
-package composicion;
+package geometria.composicion;
 
 import coordenadas.Costura;
 import coordenadas.Opciones;

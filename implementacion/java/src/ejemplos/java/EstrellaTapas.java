@@ -1,6 +1,6 @@
 import pintado.Plotter;
-import composicion.ComposicionPruebas;
-import composicion.Grafo;
+import geometria.composicion.ComposicionPruebas;
+import geometria.composicion.Grafo;
 import color.Mezcla;
 import color.Texturas;
 import java.awt.image.BufferedImage;

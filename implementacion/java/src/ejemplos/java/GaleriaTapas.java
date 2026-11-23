@@ -1,5 +1,5 @@
-import composicion.ComposicionPruebas;
-import composicion.Grafo;
+import geometria.composicion.ComposicionPruebas;
+import geometria.composicion.Grafo;
 import pintado.Plotter;
 import color.Relleno;
 import color.Mezcla;
