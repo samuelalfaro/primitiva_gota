@@ -1,13 +1,13 @@
-package composicion;
+package geometria;
 
+import composicion.Grafo;
+import composicion.Pintada;
 import color.Colores;
 import color.Mezcla;
 import coordenadas.Opciones;
 import coordenadas.Solape;
 import forma.Gota;
 import forma.Perfil;
-import geometria.Geometria;
-import geometria.Tinta;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
@@ -49,6 +49,12 @@ public class GrupoPruebas {
     /** Un disco (gota circular) de un solo color. */
     static Pintada disco(double x, double y, double r, int color) {
         return Pintada.de(Gota.lineal(new Point2D.Double(x, y), r, new Point2D.Double(x + 0.01, y), r, Perfil.recto()), Colores.dosColores(color, color));
+    }
+
+    static List<Geometria> hojas(Geometria g) {
+        List<Geometria> r = new ArrayList<>();
+        g.acepta(new Visitante() { @Override public void hoja(Geometria h) { r.add(h); } });
+        return r;
     }
 
     static BufferedImage pinta(Geometria g) {
@@ -115,15 +121,42 @@ public class GrupoPruebas {
         var bb = g2.bounds();
         comprueba("bounds() es la unión de los límites", bb.contains(rojo.bounds()) && bb.contains(azul.bounds()) && bb.getWidth() < rojo.bounds().getWidth() + azul.bounds().getWidth(), bb.toString());
         comprueba("la silueta contiene los dos discos", g2.silueta().contains(150, 200) && g2.silueta().contains(270, 200) && !g2.silueta().contains(10, 10), "");
-        comprueba("label, altura por defecto y hijos en orden", "par".equals(g2.label()) && g2.altura() == 0 && g2.hijos().get(0) == rojo && g2.hijos().get(1) == azul, "");
+        comprueba("label, altura por defecto y hijos en orden", "par".equals(g2.label()) && g2.altura() == 0 && hojas(g2).equals(List.of(rojo, azul)), "");
         comprueba("un grupo vacío no pinta nada", distintos(pinta(new Grupo()), lienzo()) == 0 && new Grupo().bounds().isEmpty(), "");
-        boolean ciclo = false, nulo = false, hijosInmutables = false;
+        boolean ciclo = false, nulo = false;
         Grupo gg = new Grupo(), h = new Grupo(gg);
         try { gg.anade(h); } catch (IllegalArgumentException e) { ciclo = true; }
         try { gg.anade(gg); } catch (IllegalArgumentException e) { ciclo &= true; }
         try { gg.anade(null); } catch (NullPointerException e) { nulo = true; }
-        try { g2.hijos().add(rojo); } catch (UnsupportedOperationException e) { hijosInmutables = true; }
-        comprueba("no admite ciclos, nulos, y hijos() es de solo lectura", ciclo && nulo && hijosInmutables, "");
+        comprueba("no admite ciclos ni nulos", ciclo && nulo, "");
+
+        // 6b. visitante, caminos, recorre, esHoja y nHijos
+        List<String> ev = new ArrayList<>();
+        Grupo interno = new Grupo(azul).label("in"), externo = new Grupo(rojo, interno);
+        externo.acepta(new Visitante() {
+            @Override public void hoja(Geometria g) { ev.add(g == rojo ? "rojo" : "azul"); }
+            @Override public boolean entra(Grupo g) { ev.add("entra " + g.label()); return true; }
+            @Override public void sale(Grupo g) { ev.add("sale " + g.label()); }
+        });
+        comprueba("visitante: orden entra/hoja/sale en grupos anidados", ev.equals(List.of("entra null", "rojo", "entra in", "azul", "sale in", "sale null")), ev.toString());
+        ev.clear();
+        externo.acepta(new Visitante() {
+            @Override public void hoja(Geometria g) { ev.add("hoja"); }
+            @Override public boolean entra(Grupo g) { ev.add("entra " + g.label()); return g.label() == null; }
+            @Override public void sale(Grupo g) { ev.add("sale " + g.label()); }
+        });
+        comprueba("entra() = false no desciende pero sale() se llama", ev.equals(List.of("entra null", "hoja", "entra in", "sale in", "sale null")), ev.toString());
+        ev.clear();
+        rojo.acepta(new Visitante() { @Override public void hoja(Geometria g) { ev.add("hoja"); } });
+        comprueba("una hoja llama a hoja() una vez", ev.size() == 1, ev.toString());
+        comprueba("caminos(): uno por pintada y concatenados en el grupo", rojo.caminos().size() == 1 && externo.caminos().size() == 2 && new Grupo().caminos().isEmpty() && externo.caminos().get(0) == rojo.gota(), "");
+        int[] nr = {0};
+        boolean[] ident = {true};
+        externo.recorre((cam, tr) -> { nr[0]++; ident[0] &= tr.isIdentity(); });
+        comprueba("recorre(): un camino por gota, con la identidad", nr[0] == 2 && ident[0], "");
+        Grafo cr = cinta(true);
+        comprueba("Grafo: caminos() = sus gotas", cr.caminos().size() == cr.gotas().size() && !cr.caminos().isEmpty(), "");
+        comprueba("esHoja/nHijos: hoja 0, grupo n, grupo vacío no es hoja", rojo.esHoja() && rojo.nHijos() == 0 && !externo.esHoja() && externo.nHijos() == 2 && !new Grupo().esHoja() && new Grupo().nHijos() == 0, "");
 
         // 7. TRAZO: las capas de una gota con lazo se conservan en su orden dentro del grupo
         Pintada lazo = Pintada.de(Gota.curva(new Point2D.Double(100, 160), 16, new Gota.Vec(330, -420), new Point2D.Double(200, 160), 16, new Gota.Vec(-330, -420), Perfil.recto()),

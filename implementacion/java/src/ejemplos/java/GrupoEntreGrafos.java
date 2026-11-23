@@ -1,6 +1,6 @@
 import color.Mezcla;
 import composicion.Grafo;
-import composicion.Grupo;
+import geometria.Grupo;
 import coordenadas.Opciones;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;

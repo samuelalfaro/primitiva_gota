@@ -12,6 +12,7 @@ import java.awt.geom.Rectangle2D;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
+import java.util.List;
 import pintado.Trazos;
 
 /**
@@ -40,6 +41,8 @@ public final class Pintada implements Geometria {
     public Pintada conLabel(String label) { return new Pintada(gota, relleno, altura, label); }
 
     public Gota gota() { return gota; }
+
+    @Override public List<Gota> caminos() { return List.of(gota); }
 
     @Override public Rectangle2D bounds() { return gota.bounds(); }
 

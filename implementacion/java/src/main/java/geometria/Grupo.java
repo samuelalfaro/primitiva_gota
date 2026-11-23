@@ -1,13 +1,11 @@
-package composicion;
+package geometria;
 
 import coordenadas.Opciones;
-import geometria.Geometria;
-import geometria.Tinta;
+import forma.Camino;
 import java.awt.Shape;
 import java.awt.geom.Area;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -47,8 +45,23 @@ public final class Grupo implements Geometria {
         return false;
     }
 
-    /** Las geometrías del grupo, en el orden en que se añadieron. */
-    public List<Geometria> hijos() { return Collections.unmodifiableList(hijos); }
+    /** Entra en el grupo, visita los hijos en el orden en que se añadieron (salvo que {@code entra} devuelva false) y sale. */
+    @Override public void acepta(Visitante v) {
+        if (v.entra(this)) for (Geometria g : hijos) g.acepta(v);
+        v.sale(this);
+    }
+
+    /** Los caminos de todos los hijos, en orden. */
+    @Override public List<Camino> caminos() {
+        List<Camino> r = new ArrayList<>();
+        for (Geometria g : hijos) r.addAll(g.caminos());
+        return r;
+    }
+
+    /** Un grupo nunca es hoja, aunque esté vacío. */
+    @Override public boolean esHoja() { return false; }
+
+    @Override public int nHijos() { return hijos.size(); }
 
     /** Unión de los límites de las geometrías; un grupo vacío tiene límites vacíos. */
     @Override public Rectangle2D bounds() {

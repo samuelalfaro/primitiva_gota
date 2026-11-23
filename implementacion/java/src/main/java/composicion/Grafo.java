@@ -305,6 +305,8 @@ public final class Grafo implements Geometria {
 
     public List<Gota> gotas() { construye(); return Collections.unmodifiableList(gotas); }
 
+    @Override public List<Gota> caminos() { return gotas(); }
+
     public Gota gota(Arista e) { construye(); return gotas.get(e.id); }
 
     /**
