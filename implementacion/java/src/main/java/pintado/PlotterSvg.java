@@ -1,6 +1,10 @@
 package pintado;
 
+import forma.Camino;
 import forma.Gota;
+import geometria.Geometria;
+import geometria.Grupo;
+import geometria.Visitante;
 import java.awt.Shape;
 import java.awt.geom.PathIterator;
 import java.awt.geom.Rectangle2D;
@@ -37,7 +41,7 @@ public final class PlotterSvg implements AutoCloseable {
 
     private final Writer out;
     private final Trazos.Ajustes ajustes;
-    private final List<Trazos.Trazo> trazos = new ArrayList<>();
+    private final StringBuilder cuerpo = new StringBuilder();
     private Rectangle2D vista;
     private boolean cerrado;
 
@@ -70,9 +74,48 @@ public final class PlotterSvg implements AutoCloseable {
         Objects.requireNonNull(gota, "gota");
         Objects.requireNonNull(aj, "ajustes");
         if (cerrado) throw new IllegalStateException("el plotter está cerrado");
-        trazos.addAll(Trazos.trazos(gota, aj));
-        Rectangle2D b = gota.bounds();
-        if (vista == null) vista = b; else vista.add(b);
+        cuerpo.append(paths(Trazos.trazos(gota, aj)));
+        amplia(gota.bounds());
+    }
+
+    /** Añade la geometría con los ajustes de este plotter. */
+    public void plot(Geometria geometria) {
+        plot(geometria, ajustes);
+    }
+
+    /**
+     * Añade las gotas de la geometría con los ajustes indicados. Cada {@link Grupo} sale como un {@code <g>} (con su
+     * {@code label} como {@code id}, si lo tiene) y cada hoja con {@code label} también, de modo que la estructura de la
+     * composición se conserva en el SVG.
+     */
+    public void plot(Geometria geometria, Trazos.Ajustes aj) {
+        Objects.requireNonNull(geometria, "geometria");
+        Objects.requireNonNull(aj, "ajustes");
+        if (cerrado) throw new IllegalStateException("el plotter está cerrado");
+        geometria.acepta(new Visitante() {
+            @Override public void hoja(Geometria h) {
+                boolean g = h.label() != null;
+                if (g) abre(h.label());
+                for (Camino c : h.caminos()) cuerpo.append(paths(Trazos.trazos(c, aj)));
+                if (g) cuerpo.append("</g>\n");
+            }
+            @Override public boolean entra(Grupo g) { abre(g.label()); return true; }
+            @Override public void sale(Grupo g) { cuerpo.append("</g>\n"); }
+        });
+        amplia(geometria.bounds());
+    }
+
+    private void abre(String label) {
+        cuerpo.append(label == null ? "<g>\n" : "<g id=\"" + atributo(label) + "\">\n");
+    }
+
+    private void amplia(Rectangle2D b) {
+        if (b.isEmpty() && b.getWidth() == 0 && b.getHeight() == 0 && b.getX() == 0 && b.getY() == 0) return;   // grupo vacío
+        if (vista == null) vista = new Rectangle2D.Double(b.getX(), b.getY(), b.getWidth(), b.getHeight()); else vista.add(b);
+    }
+
+    private static String atributo(String s) {
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
     }
 
     /** Escribe el documento y cierra el destino. Cerrar de nuevo no hace nada; sin gotas dibujadas no hay vista y falla. */
@@ -82,7 +125,7 @@ public final class PlotterSvg implements AutoCloseable {
         cerrado = true;
         try (Writer w = out) {
             if (vista == null) throw new IllegalStateException("no se ha dibujado ninguna gota");
-            escribe(trazos, vista, w);
+            escribe(cuerpo.toString(), vista, w);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -90,6 +133,16 @@ public final class PlotterSvg implements AutoCloseable {
 
     /** Escribe el SVG con la vista dada (en coordenadas de imagen) más un margen. */
     static void escribe(List<Trazos.Trazo> trazos, Rectangle2D vista, Writer out) throws IOException {
+        escribe(paths(trazos), vista, out);
+    }
+
+    private static String paths(List<Trazos.Trazo> trazos) {
+        StringBuilder sb = new StringBuilder();
+        for (Trazos.Trazo t : trazos) sb.append("<path class=\"").append(t.rol().clase).append("\" d=\"").append(camino(t.forma())).append("\"/>\n");
+        return sb.toString();
+    }
+
+    private static void escribe(String cuerpo, Rectangle2D vista, Writer out) throws IOException {
         double x = vista.getX() - MARGEN, y = vista.getY() - MARGEN;
         double w = vista.getWidth() + 2 * MARGEN, h = vista.getHeight() + 2 * MARGEN;
         out.write(String.format(Locale.ROOT,
@@ -107,9 +160,7 @@ public final class PlotterSvg implements AutoCloseable {
                 r.relleno ? " fill: " + rgb(r) + ";" + fop : ""));
         }
         out.write("</style>\n");
-        for (Trazos.Trazo t : trazos) {
-            out.write("<path class=\"" + t.rol().clase + "\" d=\"" + camino(t.forma()) + "\"/>\n");
-        }
+        out.write(cuerpo);
         out.write("</svg>\n");
     }
 
