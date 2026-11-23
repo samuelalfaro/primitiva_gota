@@ -1,6 +1,5 @@
 package composicion;
 
-import pintado.Plotter;
 import coordenadas.Solape;
 import color.Relleno;
 import color.Mezcla;
@@ -20,7 +19,6 @@ import java.awt.Shape;
 import java.awt.geom.Area;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
-import java.awt.image.BufferedImage;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -620,74 +618,6 @@ public final class Grafo implements Geometria {
     private static double[] dirA(Nodo n, Arista e) {
         Nodo m = e.a == n ? e.b : e.a;
         return unit(m.x - n.x, m.y - n.y);
-    }
-
-    // ---------- Pintado ----------
-
-    /**
-     * Pinta la composición sobre dst (TYPE_INT_ARGB) con el color lateral de los nodos.
-     * @deprecated usar {@code Plotter.raster(dst).plot(grafo)}.
-     */
-    @Deprecated public void render(BufferedImage dst) { render(dst, Opciones.POR_DEFECTO); }
-
-    /**
-     * Igual, con las opciones de pintado dadas (costura de la tira y solape).
-     * @deprecated usar {@code Plotter.raster(dst).plot(grafo, op)}.
-     */
-    @Deprecated public void render(BufferedImage dst, Opciones op) {
-        Objects.requireNonNull(op, "opciones");
-        Plotter.raster(dst).plot(this, op);
-    }
-
-    /**
-     * Pinta la composición con una textura (ver {@link #textura(Texturas.Textura)}), sin dejarla configurada.
-     * @deprecated usar {@code Plotter.raster(dst).plot(grafo.textura(tex))}.
-     */
-    @Deprecated public void render(BufferedImage dst, Texturas.Textura tex) { render(dst, tex, Opciones.POR_DEFECTO); }
-
-    /**
-     * Igual, con las opciones de pintado dadas.
-     * @deprecated usar {@code Plotter.raster(dst).plot(grafo.textura(tex), op)}.
-     */
-    @Deprecated public void render(BufferedImage dst, Texturas.Textura tex, Opciones op) {
-        Objects.requireNonNull(tex, "textura");
-        Objects.requireNonNull(op, "opciones");
-        conTexturaTemporal(dst, tex, null, 0xFF000000, op);
-    }
-
-    /**
-     * Pinta con la textura combinada con el color lateral (ver {@link #textura(Texturas.Textura, Combinacion.Modo)}), sin dejarla configurada.
-     * @deprecated usar {@code Plotter.raster(dst).plot(grafo.textura(tex, modo), op)}.
-     */
-    @Deprecated public void render(BufferedImage dst, Texturas.Textura tex, Combinacion.Modo modo) {
-        render(dst, tex, modo, Opciones.POR_DEFECTO);
-    }
-
-    /** @deprecated usar {@code Plotter.raster(dst).plot(grafo.textura(tex, modo), op)}. */
-    @Deprecated public void render(BufferedImage dst, Texturas.Textura tex, Combinacion.Modo modo, Opciones op) {
-        render(dst, tex, modo, 0xFF000000, op);
-    }
-
-    /** @deprecated usar {@code Plotter.raster(dst).plot(grafo.textura(tex, modo, entorno), op)}. */
-    @Deprecated public void render(BufferedImage dst, Texturas.Textura tex, Combinacion.Modo modo, int entorno, Opciones op) {
-        Objects.requireNonNull(tex, "textura");
-        Objects.requireNonNull(modo, "modo");
-        Objects.requireNonNull(op, "opciones");
-        conTexturaTemporal(dst, tex, modo, entorno, op);
-    }
-
-    /** Pinta con la textura dada y deja la configuración como estaba (los render antiguos no la cambiaban). */
-    private void conTexturaTemporal(BufferedImage dst, Texturas.Textura tex, Combinacion.Modo m, int ent, Opciones op) {
-        final Texturas.Textura t0 = textura;
-        final Combinacion.Modo m0 = modo;
-        final int e0 = entorno;
-        try {
-            if (m == null) textura(tex); else textura(tex, m, ent);
-            Plotter.raster(dst).plot(this, op);
-        } finally {
-            textura = t0; modo = m0; entorno = e0;
-            preps.clear();
-        }
     }
 
     // ---------- Orden del recorrido ----------
