@@ -7,7 +7,7 @@ import java.io.File;
 import javax.imageio.ImageIO;
 
 /**
- * El {@link ArbolParametrico} con las ayudas de Composicion: por defecto | {@link Grafo#relajar()} |
+ * El {@link ArbolParametrico} con las ayudas de Grafo: por defecto | {@link Grafo#relajar()} |
  * {@link Grafo#relajar()} + {@link Grafo#alisar()}. En cada bifurcación (nodo de grado 3) relajar() hace
  * que el tronco continúe con tangente suave por la hija que mejor sigue su dirección; la otra sale lateral.
  * Escribe arbol_relajado.png y, por la salida estándar, las aristas rígidas y plegadas de cada modo.

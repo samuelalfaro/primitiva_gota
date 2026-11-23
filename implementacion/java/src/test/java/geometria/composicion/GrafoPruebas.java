@@ -24,7 +24,7 @@ import javax.imageio.ImageIO;
  * Pruebas de la composición: (1) las tres composiciones construidas con la API; (2) reglas y errores de la API; (3) geometría (discos de los nodos, tapas elípticas exactas,
  * anillo de dos nodos, quiebros); (4) coherencia de contiene/sdf y del suavizado; (5) invalidación al modificar.
  */
-public class ComposicionPruebas {
+public class GrafoPruebas {
     static int pruebas = 0, fallos = 0;
 
     static void comprueba(String n, boolean ok, String d) {
@@ -423,7 +423,7 @@ public class ComposicionPruebas {
     }
 
     static void funcionesColor() {
-        Mezcla m = Mezcla.LCH;                                  // la de Composicion por defecto
+        Mezcla m = Mezcla.LCH;                                  // la de Grafo por defecto
         BufferedImage base = pinta(trio(false, e -> {}));
         BufferedImage conFunciones = pinta(trio(false, e -> e.espina(Degradado.entre(FA, FB, m))));
         comprueba("la espina lineal explícita da lo mismo que sin ella", difMax(base, conFunciones) <= 1,
@@ -633,7 +633,7 @@ public class ComposicionPruebas {
         colorYTextura(c, tex);
     }
 
-    /** Color y textura en una sola pasada (ComposicionColor.Modo). */
+    /** Color y textura en una sola pasada (Combinacion.Modo). */
     static void colorYTextura(Grafo c, Texturas.Textura tex) {
         Opciones op = Opciones.POR_DEFECTO;
         BufferedImage r = lienzo(), t = lienzo();

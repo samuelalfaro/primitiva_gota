@@ -10,7 +10,7 @@ import java.io.File;
 import javax.imageio.ImageIO;
 
 /**
- * Colores de Composicion con funciones programáticas: Nodo.radio (de centro a contorno) y Arista.espina (a lo largo).
+ * Colores de Grafo con funciones programáticas: Nodo.radio (de centro a contorno) y Arista.espina (a lo largo).
  * Cuatro paneles: arcoíris con paleta coseno (Íñigo Quilez), rayas con senos, tubo con brillo y pulso con escalones.
  * Escribe funciones_demo.png en el directorio actual.
  */

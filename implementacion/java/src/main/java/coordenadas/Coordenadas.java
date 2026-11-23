@@ -3,8 +3,8 @@ package coordenadas;
 import forma.Camino;
 
 /**
- * Coordenadas intrínsecas de los píxeles de una {@link forma.Gota}, comunes a los colores ({@link Colores}) y a las texturas
- * ({@link Texturas}): ambos se calculan sobre las mismas coordenadas, que la gota deduce de la posición del píxel.
+ * Coordenadas intrínsecas de los píxeles de una {@link forma.Gota}, comunes a los colores ({@link color.Colores}) y a las texturas
+ * ({@link color.Texturas}): ambos se calculan sobre las mismas coordenadas, que la gota deduce de la posición del píxel.
  * <ul>
  *   <li>{@link Muestra}: (t, rho, axial, lateral) respecto al círculo de la familia que lo cubre;</li>
  *   <li>{@link Uv}: la tira (u de lado a lado, v a lo largo, con las tapas como semidiscos);</li>

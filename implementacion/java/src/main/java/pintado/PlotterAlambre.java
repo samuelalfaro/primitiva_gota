@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Dibuja una gota en modo alambre. API propia, separada de {@link Plotter}: no usa {@link Relleno} ni
- * {@link Costura}; las opciones son las de {@link Trazos.Ajustes}.
+ * Dibuja una gota en modo alambre. API propia, separada de {@link Plotter}: no usa {@link color.Relleno} ni
+ * {@link coordenadas.Costura}; las opciones son las de {@link Trazos.Ajustes}.
  *
  * <p>Uso típico:
  * <pre>{@code

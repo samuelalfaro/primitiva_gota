@@ -35,7 +35,7 @@ public interface Camino {
 
     /**
      * Vector del centro c(t) al punto de contacto con el contorno del lado dado (0 = -N, 1 = +N), o null si es el de la
-     * envolvente de la familia de círculos (el que calcula {@link Zonas}). Una forma rígida (sin deformación) da aquí
+     * envolvente de la familia de círculos (el que calcula {@link coordenadas.Zonas}). Una forma rígida (sin deformación) da aquí
      * los radios que parten de los extremos P1..P4 de la silueta, repartidos linealmente en t.
      */
     default double[] costilla(double t, int lado) { return null; }

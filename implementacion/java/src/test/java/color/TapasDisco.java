@@ -1,6 +1,6 @@
 package color;
 
-import geometria.composicion.ComposicionPruebas;
+import geometria.composicion.GrafoPruebas;
 import geometria.composicion.Grafo;
 import pintado.Plotter;
 import color.Relleno;
@@ -267,7 +267,7 @@ public class TapasDisco {
     // ---------- Composición ----------
 
     static void composicion() throws Exception {
-        Grafo[] cs = { ComposicionPruebas.cadena(), ComposicionPruebas.estrella(0) };
+        Grafo[] cs = { GrafoPruebas.cadena(), GrafoPruebas.estrella(0) };
         int W = 440, H = 400, FONDO = 0xFFF4F1EA;
         BufferedImage out = new BufferedImage(W * 2, H, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(datos(out), FONDO);
@@ -283,7 +283,7 @@ public class TapasDisco {
         for (int c = 0; c < 2; c++) {
             BufferedImage a = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB), b = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
             Plotter.raster(a).plot(cs[c]);
-            geometria.composicion.ComposicionPruebas.pintaConTextura(cs[c], b, tex, Opciones.POR_DEFECTO);
+            geometria.composicion.GrafoPruebas.pintaConTextura(cs[c], b, tex, Opciones.POR_DEFECTO);
             int[] da = datos(a), db = datos(b);
             int difAlfa = 0, pintados = 0;
             for (int k = 0; k < da.length; k++) {

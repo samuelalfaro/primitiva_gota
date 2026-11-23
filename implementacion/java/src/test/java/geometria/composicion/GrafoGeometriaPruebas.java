@@ -51,15 +51,15 @@ public class GrafoGeometriaPruebas {
 
     static List<Caso> casos() {
         List<Caso> c = new ArrayList<>();
-        c.add(new Caso("cadena", ComposicionPruebas.cadena()));
-        c.add(new Caso("ciclo", ComposicionPruebas.ciclo()));
-        c.add(new Caso("estrella", ComposicionPruebas.estrella(0)));
-        c.add(new Caso("estrella con suavizado 12", ComposicionPruebas.estrella(12)));
-        c.add(new Caso("ocho (se cruza)", ComposicionPruebas.ocho()));
-        c.add(new Caso("cinta con rama", ComposicionPruebas.cintaConRama()));
-        c.add(new Caso("cruz, roja por encima (alturas)", ComposicionPruebas.cruz(2.0, 1.0)));
-        c.add(new Caso("cruz, azul por encima (alturas)", ComposicionPruebas.cruz(1.0, 2.0)));
-        c.add(new Caso("trébol de 12 nodos", ComposicionPruebas.trebolDeNodos(12)));
+        c.add(new Caso("cadena", GrafoPruebas.cadena()));
+        c.add(new Caso("ciclo", GrafoPruebas.ciclo()));
+        c.add(new Caso("estrella", GrafoPruebas.estrella(0)));
+        c.add(new Caso("estrella con suavizado 12", GrafoPruebas.estrella(12)));
+        c.add(new Caso("ocho (se cruza)", GrafoPruebas.ocho()));
+        c.add(new Caso("cinta con rama", GrafoPruebas.cintaConRama()));
+        c.add(new Caso("cruz, roja por encima (alturas)", GrafoPruebas.cruz(2.0, 1.0)));
+        c.add(new Caso("cruz, azul por encima (alturas)", GrafoPruebas.cruz(1.0, 2.0)));
+        c.add(new Caso("trébol de 12 nodos", GrafoPruebas.trebolDeNodos(12)));
         return c;
     }
 
@@ -92,7 +92,7 @@ public class GrafoGeometriaPruebas {
             comprueba(k.nombre() + ": la silueta coincide con contiene() (<= 1 % de discrepancias)", mal <= n / 100, mal + "/" + n);
             comprueba(k.nombre() + ": label y altura", k.nombre().equals(g.label()) && g.altura() == 3, "");
         }
-        Grafo s12 = ComposicionPruebas.estrella(12), s0 = ComposicionPruebas.estrella(0);
+        Grafo s12 = GrafoPruebas.estrella(12), s0 = GrafoPruebas.estrella(0);
         comprueba("bounds() se ensancha con el suavizado (12 px por lado)", Math.abs(s12.bounds().getWidth() - s0.bounds().getWidth() - 24) < 1e-9, "");
 
         // la memoria por opciones se invalida al modificar
@@ -117,7 +117,7 @@ public class GrafoGeometriaPruebas {
         Texturas.Textura tex = Texturas.referenciaLados();
         for (Solape s : Solape.values()) {
             Opciones op = Opciones.POR_DEFECTO.conSolape(s);
-            Grafo gt = ComposicionPruebas.cadena();
+            Grafo gt = GrafoPruebas.cadena();
             BufferedImage lat = lienzo(), t1 = lienzo(), t2 = lienzo(), rep = lienzo(), sin = lienzo(), md = lienzo(), dc = lienzo(), re = lienzo();
             Plotter.raster(lat).plot(gt, op);
             Plotter.raster(t1).plot(gt.textura(tex), op);
@@ -131,7 +131,7 @@ public class GrafoGeometriaPruebas {
             comprueba("textura / " + s + ": MODULATE y DECAL se distinguen de REPLACE", diferencias(re, md)[0] > 0 && diferencias(re, dc)[0] > 0, "");
             comprueba("textura / " + s + ": sinTextura() vuelve al color lateral", diferencias(lat, sin)[0] == 0, "");
         }
-        Grafo gb = ComposicionPruebas.cadena();
+        Grafo gb = GrafoPruebas.cadena();
         BufferedImage u1 = lienzo(), u2 = lienzo(), u3 = lienzo();
         Plotter.raster(u1).plot(gb.textura(tex, Combinacion.Modo.BLEND, 0xFFFF8000));
         Plotter.raster(u2).plot(gb.textura(tex, Combinacion.Modo.BLEND, 0xFF0080FF));

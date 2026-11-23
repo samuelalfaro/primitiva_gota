@@ -13,7 +13,7 @@ import java.util.List;
 import javax.imageio.ImageIO;
 
 /**
- * Dibujo libre solo con la API de Composicion: un colibrí en vuelo ante una flor, firmado con caligrafía. La firma es un trazo
+ * Dibujo libre solo con la API de Grafo: un colibrí en vuelo ante una flor, firmado con caligrafía. La firma es un trazo
  * continuo (Catmull-Rom sobre puntos clave) cuyo radio, la presión de la pluma, sube en los trazos descendentes y baja en los ascendentes.
  */
 public class Colibri {

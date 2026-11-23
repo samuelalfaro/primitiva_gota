@@ -12,7 +12,7 @@ import java.io.File;
 import javax.imageio.ImageIO;
 
 /**
- * Dibujo libre con las funciones de color de Composicion: un pez luchador (betta). El cuerpo lleva una paleta a lo
+ * Dibujo libre con las funciones de color de Grafo: un pez luchador (betta). El cuerpo lleva una paleta a lo
  * largo de la espina (Nodo.radio y Arista.espina) con el contorno iridiscente; las aletas son gotas de base ancha y
  * punta fina que se desvanecen hacia el borde (alfa en la función del radio). Escribe betta.png.
  */

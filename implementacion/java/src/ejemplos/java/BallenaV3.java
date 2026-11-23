@@ -12,7 +12,7 @@ import javax.imageio.ImageIO;
 
 /**
  * Ballena – Versión 3 (composicional)
- * Una sola Composicion para cuerpo + flukes + aletas.
+ * Un solo Grafo para cuerpo + flukes + aletas.
  * Nodos compartidos (cola grado 3, centro y anterior grado 3).
  * Continuidad real de color y tangentes en las uniones.
  */

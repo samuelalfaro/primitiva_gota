@@ -5,7 +5,7 @@ import coordenadas.Tira;
 import java.util.Objects;
 
 /**
- * Cómo se pinta una {@link Gota}: la {@link Costura} reparte las coordenadas de la tira, el {@link Solape} resuelve
+ * Cómo se pinta una {@link forma.Gota}: la {@link Costura} reparte las coordenadas de la tira, el {@link Solape} resuelve
  * los cruces del camino y la {@link Tira} reparte el eje v entre tapas y cuerpo. Son independientes entre sí y no
  * cambian la forma de la gota, solo qué coordenadas (y por tanto qué color) llega a cada píxel.
  */

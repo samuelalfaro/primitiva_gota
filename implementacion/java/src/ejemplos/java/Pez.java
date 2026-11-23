@@ -11,7 +11,7 @@ import java.awt.image.DataBufferInt;
 import java.io.File;
 import javax.imageio.ImageIO;
 
-/** Dibujo libre solo con la API de Composicion: un pez (y el océano, una sola gota enorme) con aletas, escamas (textura con alfa), ojo, burbujas y algas. */
+/** Dibujo libre solo con la API de Grafo: un pez (y el océano, una sola gota enorme) con aletas, escamas (textura con alfa), ojo, burbujas y algas. */
 public class Pez {
     static final int W = 700, H = 440;
 

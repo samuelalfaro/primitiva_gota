@@ -15,7 +15,7 @@ import java.util.stream.IntStream;
 /**
  * Dibuja una gota en algún sitio: {@code plotter.plot(gota, relleno, opciones)}. Cada plotter es una forma distinta de hacerlo:
  * {@link #raster(BufferedImage)} la rasteriza en una imagen con antialiasing y composición alfa; el modo alambre y la exportación
- * a SVG serían otros plotters. La gota solo guarda sus parámetros: la máscara está en {@link Silueta}, las coordenadas en
+ * a SVG serían otros plotters. La gota solo guarda sus parámetros: la máscara está en {@code Silueta}, las coordenadas en
  * {@link Coordenadas} y el color en {@link Relleno}; el plotter los ensambla.
  *
  * <p>{@link PlotterAlambre} y {@link PlotterSvg} siguen la convención (prefijo {@code Plotter} y verbo {@code plot}) sin

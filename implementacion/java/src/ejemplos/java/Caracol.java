@@ -10,7 +10,7 @@ import java.awt.image.DataBufferInt;
 import java.io.File;
 import javax.imageio.ImageIO;
 
-/** Dibujo libre solo con la API de Composicion: un caracol sobre una hoja (concha en espiral como cadena de nodos de radio decreciente). */
+/** Dibujo libre solo con la API de Grafo: un caracol sobre una hoja (concha en espiral como cadena de nodos de radio decreciente). */
 public class Caracol {
     static final int W = 640, H = 620, FONDO = 0xFFF4F1EA, RECORTE = 130, ALTO = 480;
 

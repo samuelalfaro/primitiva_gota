@@ -196,7 +196,7 @@ public record Contorno(Shape borde, Shape oculta) {
      */
     public static Contorno de(Camino geo, Zonas zonas, int muestras) {
         List<Camino.Arco> arcos = geo.arcos();
-        if (arcos != null) {                      // forma rígida: el contorno es la silueta que la Geometria da, no la envolvente
+        if (arcos != null) {                      // forma rígida: el contorno es la silueta que el Camino da, no la envolvente
             Path2D contorno = new Path2D.Double();
             for (Camino.Arco a : arcos) contorno.append(a.forma(), contorno.getCurrentPoint() != null);
             contorno.closePath();

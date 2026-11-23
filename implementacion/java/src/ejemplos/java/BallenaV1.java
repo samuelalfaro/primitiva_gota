@@ -13,7 +13,7 @@ import javax.imageio.ImageIO;
 /**
  * Ballena – Versión 1 (primer intento)
  * Composiciones independientes para cada parte.
- * Aprendizaje: API básica de Composicion, lados vs sectores, tiradores.
+ * Aprendizaje: API básica de Grafo, lados vs sectores, tiradores.
  */
 public class BallenaV1 {
     static final int W = 900, H = 600;

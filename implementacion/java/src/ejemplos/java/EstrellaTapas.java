@@ -1,5 +1,5 @@
 import pintado.Plotter;
-import geometria.composicion.ComposicionPruebas;
+import geometria.composicion.GrafoPruebas;
 import geometria.composicion.Grafo;
 import color.Mezcla;
 import color.Texturas;
@@ -16,10 +16,10 @@ public class EstrellaTapas {
         int W = 440, H = 400, FONDO = 0xFFF4F1EA;
         Texturas.Textura tex = Texturas.referencia();
         Grafo[] col = {
-                ComposicionPruebas.estrella(0).mezcla(Mezcla.RGB),
-                ComposicionPruebas.estrella(18).mezcla(Mezcla.LCH),
-                ComposicionPruebas.cadena().mezcla(Mezcla.RGB_LINEAL) };
-        Grafo[] txt = { ComposicionPruebas.estrella(0), ComposicionPruebas.cadena() };
+                GrafoPruebas.estrella(0).mezcla(Mezcla.RGB),
+                GrafoPruebas.estrella(18).mezcla(Mezcla.LCH),
+                GrafoPruebas.cadena().mezcla(Mezcla.RGB_LINEAL) };
+        Grafo[] txt = { GrafoPruebas.estrella(0), GrafoPruebas.cadena() };
         BufferedImage out = new BufferedImage(W * 3, H * 2, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(datos(out), FONDO);
         for (int c = 0; c < 3; c++) {

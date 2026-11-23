@@ -10,7 +10,7 @@ import java.io.File;
 import javax.imageio.ImageIO;
 
 /**
- * Trébol (nudo de tres cruces) con {@link Composicion.Arista#altura}. Un círculo de nodos cerrado sobre sí mismo no
+ * Trébol (nudo de tres cruces) con {@link Grafo.Arista#altura}. Un círculo de nodos cerrado sobre sí mismo no
  * puede alternar por encima / por debajo con el orden del recorrido (TRAZO da U U U O O O); con z = -sin 3t en cada
  * arista, sí. Los nodos van separados más de r1+r2 (si no, la gota es rígida y recta: ver {@link Gota}). Escribe nudo_altura.png con dos paneles: TRAZO sin altura | TRAZO con altura.
  */

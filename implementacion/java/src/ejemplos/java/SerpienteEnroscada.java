@@ -15,7 +15,7 @@ import java.util.List;
 import javax.imageio.ImageIO;
 
 /**
- * Dibujo libre solo con la API de Composicion: una serpiente enroscada, en una sola cadena de nodos cuyo camino se cruza consigo mismo
+ * Dibujo libre solo con la API de Grafo: una serpiente enroscada, en una sola cadena de nodos cuyo camino se cruza consigo mismo
  * (las vueltas se tapan unas a otras con el solape TRAZO: lo posterior tapa lo anterior) y que acaba en un cuello que se levanta.
  */
 public class SerpienteEnroscada {

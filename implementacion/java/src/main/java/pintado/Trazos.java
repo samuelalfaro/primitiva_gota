@@ -28,10 +28,10 @@ import java.awt.Graphics2D;
  * pintar en un {@link Graphics2D} ({@link #render}) o para escribir un SVG ({@link PlotterSvg}). El estilo de cada rol se define
  * una sola vez, en {@link Rol}.
  *
- * Solo conoce {@link Camino}: no depende de Gota, de Composicion ni del render sólido. La envolvente sale de los
+ * Solo conoce {@link Camino}: no depende de Gota, de Grafo ni del render sólido. La envolvente sale de los
  * puntos de contacto de la familia (los que usa {@code Zonas}, visibles en el paquete de forma provisional) y de los
  * arcos de los extremos; no de una malla. De ella, la silueta ({@link Rol#CONTORNO}) son los tramos que
- * {@link Camino#contiene} confirma como borde real: un punto de la envolvente es borde si un punto apenas más hacia
+ * {@link forma.Mascara#contiene} confirma como borde real: un punto de la envolvente es borde si un punto apenas más hacia
  * fuera queda fuera de la gota. El resto (la parte de la envolvente que queda dentro, en lazos, cuellos y pliegues) es
  * {@link Rol#OCULTA}, opcional. Donde no hay contacto (casos degenerados) se ve lo que hace hoy el modelo.
  */
@@ -256,7 +256,7 @@ public final class Trazos {
         }
     }
 
-    /** Ejes (T, N) del marco: {tx, ty, nx, ny}. Con el camino parado, Geometria ya da T = eje x y N = (0, -1) (y hacia arriba). */
+    /** Ejes (T, N) del marco: {tx, ty, nx, ny}. Con el camino parado, Camino ya da T = eje x y N = (0, -1) (y hacia arriba). */
     private static double[] ejes(Zonas.Fr f) { return new double[] { f.tx(), f.ty(), f.nx(), f.ny() }; }
 
     /**
@@ -380,7 +380,7 @@ public final class Trazos {
         return AffineTransform.getTranslateInstance(x - b.getCenterX(), y - b.getCenterY()).createTransformedShape(s);
     }
 
-    /** Pinta los trazos en el sistema de coordenadas del Graphics2D (las coordenadas de Geometria son de imagen). */
+    /** Pinta los trazos en el sistema de coordenadas del Graphics2D (las coordenadas de Camino son de imagen). */
     public static void render(Graphics2D g, List<Trazo> trazos) {
         var color = g.getColor();
         var trazo = g.getStroke();

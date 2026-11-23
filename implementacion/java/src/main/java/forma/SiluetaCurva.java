@@ -234,7 +234,7 @@ final class SiluetaCurva implements Mascara {
 
     // ---------- Mascara ----------
 
-    /** Anchura del antialiasing a cada lado del borde, en píxeles (la de {@link Geometria.Hebra#cobertura()}). */
+    /** Anchura del antialiasing a cada lado del borde, en píxeles (la de {@link Camino.Hebra#cobertura()}). */
     private static final double BANDA = 0.5;
 
     /**
@@ -249,7 +249,7 @@ final class SiluetaCurva implements Mascara {
     /**
      * Las pasadas del camino que cubren, aunque sea en parte, el píxel (px, py), en orden de t creciente: cada pie de la perpendicular sobre el
      * camino es una pasada, con su t (la tabla del camino se muestrea en t uniforme) y la distancia con signo de su capa al borde (positiva fuera,
-     * como en {@link Geometria.Hebra}); y las prolongaciones rectas de las tapas, en t = 0 y t = 1. Solo se devuelven las que quedan a menos de
+     * como en {@link Camino.Hebra}); y las prolongaciones rectas de las tapas, en t = 0 y t = 1. Solo se devuelven las que quedan a menos de
      * media unidad de cubrir el píxel.
      */
     @Override public List<Camino.Hebra> hebras(double px, double py) {

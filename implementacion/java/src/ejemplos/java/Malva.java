@@ -13,7 +13,7 @@ import java.io.File;
 import javax.imageio.ImageIO;
 
 /**
- * Malva: cinco pétalos que salen del centro M y vuelven a él (nodo de grado 10), en una sola Composicion. Los pétalos
+ * Malva: cinco pétalos que salen del centro M y vuelven a él (nodo de grado 10), en un solo Grafo. Los pétalos
  * se solapan entre sí como en la flor real. Escribe malva.png con tres paneles: PLANO, TRAZO y TRAZO con un botón
  * dibujado encima de M (un adorno del ejemplo, no una regla de la composición: tapa las uniones como salgan).
  */

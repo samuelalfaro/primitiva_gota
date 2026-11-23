@@ -213,7 +213,7 @@ public class PezAbisal {
         return im;
     }
 
-    /** Disco pintado directo en el raster (solo para el ojo, fuera de la Composicion). */
+    /** Disco pintado directo en el raster (solo para el ojo, fuera del Grafo). */
     static void disco(BufferedImage im, double x, double y, double r, int centro, int borde) {
         java.awt.geom.Point2D.Double a = new java.awt.geom.Point2D.Double(x, y);
         java.awt.geom.Point2D.Double b = new java.awt.geom.Point2D.Double(x + 0.5, y);

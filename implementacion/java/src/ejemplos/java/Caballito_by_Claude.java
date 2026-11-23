@@ -13,7 +13,7 @@ import javax.imageio.ImageIO;
 
 /**
  * Lámina libre de Claude (tema elegido por Claude; la regla del repo es que cada autor firma su clase con
- * _by_Autor): un caballito de mar. Todo son gotas de una Composicion.
+ * _by_Autor): un caballito de mar. Todo son gotas de un Grafo.
  * <ul>
  * <li>El cuerpo es una sola cadena de nodos de la cabeza a la punta de la cola, que se enrosca en espiral:
  *     es el test de estrés de TRAZO (vueltas sucesivas que se solapan consigo mismas).</li>

@@ -9,7 +9,7 @@ import java.awt.image.DataBufferInt;
 import java.io.File;
 import javax.imageio.ImageIO;
 
-/** Una flor con tallo y una hoja, dibujada solo con la API de Composicion (sin tocar la primitiva). */
+/** Una flor con tallo y una hoja, dibujada solo con la API de Grafo (sin tocar la primitiva). */
 public class Flor {
     static final int W = 500, H = 700, FONDO = 0xFFF4F1EA;
 

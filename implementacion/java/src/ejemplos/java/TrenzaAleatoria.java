@@ -17,7 +17,7 @@ import java.util.Random;
 import javax.imageio.ImageIO;
 
 /**
- * Prueba de fuego de {@link Grafo#alisar()} y {@link Composicion.Arista#altura}: una única composición cerrada
+ * Prueba de fuego de {@link Grafo#alisar()} y {@link Grafo.Arista#altura}: una única composición cerrada
  * de puntos, radios y colores aleatorios (semilla fija, replicable), con muchos cruces de la cinta consigo misma.
  * <ul>
  * <li>A: por defecto (tiradores automáticos, TRAZO).</li>

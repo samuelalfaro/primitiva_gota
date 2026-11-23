@@ -5,7 +5,7 @@ import forma.Camino;
 
 /**
  * La máscara de una gota: dice si un punto pertenece a ella, como si se dibujara la gota de un color sólido. Es lo primero
- * que se decide; a qué zona de las coordenadas intrínsecas pertenece el punto es posterior ({@link Coordenadas}).
+ * que se decide; a qué zona de las coordenadas intrínsecas pertenece el punto es posterior ({@link coordenadas.Coordenadas}).
  */
 public interface Mascara {
     /** Pertenencia exacta de un punto. */

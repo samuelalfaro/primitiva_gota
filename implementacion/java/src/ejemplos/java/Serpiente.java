@@ -11,7 +11,7 @@ import java.awt.image.DataBufferInt;
 import java.io.File;
 import javax.imageio.ImageIO;
 
-/** Dibujo libre solo con la API de Composicion: una serpiente ondulando por un desierto (un camino sinuoso de nodos con el radio variable). */
+/** Dibujo libre solo con la API de Grafo: una serpiente ondulando por un desierto (un camino sinuoso de nodos con el radio variable). */
 public class Serpiente {
     static final int W = 820, H = 480;
     static final int LOMO = 0xFF6B8E23, LOMO2 = 0xFF8FB339, VIENTRE = 0xFFF1E3B5, OSC = 0xFF2F4A12;
