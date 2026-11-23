@@ -32,6 +32,9 @@ public interface Plotter {
      */
     void plot(Geometria g, Opciones op);
 
+    /** Igual, con las opciones por defecto. */
+    default void plot(Geometria g) { plot(g, Opciones.POR_DEFECTO); }
+
     /** Dibuja la gota con las opciones por defecto. */
     default void plot(Gota g, Relleno relleno) { plot(g, relleno, Opciones.POR_DEFECTO); }
 

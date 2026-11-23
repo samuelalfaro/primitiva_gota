@@ -281,7 +281,7 @@ public final class Grafo implements Geometria {
      * nodos compartidos desaparecen y solo quedan las de los extremos libres. Se queda configurada hasta {@link #sinTextura()}.
      */
     public Grafo textura(Texturas.Textura tex) {
-        textura = Objects.requireNonNull(tex, "textura"); modo = null; invalida(); return this;
+        textura = Objects.requireNonNull(tex, "textura"); modo = null; preps.clear(); return this;
     }
 
     /**
@@ -294,12 +294,12 @@ public final class Grafo implements Geometria {
     /** Igual, con el color de entorno Ce de BLEND (su alfa se ignora). */
     public Grafo textura(Texturas.Textura tex, Combinacion.Modo m, int entorno) {
         textura = Objects.requireNonNull(tex, "textura"); modo = Objects.requireNonNull(m, "modo"); this.entorno = entorno;
-        invalida();
+        preps.clear();
         return this;
     }
 
     /** Vuelve al color lateral de los nodos. */
-    public Grafo sinTextura() { textura = null; modo = null; invalida(); return this; }
+    public Grafo sinTextura() { textura = null; modo = null; preps.clear(); return this; }
 
     /** Los rellenos con los que se pinta: los laterales, o la textura (sola o combinada con ellos). */
     private List<Relleno> rellenosPintado() {
@@ -624,75 +624,70 @@ public final class Grafo implements Geometria {
 
     // ---------- Pintado ----------
 
-    /** Pinta la composición sobre dst (TYPE_INT_ARGB) con antialiasing y composición alfa, con el color lateral de los nodos. */
-    public void render(BufferedImage dst) { render(dst, Opciones.POR_DEFECTO); }
+    /**
+     * Pinta la composición sobre dst (TYPE_INT_ARGB) con el color lateral de los nodos.
+     * @deprecated usar {@code Plotter.raster(dst).plot(grafo)}.
+     */
+    @Deprecated public void render(BufferedImage dst) { render(dst, Opciones.POR_DEFECTO); }
 
-    /** Igual, con las opciones de pintado dadas (costura de la tira y solape). */
-    public void render(BufferedImage dst, Opciones op) {
+    /**
+     * Igual, con las opciones de pintado dadas (costura de la tira y solape).
+     * @deprecated usar {@code Plotter.raster(dst).plot(grafo, op)}.
+     */
+    @Deprecated public void render(BufferedImage dst, Opciones op) {
         Objects.requireNonNull(op, "opciones");
-        construye();
-        pinta(dst, rellenos, op);
+        Plotter.raster(dst).plot(this, op);
     }
 
     /**
-     * Pinta la composición con una textura: cada arista es una tira (u a lo ancho, v a lo largo, tapas de semidisco).
-     * El color lo pone, como en el color lateral, la gota de menor ρ en cada píxel, así que las tapas de los nodos
-     * compartidos desaparecen y solo quedan las de los extremos libres.
+     * Pinta la composición con una textura (ver {@link #textura(Texturas.Textura)}), sin dejarla configurada.
+     * @deprecated usar {@code Plotter.raster(dst).plot(grafo.textura(tex))}.
      */
-    public void render(BufferedImage dst, Texturas.Textura tex) { render(dst, tex, Opciones.POR_DEFECTO); }
+    @Deprecated public void render(BufferedImage dst, Texturas.Textura tex) { render(dst, tex, Opciones.POR_DEFECTO); }
 
-    /** Igual, con las opciones de pintado dadas. */
-    public void render(BufferedImage dst, Texturas.Textura tex, Opciones op) {
+    /**
+     * Igual, con las opciones de pintado dadas.
+     * @deprecated usar {@code Plotter.raster(dst).plot(grafo.textura(tex), op)}.
+     */
+    @Deprecated public void render(BufferedImage dst, Texturas.Textura tex, Opciones op) {
         Objects.requireNonNull(tex, "textura");
         Objects.requireNonNull(op, "opciones");
-        construye();
-        List<Relleno> rs = new ArrayList<>();
-        for (int i = 0; i < gotas.size(); i++) rs.add(Texturas.tira(tex));
-        pinta(dst, rs, op);
+        conTexturaTemporal(dst, tex, null, 0xFF000000, op);
     }
 
     /**
-     * Pinta la composición combinando en una sola pasada el color lateral de cada gota (Cf) con la textura (Ct), al estilo de
-     * glTexEnv ({@link ComposicionColor.Modo}). La gota que manda en cada píxel es la misma que con el color solo, y la cobertura del
-     * borde se aplica una vez (dos pasadas, color y luego textura con alfa, equivalen como mucho a DECAL y la cobertura se aplica dos veces).
-     * Con REPLACE da lo mismo que {@link #render(BufferedImage, Texturas.Textura, Opciones)}.
+     * Pinta con la textura combinada con el color lateral (ver {@link #textura(Texturas.Textura, Combinacion.Modo)}), sin dejarla configurada.
+     * @deprecated usar {@code Plotter.raster(dst).plot(grafo.textura(tex, modo), op)}.
      */
-    public void render(BufferedImage dst, Texturas.Textura tex, Combinacion.Modo modo) {
+    @Deprecated public void render(BufferedImage dst, Texturas.Textura tex, Combinacion.Modo modo) {
         render(dst, tex, modo, Opciones.POR_DEFECTO);
     }
 
-    /** Igual, con las opciones de pintado dadas. */
-    public void render(BufferedImage dst, Texturas.Textura tex, Combinacion.Modo modo, Opciones op) {
+    /** @deprecated usar {@code Plotter.raster(dst).plot(grafo.textura(tex, modo), op)}. */
+    @Deprecated public void render(BufferedImage dst, Texturas.Textura tex, Combinacion.Modo modo, Opciones op) {
         render(dst, tex, modo, 0xFF000000, op);
     }
 
-    /** Igual, con el color de entorno Ce de BLEND (su alfa se ignora). */
-    public void render(BufferedImage dst, Texturas.Textura tex, Combinacion.Modo modo, int entorno, Opciones op) {
+    /** @deprecated usar {@code Plotter.raster(dst).plot(grafo.textura(tex, modo, entorno), op)}. */
+    @Deprecated public void render(BufferedImage dst, Texturas.Textura tex, Combinacion.Modo modo, int entorno, Opciones op) {
         Objects.requireNonNull(tex, "textura");
         Objects.requireNonNull(modo, "modo");
         Objects.requireNonNull(op, "opciones");
-        construye();
-        List<Relleno> rs = new ArrayList<>();
-        for (int i = 0; i < gotas.size(); i++) rs.add(Combinacion.combinar(rellenos.get(i), Texturas.tira(tex), modo, entorno));
-        pinta(dst, rs, op);
+        conTexturaTemporal(dst, tex, modo, entorno, op);
     }
 
-    private void pinta(BufferedImage dst, List<Relleno> rellenos, Opciones op) {
-        final Plotter.Raster raster = new Plotter.Raster(dst);
-        final double marg = 2 + suaviza;
-        final Plotter.Raster.Zona z = raster.zona(bounds.getMinX(), bounds.getMaxX(), bounds.getMinY(), bounds.getMaxY(), marg);
-        if (z == null) return;
-        final Prep pr = prepara(rellenos, op);
-        final List<Relleno> rel = pr.rel();
-        final Opciones[] ops = pr.ops();
-        raster.recorre(z, (i, j) -> {
-            double x = i + 0.5, y = j + 0.5;
-            double[] ev = evalua(x, y, op, ops);
-            if (ev[1] < 0) return;
-            Gota g = gotas.get((int) ev[1]);
-            int c = rel.get((int) ev[1]).argb(Coordenadas.punto(g, x, y, ops[(int) ev[1]]));
-            raster.set(i, j, sobre(raster.get(i, j), c, ev[0]));
-        });
+    /** Pinta con la textura dada y deja la configuración como estaba (los render antiguos no la cambiaban). */
+    private void conTexturaTemporal(BufferedImage dst, Texturas.Textura tex, Combinacion.Modo m, int ent, Opciones op) {
+        final Texturas.Textura t0 = textura;
+        final Combinacion.Modo m0 = modo;
+        final int e0 = entorno;
+        try {
+            if (m == null) textura(tex); else textura(tex, m, ent);
+            Plotter.raster(dst).plot(this, op);
+        } finally {
+            textura = t0; modo = m0; entorno = e0;
+            preps.clear();
+        }
     }
 
     // ---------- Orden del recorrido ----------
@@ -847,19 +842,6 @@ public final class Grafo implements Geometria {
             if (rho < rmin) { rmin = rho; mejor = k; }
         }
         return new double[] { cob, mejor };
-    }
-
-    /** fg con cobertura a sobre dst (ARGB no premultiplicado). */
-    private static int sobre(int dst, int fg, double a) {
-        double fa = ((fg >>> 24) / 255.0) * a, da = (dst >>> 24) / 255.0;
-        double oa = fa + da * (1 - fa);
-        if (oa <= 0) return 0;
-        int r = (int) Math.round(oa * 255) << 24;
-        for (int s = 16; s >= 0; s -= 8) {
-            double c = (((fg >> s) & 255) * fa + ((dst >> s) & 255) * da * (1 - fa)) / oa;
-            r |= (int) Math.round(c) << s;
-        }
-        return r;
     }
 
     private static double[] unit(double x, double y) {
