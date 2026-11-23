@@ -2,7 +2,7 @@ package coordenadas;
 
 /**
  * Caso de estudio (rama estudio_solapes; no está en Todas): suite de casos básicos del solape, con camino regular
- * (sin cúspides: ver «Caso límite» en ESTUDIO_SOLAPES.md). Tres filas por familia: textura guía, signo de J por hebra
+ * (sin cúspides: ver «Caso límite» en incubator/estudio_pliegues_polar/ESTUDIO_SOLAPES.md). Tres filas por familia: textura guía, signo de J por hebra
  * (verde: solape con J > 0 en todas las hebras; rojo: alguna hebra con J <= 0) y mapa de f (corte -Destudio.fcorte, 0.6).
  * Familias: alfa abierta (solo solape legítimo), u cerrada (solape legítimo + abanico de la curva cerrada),
  * omega sin cruce (solape sin cruce) y codo (compresión y, con radios distintos, pliegue).

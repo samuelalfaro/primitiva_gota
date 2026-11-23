@@ -16,7 +16,7 @@ import javax.imageio.ImageIO;
 import pintado.*;
 
 /**
- * Caso de estudio del solapamiento (rama estudio_solapes, ver ESTUDIO_SOLAPES.md). No es una suite de pruebas ni está en
+ * Caso de estudio del solapamiento (rama estudio_solapes, ver incubator/estudio_pliegues_polar/ESTUDIO_SOLAPES.md). No es una suite de pruebas ni está en
  * {@link Todas}: dibuja, con las celdas de {@link SuiteMatriz00}, cada forma con los solapes PLANO, TRAZO y PONDERADO
  * y cuenta los píxeles con salto de color entre vecinos. Uso: {@code EstudioSolapes [d] [umbral]} (por defecto d = 5, umbral 100);
  * el ancho de la banda del PONDERADO se cambia con {@code -Dsolape.k=...}. Deja {@code estudio_solapes_d<d>.png}.

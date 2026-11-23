@@ -7,7 +7,7 @@ import forma.*;
 import java.awt.image.BufferedImage;
 import java.util.*;
 /**
- * Caso de estudio (rama estudio_solapes, ver ESTUDIO_SOLAPES.md; no está en {@link Todas}). Para los píxeles cubiertos por dos o
+ * Caso de estudio (rama estudio_solapes, ver incubator/estudio_pliegues_polar/ESTUDIO_SOLAPES.md; no está en {@link Todas}). Para los píxeles cubiertos por dos o
  * más hebras (formas no rígidas, d = 5 y 4) reparte la fracción de discrepancia PLANO/TRAZO (> 48 de 255) según: el cociente
  * rho_min/rho_max, el coseno entre las tangentes de la pasada de menor y mayor t, el tipo (banda si |u/r| < 0.5, tapa si no), el
  * signo de u (componente de p - c(t) a lo largo de la tangente) y el tramo de t. Es una medida de dónde discrepan las dos reglas, no de cuál acierta.

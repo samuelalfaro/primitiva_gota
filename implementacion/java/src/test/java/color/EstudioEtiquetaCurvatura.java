@@ -7,7 +7,7 @@ import forma.*;
 import java.awt.image.BufferedImage;
 import java.util.*;
 /**
- * Caso de estudio (rama estudio_solapes, ver ESTUDIO_SOLAPES.md; no está en {@link Todas}). Etiqueta cada píxel solapado (dos o
+ * Caso de estudio (rama estudio_solapes, ver incubator/estudio_pliegues_polar/ESTUDIO_SOLAPES.md; no está en {@link Todas}). Etiqueta cada píxel solapado (dos o
  * más hebras, formas no rígidas, d = 5 y 4) como PLEGADO si en alguna de sus pasadas el píxel está en el lado cóncavo más allá del
  * centro de curvatura de la espina (distancia normal > 1/|kappa|: cara interior de un codo cerrado) y como LEGÍTIMO si no, y mide
  * con el AUC si cada variable (cociente de rho, coseno entre tangentes, Δt, u/r, ...) separa las dos clases. La curvatura sale de

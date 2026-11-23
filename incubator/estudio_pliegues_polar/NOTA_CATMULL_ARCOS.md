@@ -6,8 +6,8 @@ Material de la charla de estudio (issue #29).
 
 ## `EstudioCatmullRom`
 
-Fuente: `src/test/java/EstudioCatmullRom.java`.
-Imagen: `estudio/catmull_rom.png` (generar con `EstudioCatmullRom`).
+Fuente: `implementacion/java/src/test/java/EstudioCatmullRom.java`.
+Imagen: `catmull_rom.png` (generar con `EstudioCatmullRom`).
 
 Comparación CR vs Bézier cúbica de la espina, con muestreo en t y por longitud de arco.
 

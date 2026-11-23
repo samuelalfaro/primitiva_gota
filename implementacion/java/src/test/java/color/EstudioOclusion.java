@@ -9,7 +9,7 @@ import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 
 /**
- * Caso de estudio (rama estudio_solapes, ver ESTUDIO_SOLAPES.md; no está en {@link Todas}). Pista de oclusión sobre la imagen de
+ * Caso de estudio (rama estudio_solapes, ver incubator/estudio_pliegues_polar/ESTUDIO_SOLAPES.md; no está en {@link Todas}). Pista de oclusión sobre la imagen de
  * TRAZO: sombra suave sobre la pasada inferior (píxeles con una sola hebra) junto al borde de la superior (píxeles vecinos con
  * dos o más hebras y t mayor que la de la inferior). Intensidad {@code -Da=0.45} y ancho {@code -Dw=9} px; deja oclusion_d<d>.png
  * (S y ჲ, TRAZO frente a TRAZO + sombra). Es un efecto de imagen, no una regla de {@link Solape}.

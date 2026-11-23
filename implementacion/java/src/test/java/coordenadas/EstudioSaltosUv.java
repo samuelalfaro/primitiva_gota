@@ -3,7 +3,7 @@ package coordenadas;
 import forma.*;
 import common.SuiteMatriz00;
 
-/** Caso de estudio (rama estudio_solapes, ver ESTUDIO_SOLAPES.md; no está en Todas). */
+/** Caso de estudio (rama estudio_solapes, ver incubator/estudio_pliegues_polar/ESTUDIO_SOLAPES.md; no está en Todas). */
 public class EstudioSaltosUv {
     public static void main(String[] args){
         String[] formas={"suave","S","ჲ"};double[] ds={5,4};

@@ -9,7 +9,7 @@ import java.util.*;
 import java.util.List;
 import javax.imageio.ImageIO;
 /**
- * Caso de estudio (rama estudio_solapes, ver ESTUDIO_SOLAPES.md; no está en {@link Todas}). Clasifica los píxeles donde el
+ * Caso de estudio (rama estudio_solapes, ver incubator/estudio_pliegues_polar/ESTUDIO_SOLAPES.md; no está en {@link Todas}). Clasifica los píxeles donde el
  * color de PLANO y el de TRAZO difieren en más de 48 (de 255) según cuántas hebras del camino los cubren y según el cociente
  * rho_min / rho_max entre ellas (rho = distancia a la espina dividida por el radio de su t). Uso: {@code ClasificaDiscrepancias [d]}.
  * Deja {@code clasifica_rho_d<d>.png}: azul = empate (cociente >= 0.9), ámbar = medio (0.7 a 0.9), rojo = solape profundo (< 0.7),

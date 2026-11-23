@@ -3,7 +3,7 @@ package coordenadas;
 import forma.Camino;
 
 /**
- * EXPERIMENTAL (rama de estudio, issue #29; ver ESTUDIO_SOLAPES.md). Zona de pliegue de la costura ORTOGONAL: cuando el
+ * EXPERIMENTAL (rama de estudio, issue #29; ver incubator/estudio_pliegues_polar/ESTUDIO_SOLAPES.md). Zona de pliegue de la costura ORTOGONAL: cuando el
  * contorno interior del codo, recorrido por las normales del camino, se corta a sí mismo en un punto X, ese punto
  * corresponde a dos valores del camino (ta y tb), y el tramo [ta, tb] deja de usar la tira (t, u) para usar polares con centro en X.
  * <ul>
@@ -15,7 +15,7 @@ import forma.Camino;
  * </ul>
  * Solo se trata un cruce (el de mayor tramo de t). Con varios (S, espirales) el resto queda con la tira. Pendiente: radios
  * muy distintos con inclinación fuerte del contorno (aquí la normal es la de la tira, no la de la envolvente exacta).
- * <p>Referencias y aviso de patentes (Asente 2010, Berio et al. 2019, Kilgard 2020; patente US 8,674,995 B1): ver ESTUDIO_SOLAPES.md,
+ * <p>Referencias y aviso de patentes (Asente 2010, Berio et al. 2019, Kilgard 2020; patente US 8,674,995 B1): ver incubator/estudio_pliegues_polar/ESTUDIO_SOLAPES.md,
  * sección «Referencias y aviso sobre patentes».
  */
 final class Pliegue {

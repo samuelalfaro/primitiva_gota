@@ -2,8 +2,9 @@
 
 Resumen del log de la rama de estudio de la issue #29 (qué píxel manda donde la envolvente se pliega), reconstruido a partir de
 sus commits antes de que se perdiera en el rebase único (`estudio_pliegues_polar_rebase`, "Rebase a lo bruto", 2026-11-23).
-Los hashes son los de la rama `estudio_pliegues_polar` anterior al rebase; solo son consultables mientras esa rama (o una
-etiqueta sobre ella) siga existiendo. El detalle de cada medida está en `implementacion/java/ESTUDIO_SOLAPES.md`.
+Los hashes son los de la rama `estudio_pliegues_polar` anterior al rebase, conservada en la etiqueta `estudio_pliegues_polar`
+(`2fc956c`); GitHub ofrece el zip de esa instantánea y `git log estudio_pliegues_polar` recorre la historia completa. El detalle de
+cada medida está en `ESTUDIO_SOLAPES.md`, en esta misma carpeta.
 
 **Cifras.** 44 commits distintos (39 de Claude, 3 de Sam, 2 de samuelalfaro), del 2026-11-12 al 2026-11-22. El `git log` da 86 sin
 merges porque los 42 primeros aparecen dos veces (una copia anterior a un rebase previo y otra posterior) más 5 merges de `main`.
@@ -94,13 +95,12 @@ El estudio se aparca el 18 de noviembre: nada de esta rama está en las suites d
 ## Qué contiene esta carpeta
 
 - `HISTORIA.md`: este resumen.
+- `ESTUDIO_SOLAPES.md`: el informe completo del estudio, con sus imágenes en esta carpeta.
 - `NOTA_CATMULL_ARCOS.md`: la nota de Catmull-Rom y arcos complementarios (no llegó a la instantánea del rebase y se ha recuperado).
 - Las imágenes de los estudios (`estudio_pliegue_*`, `pliegue_*`, mapas y clasificaciones).
-
-El informe `ESTUDIO_SOLAPES.md` sigue en `implementacion/java/`.
 
 ## Qué no sobrevivió al rebase
 
 - `NOTA_CATMULL_ARCOS.md` (recuperada aquí).
 - `estudio_guia_textura.png`, que estaba en la raíz de `implementacion/java/` en la rama anterior.
-- La historia fina: cada commit de arriba se aplanó en uno.
+- La historia fina: cada commit de arriba se aplanó en uno (queda en la etiqueta `estudio_pliegues_polar`).

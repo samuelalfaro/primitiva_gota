@@ -1,6 +1,6 @@
 package coordenadas;
 
-/** Caso de estudio (rama estudio_solapes, ver ESTUDIO_SOLAPES.md; no está en Todas). Mapa de calor de la fracción mínima f (ventana euclídea ±f·r) a la que las hebras baja y alta de cada píxel solapado conectan en t (pasos |Δt|<0.03); lo que supera el corte f (-Destudio.fcorte, por defecto 0.6, o segundo argumento) o no conecta se pinta como solape legítimo (verde oscuro). Uso: EstudioMapaCorte [d] [corte]. */
+/** Caso de estudio (rama estudio_solapes, ver incubator/estudio_pliegues_polar/ESTUDIO_SOLAPES.md; no está en Todas). Mapa de calor de la fracción mínima f (ventana euclídea ±f·r) a la que las hebras baja y alta de cada píxel solapado conectan en t (pasos |Δt|<0.03); lo que supera el corte f (-Destudio.fcorte, por defecto 0.6, o segundo argumento) o no conecta se pinta como solape legítimo (verde oscuro). Uso: EstudioMapaCorte [d] [corte]. */
 import common.SuiteMatriz00;
 import forma.*;
 import java.awt.*;

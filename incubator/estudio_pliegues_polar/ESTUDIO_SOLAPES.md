@@ -22,7 +22,7 @@ por celda. Es un detector, no una medida de cuál es correcto. Resultados (d = 3
 - Suave: hasta 2.7 % (d = 4, r1 = 0). S: hasta 9 % (d = 4, r1 = 0), bajando al crecer r1.
 - ჲ: entre el 4 % y el 19 %, con el máximo con radios medios y d = 3.
 
-![discrepancias](estudio/discrepancias_plano_trazo.jpg)
+![discrepancias](discrepancias_plano_trazo.jpg)
 
 ## Experimento: `Solape.PONDERADO`
 
@@ -43,7 +43,7 @@ las zonas de color, así que es un indicador grueso):
 | S | TRAZO / PONDERADO | 517 / 453 | 377 / 371 | 347 / 349 |
 | ჲ | TRAZO / PONDERADO | 600 / 599 | 789 / 770 | 757 / 546 |
 
-![PLANO, TRAZO y PONDERADO](estudio/solapes_plano_trazo_ponderado_d5.jpg)
+![PLANO, TRAZO y PONDERADO](solapes_plano_trazo_ponderado_d5.jpg)
 
 - Las cuñas de ჲ y el escalón de S pasan a degradados continuos; en (4, 0) el pliegue de ჲ se disuelve.
 - El coste: donde los dos campos de color son distintos, el fundido tiene aspecto de semitransparencia.
@@ -51,7 +51,7 @@ las zonas de color, así que es un indicador grueso):
   el borde de la pasada superior, que ya tenía TRAZO, siguen.
 - K = 6 no está explorado; `Coordenadas.porRho` trata PONDERADO como PLANO (solo afecta a las composiciones).
 
-![zoom](estudio/solapes_zoom.png)
+![zoom](solapes_zoom.png)
 
 ## Clasificación de las discrepancias (`ClasificaDiscrepancias`)
 
@@ -61,7 +61,7 @@ discrepantes tienen dos o más hebras con Δt entre 0.2 y 0.6 o más; con Δt < 
 r1 = 0) y 122 de 2252 (S, d = 4, r1 = 0). Δt no separa los dos fenómenos. En suave y S la discrepancia es el extremo grueso
 solapando al brazo, igual que en ჲ pero más pequeña.
 
-![clasificación por Δt](estudio/clasificacion_dt_d5.jpg)
+![clasificación por Δt](clasificacion_dt_d5.jpg)
 
 Lo que sí separa es el cociente rho_min / rho_max de las hebras del píxel, con rho = |p − c(t)| / r(t) (distancia a la espina
 normalizada por el radio de su t; adimensional). Con tres clases provisionales (los cortes 0.9 y 0.7 son un criterio a decidir):
@@ -77,7 +77,7 @@ empate (≥ 0.9), medio (0.7 a 0.9) y solape profundo (< 0.7). Con d = 5:
 
 (en cada fila falta el resto hasta el total: píxeles con una sola hebra.)
 
-![clasificación por rho](estudio/clasificacion_rho_d5.jpg)
+![clasificación por rho](clasificacion_rho_d5.jpg)
 
 - La zona discrepante es una lente: en el interior (rojo) el solape es profundo y la proximidad y el orden de las pasadas se
   contradicen; en el borde (azul y ámbar) las dos pasadas casi empatan.
@@ -109,7 +109,7 @@ discrepancia ronda el 49 % de forma general, así que lo que importa es cuánto 
   (verde discrepante, rojo no); los cortes 0.5 de banda/tapa y 0 del signo son arbitrarios; solo se midió dónde discrepan las
   dos reglas, no cuál tiene razón.
 
-![mapa del signo](estudio/producto_escalar_mapa_signo_d4.jpg)
+![mapa del signo](producto_escalar_mapa_signo_d4.jpg)
 
 ## Separar solape legítimo de pliegue de codo cerrado (`EstudioEtiquetaCurvatura`)
 
@@ -167,7 +167,7 @@ indicador grueso de antes, que cuenta también los bordes legítimos de color), 
 - Es una decisión píxel a píxel sobre imágenes ya compuestas: no sustituye a una regla dentro de `Solape`, solo mide si la etiqueta
   hace algo útil. Límites: indicador grueso, solo color, sin juicio estético fuera de mi lectura de las imágenes.
 
-![híbrido](estudio/hibrido_curvatura_d4.jpg)
+![híbrido](hibrido_curvatura_d4.jpg)
 
 ## Pistas de oclusión (`EstudioOclusion`)
 
@@ -175,8 +175,8 @@ Donde el solape es legítimo el borde de la capa superior es una oclusión real:
 Sobre la imagen de TRAZO se oscurece suavemente (intensidad 0.45, 9 px) la pasada inferior junto al borde de la superior (píxeles
 con una sola hebra cuyo vecino solapado tiene una t mayor).
 
-![oclusión](estudio/oclusion_sombra_d4.jpg)
-![detalle: ჲ (3, 1) y S (1, 3), sin y con sombra](estudio/oclusion_sombra_zoom.png)
+![oclusión](oclusion_sombra_d4.jpg)
+![detalle: ჲ (3, 1) y S (1, 3), sin y con sombra](oclusion_sombra_zoom.png)
 
 - En ჲ la sombra hace que el trozo superior se lea como cinta que pasa por encima; en S marca el borde de la tapa sobre el brazo.
 - Se ven también los defectos que ya había: filas de píxeles sueltos de otro color a lo largo de algunos bordes de la capa superior
@@ -232,7 +232,7 @@ Experimento: en vez de mezclar colores, se promedian (t, u, v) de las pasadas co
 
 Conclusión: es un barniz (como el antialiasing), no una solución. Se aplica al final, cuando ya esté decidido qué píxel manda; mientras se estudian los pliegues se mira sin barniz.
 
-Imágenes: `estudio/uv_textura_d4.jpg`, `estudio/uv_degradado_d4.jpg`. Reproducir: `EstudioUV` (d=4).
+Imágenes: `uv_textura_d4.jpg`, `uv_degradado_d4.jpg`. Reproducir: `EstudioUV` (d=4).
 
 ## Delimitar: legítimo / compresión / pliegue (J = 1 + κ·y)
 
@@ -252,11 +252,11 @@ Antes de decidir qué píxel manda, se delimitan las zonas de solape (píxeles c
 - El detector PLANO≠TRAZO discrepa ~50 % en las tres clases: mide que hay solape, no que haya pliegue, así que no valida la clasificación.
 - Sin validar: las clases son geométricas (sin referencia independiente); κ por diferencias finitas, r′(t) ignorada. Siguiente paso: contrastar la compresión con la distorsión real de la textura guía.
 
-Imagen: `estudio/tres_clases_d5_d4.jpg` (verde legítimo, naranja compresión, rojo pliegue; oscuro = PLANO≠TRAZO). Reproducir: `EstudioTresClases`.
+Imagen: `tres_clases_d5_d4.jpg` (verde legítimo, naranja compresión, rojo pliegue; oscuro = PLANO≠TRAZO). Reproducir: `EstudioTresClases`.
 
 ## Comprobar las clases con la textura (J frente a la distorsión real)
 
-Imagen: `estudio/tres_clases_textura.jpg` (textura guía con TRAZO; segunda fila de cada caso con compresión en naranja y pliegue en rojo). Código: `EstudioTexturaClases`, `EstudioDensidadTexels`, `EstudioSaltosUv`.
+Imagen: `tres_clases_textura.jpg` (textura guía con TRAZO; segunda fila de cada caso con compresión en naranja y pliegue en rojo). Código: `EstudioTexturaClases`, `EstudioDensidadTexels`, `EstudioSaltosUv`.
 
 - **Densidad de texels** |det ∂(u,v)/∂(x,y)| respecto a la mediana de los píxeles de una hebra con el mismo t y rho (sin píxeles con salto): no separa las clases (legítimo Q≈2 en las tres formas; en S compresión 1,19 y pliegue 1,37 frente a 1,84 del legítimo). Con signo, ningún píxel sale invertido: la biblioteca no produce uv invertida, el pliegue se manifiesta como salto de uv. Al excluir los saltos del cálculo se deja fuera justo ese caso.
 - **Saltos de uv** (|Δt|>0,03 o |Δu|,|Δv|>0,2 a ±1–2 px), % de píxeles con 2+ hebras:
@@ -279,9 +279,9 @@ Idea (Samuel): un píxel con 2+ hebras es solape legítimo si las zonas de t que
 
 - Implementación (`EstudioConexion`): nodos (píxel, hebra); dos nodos vecinos se unen si |Δt| < 0,03 (p99 del paso entre píxeles vecinos de una hebra: 0,008–0,02). Para que sea local se busca el camino solo dentro de una ventana de ±f·r(t) alrededor del píxel. Un anillo común a todo el solape no sirve: la búsqueda recorre el cuerpo del trazo y conecta hojas lejanas.
 - Con ventana pequeña (f ≤ 0,12) casi todo sale legítimo; entre f=0,25 y 1 el porcentaje de pliegue crece de forma continua (S d=4: 3 % → 22 % → 57 %; ჲ d=4: 1,6 % → 13 % → 50 %). No hay meseta, y no coincide con J (en ჲ las clases de J y las de conexión no se corresponden; en S señalan la misma cuña pero dan signos distintos).
-- Mapa de calor (`EstudioMapaCorte`, `estudio/mapa_f_d4.jpg`): la f mínima a la que las hojas conectan es una distancia radial a un punto de unión de las hojas (con distancia euclídea los contornos son arcos concéntricos; con Chebyshev salían ángulos rectos, artefacto de la métrica). El corte f ≈ 0,5 equivale a un disco de radio 0,5·r alrededor del punto de unión.
-- Corte duro configurable (`-Destudio.fcorte`, por defecto 0,6; Samuel propone ≈ 0,6): lo que supera el corte o no conecta es solape legítimo (verde oscuro); la zona por debajo mantiene el valor de f, que puede servir para distinguir compresión de pliegue. Imágenes: `estudio/mapa_corte_d4.jpg`, `estudio/mapa_corte_d5.jpg`.
-- `EstudioComparaConexion` / `estudio/conexion_frente_a_J_d4.jpg`: textura TRAZO con las clases de J y las de conexión superpuestas.
+- Mapa de calor (`EstudioMapaCorte`, `mapa_f_d4.jpg`): la f mínima a la que las hojas conectan es una distancia radial a un punto de unión de las hojas (con distancia euclídea los contornos son arcos concéntricos; con Chebyshev salían ángulos rectos, artefacto de la métrica). El corte f ≈ 0,5 equivale a un disco de radio 0,5·r alrededor del punto de unión.
+- Corte duro configurable (`-Destudio.fcorte`, por defecto 0,6; Samuel propone ≈ 0,6): lo que supera el corte o no conecta es solape legítimo (verde oscuro); la zona por debajo mantiene el valor de f, que puede servir para distinguir compresión de pliegue. Imágenes: `mapa_corte_d4.jpg`, `mapa_corte_d5.jpg`.
+- `EstudioComparaConexion` / `conexion_frente_a_J_d4.jpg`: textura TRAZO con las clases de J y las de conexión superpuestas.
 
 Abierto: ver si en una silueta tipo caracol conviven solape legítimo y pliegue en la misma zona (hipótesis); habría que clasificar por pares de hebras adyacentes, no solo baja/alta; la elección de los cortes (0,6; y uno posible entre compresión y pliegue) es una decisión de diseño, no de los datos.
 
@@ -312,11 +312,11 @@ Con la superficie S(t, u) = (x(t, u), y(t, u), t): cada hebra de un píxel es un
 - S: los signos opuestos (pliegue de la proyección) están donde las hebras **no** conectan (61 %) y con f entre 0,6 y 1 (26 %); donde f es pequeña casi no hay (4–6 %). La línea de unión que marca f no coincide con la curva J = 0: f indica proximidad al borde de la lente / unión de hojas, y el signo de J por hebra indica el pliegue. Se complementan.
 - Pendiente de medir: en S con r1 = 0 o r2 = 0 el sector J ≤ 0 queda en el mismo lado que el corte recto de la costura (coincidencia visual).
 
-Imagen con el esquema (`PlotterAlambre` con `Trazos.Ajustes.ESQUEMA`: centros, P1..P4, radios, camino discontinuo y arcos de las tapas) superpuesto: `estudio/mapa_alambre_d4.jpg` (`EstudioMapaAlambre`); catálogo del plotter: `estudio/esquema_catalogo.jpg`. El esquema (antes `PlotterEsquema`, PR #30) es ahora un ajuste de `PlotterAlambre` (PR #34).
+Imagen con el esquema (`PlotterAlambre` con `Trazos.Ajustes.ESQUEMA`: centros, P1..P4, radios, camino discontinuo y arcos de las tapas) superpuesto: `mapa_alambre_d4.jpg` (`EstudioMapaAlambre`); catálogo del plotter: `esquema_catalogo.jpg`. El esquema (antes `PlotterEsquema`, PR #30) es ahora un ajuste de `PlotterAlambre` (PR #34).
 
 ## Caso límite: cúspide del camino (fuera de los casos básicos)
 
-Con la α abierta (controles ±k·1,0 / k·0,9) y k = 2,0, el camino tiene una cúspide en t = 0,5 (c′(0,5) = 0). Con la textura guía sale un semidisco rojo sólido arriba y una cuña roja junto a la tapa 1 (`estudio/caso_limite_cuspide.jpg`, k = 1,6 / 2,0 / 2,4).
+Con la α abierta (controles ±k·1,0 / k·0,9) y k = 2,0, el camino tiene una cúspide en t = 0,5 (c′(0,5) = 0). Con la textura guía sale un semidisco rojo sólido arriba y una cuña roja junto a la tapa 1 (`caso_limite_cuspide.jpg`, k = 1,6 / 2,0 / 2,4).
 
 - No es un error de solape. Los píxeles rojos son de una sola hebra, con t = 0,500 y v = 0,500 constantes; solo varía u. El punto más cercano del camino a todo el abanico de píxeles es la propia cúspide, y la línea transversal de la guía en v = 0,5 es roja.
 - Con velocidad pequeña pero no nula pasa lo mismo, de forma atenuada. Píxeles con v ≡ 0,5 y una sola hebra para k = 1,6 / 1,9 / 2,0 / 2,1 / 2,4: 74 / 318 / 1710 / 354 / 110 (ORTOGONAL y SUAVIZADO; en ESPIGA 2919 para k = 2,0).
@@ -327,7 +327,7 @@ Decisión: es un caso límite, se documenta y se deja fuera de la suite de casos
 
 ## Suite de casos básicos (`EstudioCasosBasicos`)
 
-Casos simples y de camino regular (sin cúspide) para entender el solape antes de atacar S, ჲ y suave, que se dejan para el final. Por familia, tres filas: textura guía, signo de J por hebra (verde: J > 0 en todas; rojo: alguna hebra con J ≤ 0) y mapa de f (corte 0,6). Imagen: `estudio/casos_basicos.jpg`. Uso: `EstudioCasosBasicos [alfa|u|omega|codo|todas]`.
+Casos simples y de camino regular (sin cúspide) para entender el solape antes de atacar S, ჲ y suave, que se dejan para el final. Por familia, tres filas: textura guía, signo de J por hebra (verde: J > 0 en todas; rojo: alguna hebra con J ≤ 0) y mapa de f (corte 0,6). Imagen: `casos_basicos.jpg`. Uso: `EstudioCasosBasicos [alfa|u|omega|codo|todas]`.
 
 | Familia | Parámetros | Qué enseña | % J ≤ 0 en el solape |
 |---|---|---|---|
@@ -353,7 +353,7 @@ a polares con centro en X. Es opt-in (`Solape.PLIEGUE`); con SUAVIZADO (legacy: 
 - **Cruce**: se busca en el contorno de la familia c(t) ± r(t)·N, no en el de la máscara. La primera versión usaba la semianchura de la máscara y
   colocaba mal X: en el pliegue la normal vuelve a entrar en la gota por la otra pierna del codo y la máscara da una distancia que no es el contorno.
   La semianchura solo se usa para el contorno exterior de la cuña. Las formas rígidas (`arcos() != null`) no se tratan.
-- **Medido** (`EstudioPliegue`, imagen `estudio/pliegue_polar_ortogonal.png`, arriba TRAZO y abajo PLIEGUE): en los cinco codos probados el pliegue desaparece y la
+- **Medido** (`EstudioPliegue`, imagen `pliegue_polar_ortogonal.png`, arriba TRAZO y abajo PLIEGUE): en los cinco codos probados el pliegue desaparece y la
   zona interior queda cubierta una sola vez; cambia entre el 10 % y el 24 % de los píxeles de la gota. ta y tb coinciden con los de una prueba
   aparte en Python (a = 3,5 y r = 1,6: 0,090 / 0,910; a = 2,5 y r = 1,6: 0,145 / 0,855). Las suites de `Todas` pasan (11 suites, 0 fallos).
 - **Observado, no probado**: el contorno usa c ± r·N, sin la inclinación de la envolvente exacta cuando los radios cambian; la continuidad de la derivada en los
@@ -372,7 +372,7 @@ Se mide con `EstudioPliegueBordes` el salto de (u, v) a través de las dos norma
   ORTOGONAL**, las suites de `Todas` pasan pero no se ha comparado la imagen en otras formas) y el pliegue es el intervalo [ta, tb] donde esa salida pasa de 1,35·r
   (se funden tramos separados por menos de 0,2 de t, porque en un codo suave baja en medio). El centro es el corte de las normales de ta y tb por el lado
   interior, de modo que los bordes de la cuña están sobre las líneas de t constante.
-- **Zonas** (`EstudioPliegueZonas`, `estudio/pliegue_zonas_ortogonal.png`): con radios distintos la tira ya tiene 7 zonas (tapa, dos cuñas del conector, banda, dos cuñas
+- **Zonas** (`EstudioPliegueZonas`, `pliegue_zonas_ortogonal.png`): con radios distintos la tira ya tiene 7 zonas (tapa, dos cuñas del conector, banda, dos cuñas
   del extremo y tapa); con el pliegue son 9: la banda se parte en banda antes de ta y banda tras tb, y aparece la polar. Dos fallos corregidos al revisar el mapa:
   (1) la mitad interior de las hebras con t en [ta, tb] seguía reclamando, con su semianchura que atraviesa el codo, píxeles de la pierna anterior (la mitad superior
   del tramo izquierdo salía "plegada"); ahora `Solape.PLIEGUE` descarta esos candidatos (`Pliegue.sustituye`); (2) el sector angular de la cuña se barría por el camino
@@ -405,7 +405,7 @@ Se mide con `EstudioPliegueBordes` el salto de (u, v) a través de las dos norma
 - **Zona**: el abanico entre X, las dos costillas interiores (las rectas de X a c(ta) y a c(tb), de longitud r) y la espina. El ángulo del rayo
   desde X da t y w = 1 − ρ/d (1 en X, 0 en la espina). En las dos costillas coincide exactamente con la tira de ESPIGA, así que no hace falta
   la aproximación de la normal que sí hay en ORTOGONAL.
-- **Medido** (`EstudioPliegue espiga`, imagen `estudio/pliegue_polar_espiga.png`): en los cinco codos el pliegue desaparece; cambia entre el 3 % y el 7 % de los
+- **Medido** (`EstudioPliegue espiga`, imagen `pliegue_polar_espiga.png`): en los cinco codos el pliegue desaparece; cambia entre el 3 % y el 7 % de los
   píxeles de la gota (menos que en ORTOGONAL porque solo se sustituye la mitad interior). Las suites de `Todas` pasan.
 - **Pendiente**: SUAVIZADO (el Hermite no tiene costilla recta); un solo cruce por gota; continuidad de la derivada en los bordes del abanico.
 
@@ -419,7 +419,7 @@ Una cúbica tiene como mucho dos inflexiones (el numerador de la curvatura, cros
 - **Casos** (búsqueda aleatoria de cúbicas con dos cruces verificados en lados opuestos y tramos de t disjuntos; `EstudioPliegueDos r x0 y0 … x3 y3 etiqueta`):
   - c147, r = 0,89: puntos de control (2,26, 2,39) (2,94, −1,0) (−0,19, 2,96) (1,2, −2,66); zonas t∈[0,09, 0,45] (lado −N) y [0,47, 0,75] (lado +N).
   - c219, r = 0,65: (−0,73, −1,34) (−1,57, 2,79) (1,01, −0,21) (0,44, 2,07); zonas [0,25, 0,48] y [0,55, 0,96].
-  - Con el código de un solo pliegue el segundo codo se quedaba con las costillas cruzadas; con la lista salen las dos zonas, en ESPIGA y en ORTOGONAL (`estudio/pliegue_dos_c147_espiga.png`, `estudio/pliegue_dos_c219_ortogonal.png`).
+  - Con el código de un solo pliegue el segundo codo se quedaba con las costillas cruzadas; con la lista salen las dos zonas, en ESPIGA y en ORTOGONAL (`pliegue_dos_c147_espiga.png`, `pliegue_dos_c219_ortogonal.png`).
 - **Comprobado**: los cinco codos de `EstudioPliegue` dan lo mismo que con una zona; las 11 suites de `Todas` pasan.
 - **Medido en los bordes** (`EstudioPliegueBordes espiga|ortogonal`, 0,6 px a cada lado del borde de cada zona, junto con un control: la variación natural de v entre dos puntos a la misma distancia dentro de la zona):
   - |Δu| ≤ 0,002 en los cinco codos y en c147 y c219, en ESPIGA y en ORTOGONAL.
@@ -430,7 +430,7 @@ Una cúbica tiene como mucho dos inflexiones (el numerador de la curvatura, cros
 
 ### Prioridad entre cuñas que se pisan (ORTOGONAL, caso `dos`)
 
-En `dos` (r = 0,88) las zonas A (t∈[0,28, 0,41], lado −N) y B ([0,33, 0,67], lado +N) se pisan en 248 px (solo A 385, solo B 1282; `estudio/pliegue_dos_solape_cunas.png`: azul A, rojo B, verde las dos).
+En `dos` (r = 0,88) las zonas A (t∈[0,28, 0,41], lado −N) y B ([0,33, 0,67], lado +N) se pisan en 248 px (solo A 385, solo B 1282; `pliegue_dos_solape_cunas.png`: azul A, rojo B, verde las dos).
 `EstudioPliegueSolape` calcula (t, q) con cada zona en esos píxeles: difieren en media 0,074 en t y hasta 0,31, así que no son la misma solución: la región tiene dos soluciones.
 
 - **Ninguna regla da continuidad.** Seis reglas por píxel (primera, última, t mayor, t menor, |q| menor, |q| mayor) dejan un salto medio de 0,06–0,08 donde cambia la zona ganadora, frente a 0,018 de variación natural entre vecinos de la misma zona. Al ser un doble recubrimiento, el borde de la zona de arriba es un salto inevitable (como en un solape legítimo de TRAZO).
@@ -447,16 +447,16 @@ Búsqueda aleatoria (puntos de control en [−3, 3]², unas 290 000 cúbicas con
 
 - Con filtros estrictos (radio de curvatura mínimo de cada lóbulo ≥ 5 % de la longitud y velocidad máx/mín ≤ 8): **ningún caso**.
 - Relajando (≥ 1–3 % y velocidad máx/mín ≤ 15–100): cinco casos. En todos el lóbulo central es casi una cúspide (ρ mín 0,01–0,04 con longitud 2–6) y la estructura es la misma: un cruce ancho (t del orden de 0,3–0,8) que **encierra** a otros dos pequeños en el lado contrario. Ejemplos: t3a, r = 1,0, puntos (−2,74, 2,77) (2,75, 1,49) (0,79, 1,64) (1,62, 1,69); t3b, r = 1,39, puntos (−0,28, −2,39) (−2,98, 1,88) (−1,45, −1,6) (−2,26, 1,54).
-- `Pliegue.todos` detecta las tres zonas en los dos casos y en las dos costuras. En t3b (`estudio/pliegue_tres_t3b_*.png`) **ESPIGA** sale limpia, pero en **ORTOGONAL** las cuñas se encajan unas dentro de otras y el reparto de píxeles queda irregular (bordes dentados, costillas cruzadas): con zonas anidadas la regla de la mitad interior no basta. No he medido los bordes de estos casos.
+- `Pliegue.todos` detecta las tres zonas en los dos casos y en las dos costuras. En t3b (`pliegue_tres_t3b_*.png`) **ESPIGA** sale limpia, pero en **ORTOGONAL** las cuñas se encajan unas dentro de otras y el reparto de píxeles queda irregular (bordes dentados, costillas cruzadas): con zonas anidadas la regla de la mitad interior no basta. No he medido los bordes de estos casos.
 - Lectura: el límite de la cúbica para tres pliegues es un lóbulo central casi cúspide (el caso límite ya documentado); no es una conclusión demostrada, solo lo que sale de la búsqueda aleatoria. Una `Composicion` de varias curvas sí puede dar tres codos suaves.
 
 ### Prueba: v por longitud de arco (`-Dgota.v=longitud`, experimental)
 
 `Zonas.vBanda(t)` calcula la v de la banda; con `-Dgota.v=longitud` usa la longitud de arco de la espina (normalizada a cada lado de tm, de modo que c1, c2, c3 siguen igual) en lugar de t. Solo cambia la coordenada v: la silueta, las zonas (ta, tb), la clave de solape y la prioridad no cambian. Por defecto sigue siendo t.
 
-- **Textura** (`estudio/pliegue_v_longitud_c147_espiga.png`, izquierda t, derecha longitud): las bandas de la textura guía quedan equiespaciadas a lo largo de la espina; con t se apretaban y estiraban.
+- **Textura** (`pliegue_v_longitud_c147_espiga.png`, izquierda t, derecha longitud): las bandas de la textura guía quedan equiespaciadas a lo largo de la espina; con t se apretaban y estiraban.
 - **Medida de bordes** (`EstudioPliegueBordes`, control = variación natural de v entre dos puntos a la misma distancia dentro de la zona): el control máximo baja de 0,023–0,108 (t) a 0,014–0,033 (longitud) y es más parejo entre zonas. Los saltos de borde siguen por debajo del control en c147 y c219, en ESPIGA y en ORTOGONAL, y en `dos` en ESPIGA. En `dos` ORTOGONAL, los bordes donde las cuñas se pisan siguen por encima del control (0,023 frente a 0,014 en el borde ta de A), como con t.
-- **Predicción comprobada (anidamiento)**: d crece con t, así que conserva el orden de los intervalos. En t3b ORTOGONAL (`estudio/pliegue_v_longitud_t3b_ortogonal.png`) las zonas son las mismas y el reparto dentado de las cuñas anidadas **no cambia**; solo se redistribuye la textura. El anidamiento no depende de la variable de la espina.
+- **Predicción comprobada (anidamiento)**: d crece con t, así que conserva el orden de los intervalos. En t3b ORTOGONAL (`pliegue_v_longitud_t3b_ortogonal.png`) las zonas son las mismas y el reparto dentado de las cuñas anidadas **no cambia**; solo se redistribuye la textura. El anidamiento no depende de la variable de la espina.
 - **Pendiente**: muestreo uniforme en longitud (y por ángulo de la tangente cerca de cúspides) para la espina y la envolvente; incluir o no las tapas en la longitud; `Composicion` (longitud acumulada por cuerpo). No he medido t3b con longitud.
 
 ### Anotado antes de la prueba: v por longitud de arco
@@ -467,7 +467,7 @@ Actualización 2026-11-17 (tarde): Samuel propone que el mapeo sea d → v, con 
 
 ### Diagnóstico de t3b en ORTOGONAL: cuñas anidadas
 
-`EstudioPliegueCunas` dibuja cada zona por separado, todas superpuestas y el mapa de la ganadora (`estudio/pliegue_cunas_t3b_ortogonal.png`: zona 0, zona 1, zona 2, todas con los solapes en negro, ganadora).
+`EstudioPliegueCunas` dibuja cada zona por separado, todas superpuestas y el mapa de la ganadora (`pliegue_cunas_t3b_ortogonal.png`: zona 0, zona 1, zona 2, todas con los solapes en negro, ganadora).
 
 - Tres zonas: 0 (t∈[0,287, 0,815], lado −N), 1 ([0,392, 0,457], lado +N) y 2 ([0,599, 0,779], lado +N). Los intervalos de 1 y 2 están **dentro** del de 0 (anidados).
 - Cada cuña por separado es una forma limpia. El desorden viene de que se cruzan: 0 y 1 se pisan en 226 px, 0 y 2 en 803 px (más de la mitad de la zona 2) y 1 y 2 en 69 px; en total 960 px con más de una zona sobre 4852 con alguna.
@@ -479,7 +479,7 @@ Actualización 2026-11-17 (tarde): Samuel propone que el mapeo sea d → v, con 
 
 Lectura de la propuesta de Samuel (a confirmar): si el extremo opuesto al punto de pliegue de una cuña sobrepasa otro punto de pliegue, el trozo de la cuña que corresponde al tramo de t de ese pliegue (de su t mínima a su t máxima) deja de ser de la zona ancha; vale en cada nivel de anidamiento. Implementado en `Pliegue.localiza(lista, zona, x, y)`; `-Dgota.anidadas=no` restaura la cuña entera. Solo afecta a zonas anidadas (no a c147, c219, `dos` ni a los codos).
 
-- t3b: los píxeles con más de una zona bajan de 960 a 533 (0 y 1: 226 → 129; 0 y 2: 803 → 371; 1 y 2: 69, sin cambio). La zona 0 pasa de 3889 a 2305 px y su abanico queda en tres trozos separados por huecos (`estudio/pliegue_cunas_t3b_ortogonal_cortadas.png`).
+- t3b: los píxeles con más de una zona bajan de 960 a 533 (0 y 1: 226 → 129; 0 y 2: 803 → 371; 1 y 2: 69, sin cambio). La zona 0 pasa de 3889 a 2305 px y su abanico queda en tres trozos separados por huecos (`pliegue_cunas_t3b_ortogonal_cortadas.png`).
 - Quedan solapes: los trozos del abanico de la zona 0 con t fuera de los tramos anidados siguen cruzando las mitades exteriores de las zonas 1 y 2.
 - Los huecos que deja el corte (píxeles de la zona 0 cuyo t cae en un tramo anidado) pasan a la banda si la zona anidada no los cubre, es decir, vuelven a las coordenadas (t, u) plegadas; no se ha medido cuántos son ni cómo se ven con textura.
 
@@ -487,12 +487,12 @@ Lectura de la propuesta de Samuel (a confirmar): si el extremo opuesto al punto 
 
 Samuel relaja el requisito de que las costillas sean un único segmento de extremo a extremo en ORTOGONAL: con la A, la parte exterior de las costillas de una zona anidada vuelve a la banda, donde sigue siendo normal a la espina. Las zonas que contienen a otras siguen siendo cuñas enteras. Es ahora el comportamiento por defecto (`-Dgota.anidadas=interior`; `cortar` = opción C anterior; `no` = cuñas enteras).
 
-- t3b: las zonas 1 y 2 pasan a 100 y 305 px (solo su abanico interior); la zona 0 queda entera (3889 px). Píxeles con más de una zona: 960 → 405 (0 y 1: 100; 0 y 2: 305; 1 y 2: 0), todos entre una zona ancha y el abanico interior de una anidada; la regla de la mitad interior los decide a favor de la anidada. El mapa de ganadoras ya no sale dentado: cuña azul con las dos astillas (roja, verde) dentro (`estudio/pliegue_cunas_t3b_ortogonal_A.png`) y la textura sale continua (`estudio/pliegue_t3b_ortogonal_A.png`).
+- t3b: las zonas 1 y 2 pasan a 100 y 305 px (solo su abanico interior); la zona 0 queda entera (3889 px). Píxeles con más de una zona: 960 → 405 (0 y 1: 100; 0 y 2: 305; 1 y 2: 0), todos entre una zona ancha y el abanico interior de una anidada; la regla de la mitad interior los decide a favor de la anidada. El mapa de ganadoras ya no sale dentado: cuña azul con las dos astillas (roja, verde) dentro (`pliegue_cunas_t3b_ortogonal_A.png`) y la textura sale continua (`pliegue_t3b_ortogonal_A.png`).
 - Saltos de u/v en los bordes de t3a y t3b: medidos el 2026-11-18 (ver «Saltos de u/v en los casos de tres lóbulos»).
 
 #### Prueba del «acordeón» (opción C, tres lecturas) y la espina como frontera
 
-Samuel propone que el extremo de una cuña quede limitado por el centro de giro (X) de la cuña opuesta, y confirma que en una cúbica los pliegues van en lados alternos (la curvatura cambia de signo en cada inflexión; se ordenan por el punto medio de su tramo de t: en t3b, +N, −N, +N). Esquema con la geometría real: `estudio/esquema_acordeon_t3b.png` (generado fuera del repositorio). Tres lecturas probadas en t3b (solo con `-Dgota.anidadas=`):
+Samuel propone que el extremo de una cuña quede limitado por el centro de giro (X) de la cuña opuesta, y confirma que en una cúbica los pliegues van en lados alternos (la curvatura cambia de signo en cada inflexión; se ordenan por el punto medio de su tramo de t: en t3b, +N, −N, +N). Esquema con la geometría real: `esquema_acordeon_t3b.png` (generado fuera del repositorio). Tres lecturas probadas en t3b (solo con `-Dgota.anidadas=`):
 
 | Modo | Regla | Píxeles con más de una zona | Veredicto |
 |---|---|---|---|
@@ -509,7 +509,7 @@ Resultado de `espina`:
 - Lo que sí resuelve: una zona ya no sobrepasa a la que no le corresponde. Equivale a un comportamiento tipo ESPIGA (solo abanico interior) para las zonas que se pisan y ORTOGONAL entero para las que no.
 - Lectura del esquema: el rayo X–X no separa las cuñas porque lo que se pisa es la mitad exterior de las pequeñas, no la interior.
 
-Decisión de Samuel (2026-11-17): documentarlo para estudiarlo más adelante («no queda muy limpio, pierde zonas, pero resuelve que una zona sobrepase a la que no le corresponde»); caso límite extremo. El modo por defecto sigue siendo `interior`; `espina` queda como opción de estudio. Imágenes: `estudio/pliegue_t3b_ortogonal_espina.png`, `estudio/pliegue_cunas_t3a_espina.png`, `estudio/pliegue_cunas_t3b_espina.png`.
+Decisión de Samuel (2026-11-17): documentarlo para estudiarlo más adelante («no queda muy limpio, pierde zonas, pero resuelve que una zona sobrepase a la que no le corresponde»); caso límite extremo. El modo por defecto sigue siendo `interior`; `espina` queda como opción de estudio. Imágenes: `pliegue_t3b_ortogonal_espina.png`, `pliegue_cunas_t3a_espina.png`, `pliegue_cunas_t3b_espina.png`.
 
 #### Saltos de u/v en los casos de tres lóbulos (`EstudioPliegueBordesT3`)
 
@@ -545,7 +545,7 @@ Decisiones tomadas probando variantes (2026-11-18):
 - Interpolar por tono: con el arco corto aparecen saltos donde dos colores quedan a ~180° de tono (naranja/azul, rosa/verde); con el tono fijo (horario o antihorario) se da la vuelta entera al círculo cromático. El centro **gris** (acromático) evita los saltos: LCH toma el tono del extremo.
 - Probado y descartado: centros azul y verde muy saturados (solo se ven si se remapea la distancia para que el centro de la gota caiga junto al núcleo, y el verde puro dio una costura). Samuel elige el centro gris: «buen equilibrio entre información y sutileza».
 
-Imágenes: `estudio/guia_ajedrez_textura.png`, `estudio/pliegue_t3b_ortogonal_guia_ajedrez.png`. Pendiente: suavizar (o no) los cortes duros en d = 2 y d = 6; decidir si esta textura pasa a la biblioteca (`Texturas.referenciaLados`) o a `CosturasDemo.Guia`, que no se han tocado.
+Imágenes: `implementacion/java/src/test/resources/guia_ajedrez_textura.png`, `pliegue_t3b_ortogonal_guia_ajedrez.png`. Pendiente: suavizar (o no) los cortes duros en d = 2 y d = 6; decidir si esta textura pasa a la biblioteca (`Texturas.referenciaLados`) o a `CosturasDemo.Guia`, que no se han tocado.
 
 ## Referencias y aviso sobre patentes
 

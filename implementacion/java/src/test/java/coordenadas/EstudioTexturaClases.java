@@ -1,6 +1,6 @@
 package coordenadas;
 
-/** Caso de estudio (rama estudio_solapes, ver ESTUDIO_SOLAPES.md; no está en Todas). */
+/** Caso de estudio (rama estudio_solapes, ver incubator/estudio_pliegues_polar/ESTUDIO_SOLAPES.md; no está en Todas). */
 import color.Relleno;
 import color.Texturas;
 import forma.*;

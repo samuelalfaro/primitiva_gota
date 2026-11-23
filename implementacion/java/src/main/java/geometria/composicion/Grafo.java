@@ -464,7 +464,7 @@ public final class Grafo implements Geometria {
      * quedan fuera, y una cadena cerrada de menos de tres aristas se deja como está. Opt-in e idempotente; llámala
      * después de {@link #relajar()} si quieres que las uniones también entren.
      * <p>
-     * Límite medido (estudio_trenza_aleatoria.md, 200 semillas de puntos aleatorios): con giros muy cerrados, y sobre
+     * Límite medido (incubator/estudio_union/estudio_trenza_aleatoria.md, 200 semillas de puntos aleatorios): con giros muy cerrados, y sobre
      * todo con nodos donde la ruta se invierte casi 180°, la spline concentra la curvatura y puede aumentar las aristas
      * cuya envolvente se pliega (2,4 veces más que con los tiradores automáticos). La silueta no se ve afectada; las
      * coordenadas (color y textura por bandas) pueden. Es una función de ayuda: comprueba con {@link #plegadas()} y

@@ -8,7 +8,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 /**
- * Caso de estudio (rama estudio_solapes, ver ESTUDIO_SOLAPES.md; no está en {@link Todas}). Regla híbrida de solape hecha a nivel
+ * Caso de estudio (rama estudio_solapes, ver incubator/estudio_pliegues_polar/ESTUDIO_SOLAPES.md; no está en {@link Todas}). Regla híbrida de solape hecha a nivel
  * de imagen: donde el píxel está plegado por curvatura (ver {@link EstudioEtiquetaCurvatura}) toma el color de PLANO y donde es
  * legítimo el de TRAZO. Dos variantes: corte duro y transición suave (smoothstep de 0.15 sobre |kappa|·distancia_normal - 1).
  * Cuenta los saltos de color > 100 entre vecinos de las matrices (d = 5 y 4) y deja hibrido_d4.png (S y ჲ con d = 4).

@@ -1,6 +1,6 @@
 package coordenadas;
 
-/** Caso de estudio (rama estudio_solapes, ver ESTUDIO_SOLAPES.md; no está en Todas). */
+/** Caso de estudio (rama estudio_solapes, ver incubator/estudio_pliegues_polar/ESTUDIO_SOLAPES.md; no está en Todas). */
 import forma.*;
 import java.util.ArrayList;
 import java.util.Collections;

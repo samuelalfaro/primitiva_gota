@@ -42,7 +42,7 @@ public enum Solape {
     },
 
     /**
-     * EXPERIMENTAL (rama de estudio, ver ESTUDIO_SOLAPES.md; no está en las suites de matriz). Como TRAZO, pero la capa
+     * EXPERIMENTAL (rama de estudio, ver incubator/estudio_pliegues_polar/ESTUDIO_SOLAPES.md; no está en las suites de matriz). Como TRAZO, pero la capa
      * superior no tapa a la inferior de golpe: su opacidad es el factor de mezcla de la mínima suave cuadrática de Quilez
      * entre las distancias con signo de las dos pasadas (a = la anterior, b = la nueva). Domina la pasada en la que el píxel
      * está más adentro y la transición dura 4K píxeles (K = 6 por defecto, -Dsolape.k=...).
