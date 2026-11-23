@@ -1,6 +1,7 @@
 package composicion;
 
 import color.Relleno;
+import coordenadas.Contorno;
 import coordenadas.Coordenadas;
 import coordenadas.Opciones;
 import forma.Gota;
@@ -13,7 +14,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 import java.util.List;
-import pintado.Trazos;
 
 /**
  * Una {@link Gota} con su {@link Relleno}: la gota sola solo guarda parámetros y no se puede pintar, esta sí.
@@ -46,12 +46,10 @@ public final class Pintada implements Geometria {
 
     @Override public Rectangle2D bounds() { return gota.bounds(); }
 
-    /** El contorno de la gota: los tramos de la silueta que dibuja el modo alambre. */
+    /** El contorno de la gota: los tramos de su silueta que dibuja el modo alambre. */
     @Override public Shape silueta() {
-        Path2D.Double p = new Path2D.Double(Path2D.WIND_NON_ZERO);
-        Trazos.Ajustes soloContorno = new Trazos.Ajustes(2, 160, false, false, false, false, false, true, false, false, false);
-        for (Trazos.Trazo t : Trazos.trazos(gota, soloContorno)) if (t.rol() == Trazos.Rol.CONTORNO) p.append(t.forma(), false);
-        return p;
+        Shape borde = Contorno.de(gota).borde();
+        return borde != null ? borde : new Path2D.Double();
     }
 
     @Override public String label() { return label; }
