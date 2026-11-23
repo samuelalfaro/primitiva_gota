@@ -1,4 +1,5 @@
-import composicion.Grafo;
+import pintado.Plotter;
+import geometria.composicion.Grafo;
 import color.Mezcla;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -28,7 +29,7 @@ public class RelajarDemo {
     static BufferedImage pinta(boolean relaja) {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), 0xFFF4F1EA);
-        cinta(relaja).render(im);
+        Plotter.raster(im).plot(cinta(relaja));
         return im;
     }
 

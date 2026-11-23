@@ -1,4 +1,4 @@
-import composicion.Grafo;
+import geometria.composicion.Grafo;
 import pintado.Plotter;
 import color.Mezcla;
 import color.Degradado;
@@ -12,7 +12,7 @@ import java.io.File;
 import javax.imageio.ImageIO;
 
 /**
- * Dibujo libre con las funciones de color de Composicion: un pez luchador (betta). El cuerpo lleva una paleta a lo
+ * Dibujo libre con las funciones de color de Grafo: un pez luchador (betta). El cuerpo lleva una paleta a lo
  * largo de la espina (Nodo.radio y Arista.espina) con el contorno iridiscente; las aletas son gotas de base ancha y
  * punta fina que se desvanecen hacia el borde (alfa en la función del radio). Escribe betta.png.
  */
@@ -107,17 +107,17 @@ public class Betta {
         for (int i = 0; i < n; i++) {
             double k = (double) i / (n - 1), fi = Math.toRadians(-66 + 132 * k);
             double d = 175 + 30 * Math.cos(fi * 1.3);
-            aleta(238, 272, 7, 238 - d * Math.cos(fi), 272 + d * Math.sin(fi), 40, -50, 120 * (k - 0.5) * 0.3,
-                  mezcla(rosa, vio, k), mezcla(vio, azul, k), 0.9).render(im);
+            Plotter.raster(im).plot(aleta(238, 272, 7, 238 - d * Math.cos(fi), 272 + d * Math.sin(fi), 40, -50, 120 * (k - 0.5) * 0.3,
+                  mezcla(rosa, vio, k), mezcla(vio, azul, k), 0.9));
         }
         // dorsal, anal y ventrales: base ancha, punta fina
-        aleta(420, 212, 26, 292, 96, 3, -20, -60, vio, rosa, 0.8).render(im);
-        aleta(445, 296, 26, 330, 420, 3, -10, 60, vio, rosa, 0.8).render(im);
-        aleta(505, 300, 10, 470, 460, 2, -6, 80, azul, rosa, 0.7).render(im);
-        aleta(545, 296, 8, 540, 450, 2, 10, 90, azul, vio, 0.7).render(im);
+        Plotter.raster(im).plot(aleta(420, 212, 26, 292, 96, 3, -20, -60, vio, rosa, 0.8));
+        Plotter.raster(im).plot(aleta(445, 296, 26, 330, 420, 3, -10, 60, vio, rosa, 0.8));
+        Plotter.raster(im).plot(aleta(505, 300, 10, 470, 460, 2, -6, 80, azul, rosa, 0.7));
+        Plotter.raster(im).plot(aleta(545, 296, 8, 540, 450, 2, 10, 90, azul, vio, 0.7));
         // pectoral
-        aleta(520, 270, 14, 480, 330, 2, -30, 20, azul, 0xFF9FD0FF, 0.9).render(im);
-        cuerpo().render(im);
+        Plotter.raster(im).plot(aleta(520, 270, 14, 480, 330, 2, -30, 20, azul, 0xFF9FD0FF, 0.9));
+        Plotter.raster(im).plot(cuerpo());
         ojo(im, 580, 246);
         return im;
     }

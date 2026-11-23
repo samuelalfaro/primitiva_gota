@@ -1,4 +1,5 @@
-import composicion.Grafo;
+import pintado.Plotter;
+import geometria.composicion.Grafo;
 import coordenadas.Solape;
 import color.Mezcla;
 import color.Degradado;
@@ -10,8 +11,8 @@ import java.io.File;
 import javax.imageio.ImageIO;
 
 /**
- * Y lobulada: un tallo (nodo 0 a M) y tres pétalos que salen de M y vuelven a M (M a Z_M), todo en una sola
- * Composicion. El nodo M tiene grado 7, así que el color va por funciones (Nodo.radio y Arista.espina), no por
+ * Y lobulada: un tallo (nodo 0 a M) y tres pétalos que salen de M y vuelven a M (M a Z_M), todo en un solo
+ * Grafo. El nodo M tiene grado 7, así que el color va por funciones (Nodo.radio y Arista.espina), no por
  * sectores. Cada pétalo recorre su lazo con un color que sale del de M, hace un viaje por su tono y vuelve. Escribe trebol.png.
  */
 public class Trebol {
@@ -60,7 +61,7 @@ public class Trebol {
     static BufferedImage pinta(Solape solape) {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), 0xFFF4F1EA);
-        trebol().render(im, Opciones.POR_DEFECTO.conSolape(solape));
+        Plotter.raster(im).plot(trebol(), Opciones.POR_DEFECTO.conSolape(solape));
         return im;
     }
 

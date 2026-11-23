@@ -1,4 +1,4 @@
-import composicion.Grafo;
+import geometria.composicion.Grafo;
 import pintado.Plotter;
 import coordenadas.Solape;
 import color.Mezcla;
@@ -202,7 +202,7 @@ public class PezAbisal {
         cadena(c, new double[] { 662, 714, 756 }, new double[] { 316, 350, 380 },
                     new double[] { 8, 5, 2 }, COLA, conAlfa(MEMBRANA, 0.5), true);
 
-        c.render(im, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
+        Plotter.raster(im).plot(c, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
 
         // ----- ojo, encima de todo (discos directos, como los del pulpo) -----
         disco(im, 322, 294, 12, OJO, oscuro(OJO, 0.30));
@@ -213,7 +213,7 @@ public class PezAbisal {
         return im;
     }
 
-    /** Disco pintado directo en el raster (solo para el ojo, fuera de la Composicion). */
+    /** Disco pintado directo en el raster (solo para el ojo, fuera del Grafo). */
     static void disco(BufferedImage im, double x, double y, double r, int centro, int borde) {
         java.awt.geom.Point2D.Double a = new java.awt.geom.Point2D.Double(x, y);
         java.awt.geom.Point2D.Double b = new java.awt.geom.Point2D.Double(x + 0.5, y);

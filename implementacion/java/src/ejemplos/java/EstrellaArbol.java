@@ -1,4 +1,5 @@
-import composicion.Grafo;
+import pintado.Plotter;
+import geometria.composicion.Grafo;
 import coordenadas.Solape;
 import color.Mezcla;
 import color.Degradado;
@@ -47,7 +48,7 @@ public class EstrellaArbol {
     static BufferedImage pinta(Grafo comp, boolean boton) {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), 0xFFF4F1EA);
-        comp.render(im, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
+        Plotter.raster(im).plot(comp, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
         if (boton) {
             Graphics2D g = im.createGraphics();
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);

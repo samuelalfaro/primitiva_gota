@@ -1,4 +1,4 @@
-import composicion.Grafo;
+import geometria.composicion.Grafo;
 import pintado.Plotter;
 import color.Mezcla;
 import color.Degradado;
@@ -13,7 +13,7 @@ import javax.imageio.ImageIO;
 
 /**
  * Lámina libre de Claude (tema elegido por Claude; la regla del repo es que cada autor firma su clase con
- * _by_Autor): un caballito de mar. Todo son gotas de una Composicion.
+ * _by_Autor): un caballito de mar. Todo son gotas de un Grafo.
  * <ul>
  * <li>El cuerpo es una sola cadena de nodos de la cabeza a la punta de la cola, que se enrosca en espiral:
  *     es el test de estrés de TRAZO (vueltas sucesivas que se solapan consigo mismas).</li>
@@ -113,15 +113,15 @@ public class Caballito_by_Claude {
         for (int i = 0; i < n; i++) {
             double k = (double) i / (n - 1);
             double y0 = 330 + 150 * k;
-            rayo(385, y0, 16, 495 + 30 * Math.sin(Math.PI * k), y0 - 18 + 30 * k, 9, 60, -10 + 30 * (k - 0.5),
-                 mezcla(oro, rojo, k), mezcla(rojo, 0xFFC03A5B, k), 0.95).render(im);
+            Plotter.raster(im).plot(rayo(385, y0, 16, 495 + 30 * Math.sin(Math.PI * k), y0 - 18 + 30 * k, 9, 60, -10 + 30 * (k - 0.5),
+                 mezcla(oro, rojo, k), mezcla(rojo, 0xFFC03A5B, k), 0.95));
         }
         // cresta de la cabeza: tres puntas
         for (int i = 0; i < 3; i++)
-            rayo(305 + 12 * i, 195, 10, 296 + 30 * i, 128 - 8 * (i == 1 ? 1 : 0), 3, 0, -30, oro, rojo, 0.9).render(im);
-        cuerpo().render(im);
+            Plotter.raster(im).plot(rayo(305 + 12 * i, 195, 10, 296 + 30 * i, 128 - 8 * (i == 1 ? 1 : 0), 3, 0, -30, oro, rojo, 0.9));
+        Plotter.raster(im).plot(cuerpo());
         // pectoral: pequeña aleta translúcida sobre el costado, detrás de la cabeza
-        rayo(338, 318, 12, 292, 352, 4, -25, 25, oro, 0xFFFFE9B0, 0.85).render(im);
+        Plotter.raster(im).plot(rayo(338, 318, 12, 292, 352, 4, -25, 25, oro, 0xFFFFE9B0, 0.85));
         // ojo
         disco(im, 282, 196, 12, 0xFFF3E9C8, 0xFFB07A22);
         disco(im, 283, 196, 7.5, 0xFF0A0A14, 0xFF0A0A14);

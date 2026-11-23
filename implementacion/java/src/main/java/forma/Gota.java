@@ -1,7 +1,6 @@
 package forma;
 
 import utils.Utils;
-import coordenadas.Coordenadas;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 
@@ -10,7 +9,7 @@ import java.awt.geom.Rectangle2D;
  *  - c(t): Bézier cúbica; sus extremos son los centros de los círculos.
  *  - r(t): cúbica de Bézier monótona de r1 a r2, definida por sus tangentes en los extremos (véase {@link Perfil}).
  * Un punto p pertenece a la envolvente si existe t con |p - c(t)|^2 - r(t)^2 <= 0. Ese polinomio (grado 6) se evalúa en base
- * de Bernstein en {@link Silueta.Envolvente}; la minimización de |p - c(t)| - r(t) está en {@link Camino} y las coordenadas en {@link Coordenadas}.
+ * de Bernstein en {@link Silueta.Envolvente}; la minimización de |p - c(t)| - r(t) está en {@link Camino} y las coordenadas en {@link coordenadas.Coordenadas}.
  */
 public final class Gota implements Camino {
 
@@ -35,8 +34,8 @@ public final class Gota implements Camino {
     /** La silueta rígida de la gota, o null si su trayectoria mide más de r1 + r2 (entonces la forma es la envolvente). */
     public Silueta silueta() { return silueta; }
     private volatile double[] largos;
-    /** Coordenadas intrínsecas de esta gota, una por combinación de costura y tira: las gestiona {@link Coordenadas#de}. */
-    private final java.util.concurrent.ConcurrentMap<Object, Coordenadas> coords = new java.util.concurrent.ConcurrentHashMap<>();
+    /** Memoria de cálculos derivados de esta gota (ver {@link Camino#cache()}). */
+    private final java.util.concurrent.ConcurrentMap<Object, Object> cache = new java.util.concurrent.ConcurrentHashMap<>();
 
     // ---------- Fábricas ----------
 
@@ -271,8 +270,7 @@ public final class Gota implements Camino {
         @Override public java.util.List<Camino.Hebra> hebras(double x, double y) { return java.util.List.of(); }
     };
 
-    /** Caché de coordenadas de esta gota (la usa {@link Coordenadas#de}). */
-    public java.util.concurrent.ConcurrentMap<Object, Coordenadas> cacheCoordenadas() { return coords; }
+    @Override public java.util.concurrent.ConcurrentMap<Object, Object> cache() { return cache; }
 
     @Override public int muestras() { return muestras; }
 

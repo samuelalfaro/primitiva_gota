@@ -1,4 +1,4 @@
-import composicion.Grafo;
+import geometria.composicion.Grafo;
 import pintado.Plotter;
 import coordenadas.Solape;
 import color.Mezcla;
@@ -125,7 +125,7 @@ public class Pulpo_by_Grok {
             tentaculo(c, bx, by, angs[i], largos[i], r0s[i], r1s[i], cols0[i], cols1[i], 9, onds[i]);
         }
 
-        c.render(im, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
+        Plotter.raster(im).plot(c, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
         // ojos encima (discos, sin forzar consistencia de Funciones)
         disco(im, cx - 36, cy - 8, 15, CREMA, mezcla(CREMA, OSCURO, 0.35));
         disco(im, cx - 34, cy - 6, 7, OSCURO, OSCURO);

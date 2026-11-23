@@ -1,4 +1,5 @@
-import composicion.Grafo;
+import pintado.Plotter;
+import geometria.composicion.Grafo;
 import coordenadas.Solape;
 import color.Mezcla;
 import coordenadas.Opciones;
@@ -9,7 +10,7 @@ import java.io.File;
 import javax.imageio.ImageIO;
 
 /**
- * Trébol (nudo de tres cruces) con {@link Composicion.Arista#altura}. Un círculo de nodos cerrado sobre sí mismo no
+ * Trébol (nudo de tres cruces) con {@link Grafo.Arista#altura}. Un círculo de nodos cerrado sobre sí mismo no
  * puede alternar por encima / por debajo con el orden del recorrido (TRAZO da U U U O O O); con z = -sin 3t en cada
  * arista, sí. Los nodos van separados más de r1+r2 (si no, la gota es rígida y recta: ver {@link Gota}). Escribe nudo_altura.png con dos paneles: TRAZO sin altura | TRAZO con altura.
  */
@@ -41,7 +42,7 @@ public class NudoAltura {
     static BufferedImage pinta(boolean conAltura) {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), 0xFFF4F1EA);
-        trebol(conAltura).render(im, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
+        Plotter.raster(im).plot(trebol(conAltura), Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
         return im;
     }
 

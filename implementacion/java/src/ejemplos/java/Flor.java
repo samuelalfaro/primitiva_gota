@@ -1,4 +1,4 @@
-import composicion.Grafo;
+import geometria.composicion.Grafo;
 import pintado.Plotter;
 import color.Mezcla;
 import color.Colores;
@@ -9,7 +9,7 @@ import java.awt.image.DataBufferInt;
 import java.io.File;
 import javax.imageio.ImageIO;
 
-/** Una flor con tallo y una hoja, dibujada solo con la API de Composicion (sin tocar la primitiva). */
+/** Una flor con tallo y una hoja, dibujada solo con la API de Grafo (sin tocar la primitiva). */
 public class Flor {
     static final int W = 500, H = 700, FONDO = 0xFFF4F1EA;
 
@@ -62,10 +62,10 @@ public class Flor {
         java.util.Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), FONDO);
         // la hoja nace en el nudo del tallo, sube a la derecha, y se pinta antes que el tallo para que éste tape su base
         Grafo hoja = Hoja.limbo(new Hoja.Tr(246, 505, Math.toRadians(-48), 0.34), 3.6);
-        hoja.render(im);
-        Hoja.venas(hoja, 1.0, 0.55).render(im);
-        tallo().render(im);
-        flor(rPetalo).render(im);
+        Plotter.raster(im).plot(hoja);
+        Plotter.raster(im).plot(Hoja.venas(hoja, 1.0, 0.55));
+        Plotter.raster(im).plot(tallo());
+        Plotter.raster(im).plot(flor(rPetalo));
         corazon(im);
         return im;
     }

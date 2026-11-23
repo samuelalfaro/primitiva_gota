@@ -1,6 +1,5 @@
-package composicion;
+package geometria.composicion;
 
-import pintado.Plotter;
 import coordenadas.Solape;
 import color.Relleno;
 import color.Mezcla;
@@ -14,9 +13,12 @@ import coordenadas.Tira;
 import coordenadas.Coordenadas;
 import forma.Perfil;
 import forma.Gota;
+import geometria.Geometria;
+import geometria.Tinta;
+import java.awt.Shape;
+import java.awt.geom.Area;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
-import java.awt.image.BufferedImage;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,6 +28,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Consumer;
 import java.util.function.DoubleUnaryOperator;
 
 /**
@@ -59,7 +64,7 @@ import java.util.function.DoubleUnaryOperator;
  *       entre ramas. Las puntas son la media de los colores de los lados: no hay color de extremo.</li>
  * </ul>
  */
-public final class Grafo {
+public final class Grafo implements Geometria {
 
     // ---------- Modelo ----------
 
@@ -217,6 +222,9 @@ public final class Grafo {
     private Mezcla mezcla = Mezcla.LCH;
     private boolean ajustaPendientes = true;
     private Reparto reparto = Reparto.GLOBAL;
+    private Texturas.Textura textura;          // null: color lateral de los nodos
+    private Combinacion.Modo modo;             // null con textura: la textura sola (REPLACE)
+    private int entorno = 0xFF000000;          // color de entorno de BLEND
 
     // Resultado de construir (se rehace tras cualquier cambio).
     private List<Gota> gotas;
@@ -228,6 +236,10 @@ public final class Grafo {
     private double[] sTotal;              // s máxima de cada componente
     private List<Relleno> rellenos;
     private Rectangle2D.Double bounds;
+    private String label;
+    private double altura = 0;
+    /** Lo que el pintado calcula por opciones (opciones por gota y rellenos ligados a ellas); se descarta al modificar. */
+    private final ConcurrentMap<Opciones, Prep> preps = new ConcurrentHashMap<>();
 
     // ---------- Construcción ----------
 
@@ -261,6 +273,41 @@ public final class Grafo {
     /** Mezcla de color (por defecto LCH). Ojo: el arco corto del tono puede dejar un salto con tonos opuestos. */
     public Grafo mezcla(Mezcla m) { mezcla = Objects.requireNonNull(m, "mezcla"); invalida(); return this; }
 
+    /**
+     * Pinta con una textura en lugar del color lateral: cada arista es una tira (u a lo ancho, v a lo largo, tapas de
+     * semidisco). El color lo pone, como en el color lateral, la gota de menor ρ en cada píxel, así que las tapas de los
+     * nodos compartidos desaparecen y solo quedan las de los extremos libres. Se queda configurada hasta {@link #sinTextura()}.
+     */
+    public Grafo textura(Texturas.Textura tex) {
+        textura = Objects.requireNonNull(tex, "textura"); modo = null; preps.clear(); return this;
+    }
+
+    /**
+     * Textura combinada en una sola pasada con el color lateral de cada gota (Cf), al estilo de glTexEnv
+     * ({@link Combinacion.Modo}). La gota que manda en cada píxel es la misma que con el color solo y la cobertura del borde se
+     * aplica una vez. Con REPLACE da lo mismo que {@link #textura(Texturas.Textura)}.
+     */
+    public Grafo textura(Texturas.Textura tex, Combinacion.Modo m) { return textura(tex, m, 0xFF000000); }
+
+    /** Igual, con el color de entorno Ce de BLEND (su alfa se ignora). */
+    public Grafo textura(Texturas.Textura tex, Combinacion.Modo m, int entorno) {
+        textura = Objects.requireNonNull(tex, "textura"); modo = Objects.requireNonNull(m, "modo"); this.entorno = entorno;
+        preps.clear();
+        return this;
+    }
+
+    /** Vuelve al color lateral de los nodos. */
+    public Grafo sinTextura() { textura = null; modo = null; preps.clear(); return this; }
+
+    /** Los rellenos con los que se pinta: los laterales, o la textura (sola o combinada con ellos). */
+    private List<Relleno> rellenosPintado() {
+        if (textura == null) return rellenos;
+        List<Relleno> rs = new ArrayList<>();
+        for (int i = 0; i < gotas.size(); i++)
+            rs.add(modo == null ? Texturas.tira(textura) : Combinacion.combinar(rellenos.get(i), Texturas.tira(textura), modo, entorno));
+        return rs;
+    }
+
     /** Igualar la pendiente del radio en las uniones (por defecto sí). */
 
     public Grafo ajustarPendientes(boolean si) { ajustaPendientes = si; invalida(); return this; }
@@ -288,15 +335,74 @@ public final class Grafo {
     public List<Nodo> nodos() { return Collections.unmodifiableList(nodos); }
     public List<Arista> aristas() { return Collections.unmodifiableList(aristas); }
 
-    private void invalida() { gotas = null; rellenos = null; bounds = null; invertida = null; }
+    private void invalida() { gotas = null; rellenos = null; bounds = null; invertida = null; preps.clear(); }
 
     // ---------- Consulta ----------
 
     public List<Gota> gotas() { construye(); return Collections.unmodifiableList(gotas); }
 
+    @Override public List<Gota> caminos() { return gotas(); }
+
     public Gota gota(Arista e) { construye(); return gotas.get(e.id); }
 
-    public Rectangle2D bounds() { construye(); return (Rectangle2D) bounds.clone(); }
+    /**
+     * Rectángulo que contiene todo lo que se pinta: la unión de los límites de las gotas, ensanchada por el
+     * {@link #suavizado(double) suavizado}, que extiende la unión más allá de ellas.
+     */
+    @Override public Rectangle2D bounds() {
+        construye();
+        return new Rectangle2D.Double(bounds.getMinX() - suaviza, bounds.getMinY() - suaviza,
+                bounds.getWidth() + 2 * suaviza, bounds.getHeight() + 2 * suaviza);
+    }
+
+    /** Contorno de la unión dura de las gotas (el suavizado solo afecta al pintado y a la sdf). */
+    @Override public Shape silueta() {
+        construye();
+        Area a = new Area();
+        for (Gota g : gotas) a.add(new Area(Pintada.de(g, Relleno.solido(0)).silueta()));
+        return a;
+    }
+
+    @Override public String label() { return label; }
+
+    /** Metadato de depuración. */
+    public Grafo label(String label) { this.label = label; return this; }
+
+    @Override public double altura() { return altura; }
+
+    /** Nivel de esta composición respecto a otras geometrías de un grupo (por defecto 0). No es la altura de las aristas. */
+    public Grafo altura(double altura) {
+        if (!Double.isFinite(altura)) throw new IllegalArgumentException("altura no válida");
+        this.altura = altura;
+        return this;
+    }
+
+    /**
+     * Una capa por píxel: la gota que manda, con el color lateral de los nodos y la cobertura de la unión. Es lo que pinta
+     * {@code Plotter.plot(grafo, op)}, con la {@link #textura(Texturas.Textura) textura} si la hay.
+     */
+    @Override public void capas(double x, double y, Opciones op, Consumer<Tinta> out) {
+        construye();
+        final Prep pr = preps.computeIfAbsent(op, o -> prepara(rellenosPintado(), o));
+        double[] ev = evalua(x, y, op, pr.ops());
+        if (ev[1] < 0) return;
+        final int k = (int) ev[1];
+        out.accept(new Tinta(pr.rel().get(k).argb(Coordenadas.punto(gotas.get(k), x, y, pr.ops()[k])), ev[0], altura));
+    }
+
+    /** Opciones de cada gota y relleno de cada gota ligado a ellas, para unas opciones de pintado. */
+    private record Prep(Opciones[] ops, List<Relleno> rel) {}
+
+    private Prep prepara(List<Relleno> rellenos, Opciones op) {
+        final List<Relleno> rel = new ArrayList<>();
+        final Opciones[] ops = new Opciones[gotas.size()];
+        for (int i = 0; i < gotas.size(); i++) {
+            Cortes k = cortesDe(i, op);
+            ops[i] = reparto == Reparto.GLOBAL ? op.conTira(Tira.fija(k.c1(), k.c3())) : op;    // GLOBAL: v corre por toda la composición
+            rel.add(rellenos.get(i).para(gotas.get(i), ops[i]));
+        }
+        return new Prep(ops, rel);
+    }
 
     /** Pertenencia exacta a la unión dura (el suavizado solo afecta al pintado y a la sdf). */
     public boolean contiene(double x, double y) {
@@ -514,83 +620,6 @@ public final class Grafo {
         return unit(m.x - n.x, m.y - n.y);
     }
 
-    // ---------- Pintado ----------
-
-    /** Pinta la composición sobre dst (TYPE_INT_ARGB) con antialiasing y composición alfa, con el color lateral de los nodos. */
-    public void render(BufferedImage dst) { render(dst, Opciones.POR_DEFECTO); }
-
-    /** Igual, con las opciones de pintado dadas (costura de la tira y solape). */
-    public void render(BufferedImage dst, Opciones op) {
-        Objects.requireNonNull(op, "opciones");
-        construye();
-        pinta(dst, rellenos, op);
-    }
-
-    /**
-     * Pinta la composición con una textura: cada arista es una tira (u a lo ancho, v a lo largo, tapas de semidisco).
-     * El color lo pone, como en el color lateral, la gota de menor ρ en cada píxel, así que las tapas de los nodos
-     * compartidos desaparecen y solo quedan las de los extremos libres.
-     */
-    public void render(BufferedImage dst, Texturas.Textura tex) { render(dst, tex, Opciones.POR_DEFECTO); }
-
-    /** Igual, con las opciones de pintado dadas. */
-    public void render(BufferedImage dst, Texturas.Textura tex, Opciones op) {
-        Objects.requireNonNull(tex, "textura");
-        Objects.requireNonNull(op, "opciones");
-        construye();
-        List<Relleno> rs = new ArrayList<>();
-        for (int i = 0; i < gotas.size(); i++) rs.add(Texturas.tira(tex));
-        pinta(dst, rs, op);
-    }
-
-    /**
-     * Pinta la composición combinando en una sola pasada el color lateral de cada gota (Cf) con la textura (Ct), al estilo de
-     * glTexEnv ({@link ComposicionColor.Modo}). La gota que manda en cada píxel es la misma que con el color solo, y la cobertura del
-     * borde se aplica una vez (dos pasadas, color y luego textura con alfa, equivalen como mucho a DECAL y la cobertura se aplica dos veces).
-     * Con REPLACE da lo mismo que {@link #render(BufferedImage, Texturas.Textura, Opciones)}.
-     */
-    public void render(BufferedImage dst, Texturas.Textura tex, Combinacion.Modo modo) {
-        render(dst, tex, modo, Opciones.POR_DEFECTO);
-    }
-
-    /** Igual, con las opciones de pintado dadas. */
-    public void render(BufferedImage dst, Texturas.Textura tex, Combinacion.Modo modo, Opciones op) {
-        render(dst, tex, modo, 0xFF000000, op);
-    }
-
-    /** Igual, con el color de entorno Ce de BLEND (su alfa se ignora). */
-    public void render(BufferedImage dst, Texturas.Textura tex, Combinacion.Modo modo, int entorno, Opciones op) {
-        Objects.requireNonNull(tex, "textura");
-        Objects.requireNonNull(modo, "modo");
-        Objects.requireNonNull(op, "opciones");
-        construye();
-        List<Relleno> rs = new ArrayList<>();
-        for (int i = 0; i < gotas.size(); i++) rs.add(Combinacion.combinar(rellenos.get(i), Texturas.tira(tex), modo, entorno));
-        pinta(dst, rs, op);
-    }
-
-    private void pinta(BufferedImage dst, List<Relleno> rellenos, Opciones op) {
-        final Plotter.Raster raster = new Plotter.Raster(dst);
-        final double marg = 2 + suaviza;
-        final Plotter.Raster.Zona z = raster.zona(bounds.getMinX(), bounds.getMaxX(), bounds.getMinY(), bounds.getMaxY(), marg);
-        if (z == null) return;
-        final List<Relleno> rel = new ArrayList<>();
-        final Opciones[] ops = new Opciones[gotas.size()];
-        for (int i = 0; i < gotas.size(); i++) {
-            Cortes k = cortesDe(i, op);
-            ops[i] = reparto == Reparto.GLOBAL ? op.conTira(Tira.fija(k.c1(), k.c3())) : op;    // GLOBAL: v corre por toda la composición
-            rel.add(rellenos.get(i).para(gotas.get(i), ops[i]));
-        }
-        raster.recorre(z, (i, j) -> {
-            double x = i + 0.5, y = j + 0.5;
-            double[] ev = evalua(x, y, op, ops);
-            if (ev[1] < 0) return;
-            Gota g = gotas.get((int) ev[1]);
-            int c = rel.get((int) ev[1]).argb(Coordenadas.punto(g, x, y, ops[(int) ev[1]]));
-            raster.set(i, j, sobre(raster.get(i, j), c, ev[0]));
-        });
-    }
-
     // ---------- Orden del recorrido ----------
 
     /** Un paso del recorrido: la arista se recorre desde un nodo hasta otro; es de árbol si llega a un nodo nuevo y de cierre si llega a uno ya recorrido. */
@@ -743,19 +772,6 @@ public final class Grafo {
             if (rho < rmin) { rmin = rho; mejor = k; }
         }
         return new double[] { cob, mejor };
-    }
-
-    /** fg con cobertura a sobre dst (ARGB no premultiplicado). */
-    private static int sobre(int dst, int fg, double a) {
-        double fa = ((fg >>> 24) / 255.0) * a, da = (dst >>> 24) / 255.0;
-        double oa = fa + da * (1 - fa);
-        if (oa <= 0) return 0;
-        int r = (int) Math.round(oa * 255) << 24;
-        for (int s = 16; s >= 0; s -= 8) {
-            double c = (((fg >> s) & 255) * fa + ((dst >> s) & 255) * da * (1 - fa)) / oa;
-            r |= (int) Math.round(c) << s;
-        }
-        return r;
     }
 
     private static double[] unit(double x, double y) {

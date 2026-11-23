@@ -33,7 +33,7 @@ public interface Tira {
 
     /**
      * Cortes dados, independientes de la geometría, con v lineal en la longitud de arco dentro del cuerpo. Los usa
-     * {@link Composicion} para que v corra por toda la composición y no se reinicie en cada gota.
+     * {@code Grafo} para que v corra por toda la composición y no se reinicie en cada gota.
      */
     static Tira fija(double c1, double c3) { return new Fija(new Cortes(c1, c3, true)); }
 

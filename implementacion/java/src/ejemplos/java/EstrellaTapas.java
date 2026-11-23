@@ -1,5 +1,6 @@
-import composicion.ComposicionPruebas;
-import composicion.Grafo;
+import pintado.Plotter;
+import geometria.composicion.GrafoPruebas;
+import geometria.composicion.Grafo;
 import color.Mezcla;
 import color.Texturas;
 import java.awt.image.BufferedImage;
@@ -15,22 +16,22 @@ public class EstrellaTapas {
         int W = 440, H = 400, FONDO = 0xFFF4F1EA;
         Texturas.Textura tex = Texturas.referencia();
         Grafo[] col = {
-                ComposicionPruebas.estrella(0).mezcla(Mezcla.RGB),
-                ComposicionPruebas.estrella(18).mezcla(Mezcla.LCH),
-                ComposicionPruebas.cadena().mezcla(Mezcla.RGB_LINEAL) };
-        Grafo[] txt = { ComposicionPruebas.estrella(0), ComposicionPruebas.cadena() };
+                GrafoPruebas.estrella(0).mezcla(Mezcla.RGB),
+                GrafoPruebas.estrella(18).mezcla(Mezcla.LCH),
+                GrafoPruebas.cadena().mezcla(Mezcla.RGB_LINEAL) };
+        Grafo[] txt = { GrafoPruebas.estrella(0), GrafoPruebas.cadena() };
         BufferedImage out = new BufferedImage(W * 3, H * 2, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(datos(out), FONDO);
         for (int c = 0; c < 3; c++) {
             BufferedImage p = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
             java.util.Arrays.fill(datos(p), FONDO);
-            col[c].render(p);
+            Plotter.raster(p).plot(col[c]);
             out.getGraphics().drawImage(p, c * W, 0, null);
         }
         for (int c = 0; c < 2; c++) {
             BufferedImage p = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
             java.util.Arrays.fill(datos(p), FONDO);
-            txt[c].render(p, tex);
+            Plotter.raster(p).plot(txt[c].textura(tex));
             out.getGraphics().drawImage(p, c * W, H, null);
         }
         ImageIO.write(out, "png", new File("estrella_tapas.png"));

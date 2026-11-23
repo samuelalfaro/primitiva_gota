@@ -1,4 +1,5 @@
-import composicion.Grafo;
+import pintado.Plotter;
+import geometria.composicion.Grafo;
 import color.Mezcla;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
@@ -7,9 +8,9 @@ import java.util.Random;
 import javax.imageio.ImageIO;
 
 /**
- * Árbol paramétrico construido con la API de Composicion.
+ * Árbol paramétrico construido con la API de Grafo.
  *
- * El generador decide la estructura vegetal; Gota y Composicion
+ * El generador decide la estructura vegetal; Gota y Grafo
  * se ocupan de representar las ramas.
  *
  * Las bifurcaciones comparten el nodo de nacimiento. No se intenta
@@ -81,7 +82,7 @@ public final class ArbolParametrico {
         double radioFin = Math.max(0.8, radio * p.reduccionRadio);
         Grafo.Nodo fin = nodo(xFin, yFin, radioFin, nivel + 1);
 
-        // Tiradores automáticos: la geometría de la curva pertenece a Composicion.
+        // Tiradores automáticos: la geometría de la curva pertenece a Grafo.
         composicion.arista(origen, fin)
                 .espina(t -> mezcla(color(nivel), color(nivel + 1), t));
 
@@ -124,7 +125,7 @@ public final class ArbolParametrico {
                 .getDataBuffer()).getData();
         java.util.Arrays.fill(pixeles, FONDO);
 
-        crear(p).render(imagen);
+        Plotter.raster(imagen).plot(crear(p));
         return imagen;
     }
 

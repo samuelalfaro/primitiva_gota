@@ -1,4 +1,5 @@
-import composicion.Grafo;
+import pintado.Plotter;
+import geometria.composicion.Grafo;
 import coordenadas.Solape;
 import color.Mezcla;
 import color.Degradado;
@@ -9,7 +10,7 @@ import java.io.File;
 import javax.imageio.ImageIO;
 
 /**
- * Colores de Composicion con funciones programáticas: Nodo.radio (de centro a contorno) y Arista.espina (a lo largo).
+ * Colores de Grafo con funciones programáticas: Nodo.radio (de centro a contorno) y Arista.espina (a lo largo).
  * Cuatro paneles: arcoíris con paleta coseno (Íñigo Quilez), rayas con senos, tubo con brillo y pulso con escalones.
  * Escribe funciones_demo.png en el directorio actual.
  */
@@ -69,7 +70,7 @@ public class FuncionesDemo {
             if (prev != null) c.arista(prev, nd).espina(pn.espina((double) (i - 1) / (n - 1), t));
             prev = nd;
         }
-        c.render(im, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
+        Plotter.raster(im).plot(c, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
         return im;
     }
 

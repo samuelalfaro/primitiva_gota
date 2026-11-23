@@ -1,4 +1,5 @@
-import composicion.Grafo;
+import pintado.Plotter;
+import geometria.composicion.Grafo;
 import coordenadas.Solape;
 import color.Mezcla;
 import coordenadas.Opciones;
@@ -95,7 +96,7 @@ public class Escarabajo_by_Gemini {
         c.arista(ojoInf, ojoInf)
             .tiradores(new Gota.Vec(0, 0), new Gota.Vec(0, 0));
 
-        c.render(im, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
+        Plotter.raster(im).plot(c, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
         return im;
     }
 

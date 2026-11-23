@@ -1,4 +1,4 @@
-import composicion.Grafo;
+import geometria.composicion.Grafo;
 import pintado.Plotter;
 import color.Mezcla;
 import color.Degradado;
@@ -52,7 +52,7 @@ public class Pluma {
         var a = c.nodo(p[0], p[1], 3.6).centro(base).radio(fade(base, 0.9));
         var b = c.nodo(qx, qy, 1.5).centro(punta).radio(fade(punta, 0.9));
         c.arista(a, b).tiradores(new Gota.Vec(N[0] * L * 0.45 + T[0] * L * 0.2, N[1] * L * 0.45 + T[1] * L * 0.2), null);
-        c.render(im);
+        Plotter.raster(im).plot(c);
     }
 
     // ---------- el ojo: anillos por la función del radio ----------
@@ -100,7 +100,7 @@ public class Pluma {
             if (prev != null) c.arista(prev, nd);
             prev = nd;
         }
-        c.render(im);
+        Plotter.raster(im).plot(c);
         return im;
     }
 

@@ -1,4 +1,5 @@
-import composicion.Grafo;
+import pintado.Plotter;
+import geometria.composicion.Grafo;
 import coordenadas.Solape;
 import color.Mezcla;
 import color.Degradado;
@@ -12,7 +13,7 @@ import java.io.File;
 import javax.imageio.ImageIO;
 
 /**
- * Malva: cinco pétalos que salen del centro M y vuelven a él (nodo de grado 10), en una sola Composicion. Los pétalos
+ * Malva: cinco pétalos que salen del centro M y vuelven a él (nodo de grado 10), en un solo Grafo. Los pétalos
  * se solapan entre sí como en la flor real. Escribe malva.png con tres paneles: PLANO, TRAZO y TRAZO con un botón
  * dibujado encima de M (un adorno del ejemplo, no una regla de la composición: tapa las uniones como salgan).
  */
@@ -57,7 +58,7 @@ public class Malva {
     static BufferedImage pinta(Solape solape, boolean boton) {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), 0xFFF4F1EA);
-        malva().render(im, Opciones.POR_DEFECTO.conSolape(solape));
+        Plotter.raster(im).plot(malva(), Opciones.POR_DEFECTO.conSolape(solape));
         if (boton) {
             Graphics2D g = im.createGraphics();
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);

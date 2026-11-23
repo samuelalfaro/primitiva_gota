@@ -1,5 +1,6 @@
-package composicion;
+package geometria.composicion;
 
+import pintado.Plotter;
 import coordenadas.Solape;
 import color.Mezcla;
 import color.Texturas;
@@ -23,7 +24,7 @@ import javax.imageio.ImageIO;
  * Pruebas de la composición: (1) las tres composiciones construidas con la API; (2) reglas y errores de la API; (3) geometría (discos de los nodos, tapas elípticas exactas,
  * anillo de dos nodos, quiebros); (4) coherencia de contiene/sdf y del suavizado; (5) invalidación al modificar.
  */
-public class ComposicionPruebas {
+public class GrafoPruebas {
     static int pruebas = 0, fallos = 0;
 
     static void comprueba(String n, boolean ok, String d) {
@@ -85,7 +86,7 @@ public class ComposicionPruebas {
         BufferedImage img = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         int[] d = ((DataBufferInt) img.getRaster().getDataBuffer()).getData();
         java.util.Arrays.fill(d, FONDO);
-        c.render(img);
+        Plotter.raster(img).plot(c);
         return img;
     }
 
@@ -234,9 +235,21 @@ public class ComposicionPruebas {
         return (c >>> 24) < 200 ? -1 : (c >> 16) & 255;
     }
 
+    /** Pinta con la textura y deja el grafo como estaba (sin textura). */
+    public static void pintaConTextura(Grafo c, BufferedImage im, Texturas.Textura tex, Opciones op) {
+        Plotter.raster(im).plot(c.textura(tex), op);
+        c.sinTextura();
+    }
+
+    /** Igual, combinada con el color lateral. */
+    public static void pintaConTextura(Grafo c, BufferedImage im, Texturas.Textura tex, Combinacion.Modo modo, Opciones op) {
+        Plotter.raster(im).plot(c.textura(tex, modo), op);
+        c.sinTextura();
+    }
+
     static BufferedImage conV(Grafo c, Opciones op) {
         BufferedImage img = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
-        c.render(img, V_ROJO, op);
+        pintaConTextura(c, img, V_ROJO, op);
         return img;
     }
 
@@ -279,8 +292,8 @@ public class ComposicionPruebas {
         comprueba("reparto POR_GOTA: la v pintada salta en los nodos (se reinicia en cada arista)", sg > 60, "salto " + sg);
         comprueba("reparto POR_GOTA: el orden (s) es el mismo", Math.abs(pg.orden(pg.nodos().get(3)) - ch.orden(ch.nodos().get(3))) < 1e-9, "");
         BufferedImage imGc = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB), imG0 = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
-        pg.render(imGc);
-        ch.render(imG0);
+        Plotter.raster(imGc).plot(pg);
+        Plotter.raster(imG0).plot(ch);
         int difMax = 0;
         for (int py = 0; py < H; py++) for (int px = 0; px < W; px++) {
             int c1 = imGc.getRGB(px, py), c2 = imG0.getRGB(px, py);
@@ -350,7 +363,7 @@ public class ComposicionPruebas {
         comprueba("8 (dos pétalos en el nodo 0): los dos pétalos terminan con un cierre Z0", cierres && o.orden(n0) == 0, "");
         boolean sinError = true;
         try {
-            for (Solape sl : Solape.values()) { BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB); o.render(im, V_ROJO, op.conSolape(sl)); }
+            for (Solape sl : Solape.values()) { BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB); pintaConTextura(o, im, V_ROJO, op.conSolape(sl)); }
         } catch (RuntimeException ex) { sinError = false; }
         comprueba("8: se pinta con PLANO y con TRAZO", sinError, "");
 
@@ -367,8 +380,8 @@ public class ComposicionPruebas {
         Cortes kx0 = x.cortes(ex0, op), kx2 = x.cortes(ex2, op);
         Opciones ox0 = op.conTira(Tira.fija(kx0.c1(), kx0.c3())), ox2 = op.conTira(Tira.fija(kx2.c1(), kx2.c3()));
         BufferedImage ixT = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB), ixP = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
-        x.render(ixT, V_ROJO, op.conSolape(Solape.TRAZO));
-        x.render(ixP, V_ROJO, op.conSolape(Solape.PLANO));
+        pintaConTextura(x, ixT, V_ROJO, op.conSolape(Solape.TRAZO));
+        pintaConTextura(x, ixP, V_ROJO, op.conSolape(Solape.PLANO));
         int pruebas = 0, aciertos = 0, distintos = 0;
         for (int py = 0; py < H; py += 3)
             for (int px = 0; px < W; px += 3) {
@@ -410,7 +423,7 @@ public class ComposicionPruebas {
     }
 
     static void funcionesColor() {
-        Mezcla m = Mezcla.LCH;                                  // la de Composicion por defecto
+        Mezcla m = Mezcla.LCH;                                  // la de Grafo por defecto
         BufferedImage base = pinta(trio(false, e -> {}));
         BufferedImage conFunciones = pinta(trio(false, e -> e.espina(Degradado.entre(FA, FB, m))));
         comprueba("la espina lineal explícita da lo mismo que sin ella", difMax(base, conFunciones) <= 1,
@@ -599,33 +612,33 @@ public class ComposicionPruebas {
     static void opciones() {
         Grafo c = cadena();
         BufferedImage a = lienzo(), b = lienzo();
-        c.render(a);
-        c.render(b, Opciones.POR_DEFECTO);
+        Plotter.raster(a).plot(c);
+        Plotter.raster(b).plot(c, Opciones.POR_DEFECTO);
         comprueba("render(dst) == render(dst, Opciones.POR_DEFECTO)", java.util.Arrays.equals(datos(a), datos(b)), "");
 
         Texturas.Textura tex = Texturas.referenciaLados();
         BufferedImage e = lienzo(), o = lienzo();
-        c.render(e, tex, Opciones.POR_DEFECTO);
-        c.render(o, tex, Opciones.POR_DEFECTO.conCostura(Costura.ORTOGONAL));
+        pintaConTextura(c, e, tex, Opciones.POR_DEFECTO);
+        pintaConTextura(c, o, tex, Opciones.POR_DEFECTO.conCostura(Costura.ORTOGONAL));
         int[] de = datos(e), dor = datos(o);
         int difs = 0;
         for (int i = 0; i < de.length; i++) if (de[i] != dor[i]) difs++;
         comprueba("la costura de las opciones llega a la composición con textura (ESPIGA != ORTOGONAL)", difs > 100, difs + " píxeles distintos");
 
         BufferedImage t = lienzo();
-        c.render(t, tex, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
+        pintaConTextura(c, t, tex, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
         comprueba("la composición se renderiza con solape TRAZO", datos(t) != null && !java.util.Arrays.equals(datos(t), datos(lienzo())), "");
-        comprueba("opciones nulas: NullPointerException", lanza(NullPointerException.class, () -> c.render(lienzo(), (Opciones) null)), "");
+        comprueba("opciones nulas: NullPointerException", lanza(NullPointerException.class, () -> Plotter.raster(lienzo()).plot(c, (Opciones) null)), "");
 
         colorYTextura(c, tex);
     }
 
-    /** Color y textura en una sola pasada (ComposicionColor.Modo). */
+    /** Color y textura en una sola pasada (Combinacion.Modo). */
     static void colorYTextura(Grafo c, Texturas.Textura tex) {
         Opciones op = Opciones.POR_DEFECTO;
         BufferedImage r = lienzo(), t = lienzo();
-        c.render(r, tex, Combinacion.Modo.REPLACE, op);
-        c.render(t, tex, op);
+        pintaConTextura(c, r, tex, Combinacion.Modo.REPLACE, op);
+        pintaConTextura(c, t, tex, op);
         comprueba("render(tex, REPLACE) == render(tex)", java.util.Arrays.equals(datos(r), datos(t)), "");
 
         Texturas.Textura blanca = new Texturas.Textura() {
@@ -633,8 +646,8 @@ public class ComposicionPruebas {
             @Override public int muestrea(double u, double v) { return 0xFFFFFFFF; }
         };
         BufferedImage m = lienzo(), solo = lienzo();
-        c.render(m, blanca, Combinacion.Modo.MODULATE, op);
-        c.render(solo, op);
+        pintaConTextura(c, m, blanca, Combinacion.Modo.MODULATE, op);
+        Plotter.raster(solo).plot(c, op);
         int difs = 0;
         for (int i = 0; i < datos(m).length; i++) if (datos(m)[i] != datos(solo)[i]) difs++;
         comprueba("MODULATE con textura blanca == color solo", difs == 0, difs + " píxeles distintos");
@@ -644,15 +657,15 @@ public class ComposicionPruebas {
             @Override public int muestrea(double u, double v) { return 0x00FFFFFF; }
         };
         BufferedImage d = lienzo();
-        c.render(d, clara, Combinacion.Modo.DECAL, op);
+        pintaConTextura(c, d, clara, Combinacion.Modo.DECAL, op);
         difs = 0;
         for (int i = 0; i < datos(d).length; i++) if (datos(d)[i] != datos(solo)[i]) difs++;
         comprueba("DECAL con textura transparente == color solo", difs == 0, difs + " píxeles distintos");
 
         BufferedImage mod = lienzo();
-        c.render(mod, tex, Combinacion.Modo.MODULATE, op);
+        pintaConTextura(c, mod, tex, Combinacion.Modo.MODULATE, op);
         comprueba("MODULATE con la referencia != REPLACE", !java.util.Arrays.equals(datos(mod), datos(r)), "");
-        comprueba("modo nulo: NullPointerException", lanza(NullPointerException.class, () -> c.render(lienzo(), tex, (Combinacion.Modo) null, op)), "");
+        comprueba("modo nulo: NullPointerException", lanza(NullPointerException.class, () -> c.textura(tex, null)), "");
     }
 
     // ---------- altura de las aristas ----------
@@ -670,7 +683,7 @@ public class ComposicionPruebas {
 
     static boolean rojoEncima(Grafo c) {
         BufferedImage im = lienzo();
-        c.render(im, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
+        Plotter.raster(im).plot(c, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
         int p = datos(im)[210 * W + 210];
         return ((p >> 16) & 255) > (p & 255);
     }
@@ -685,7 +698,7 @@ public class ComposicionPruebas {
         var n0 = c.nodo(60, 60, 10); var n1 = c.nodo(200, 80, 10); var n2 = c.nodo(340, 60, 10);
         c.arista(n0, n1).altura(x -> 0);
         c.arista(n1, n2).altura(x -> 1);
-        comprueba("altura: alturas distintas en un nodo compartido: IllegalArgumentException", lanza(IllegalArgumentException.class, () -> c.render(lienzo())), "");
+        comprueba("altura: alturas distintas en un nodo compartido: IllegalArgumentException", lanza(IllegalArgumentException.class, () -> Plotter.raster(lienzo()).plot(c)), "");
         comprueba("altura: nula: NullPointerException", lanza(NullPointerException.class, () -> c.arista(n0, n2).altura(null)), "");
     }
 
@@ -818,7 +831,7 @@ public class ComposicionPruebas {
 
     static BufferedImage pintaEn(Grafo c) {
         BufferedImage im = lienzo();
-        c.render(im);
+        Plotter.raster(im).plot(c);
         return im;
     }
 

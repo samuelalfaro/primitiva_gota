@@ -1,4 +1,4 @@
-import composicion.Grafo;
+import geometria.composicion.Grafo;
 import pintado.Plotter;
 import color.Mezcla;
 import color.Texturas;
@@ -11,7 +11,7 @@ import java.awt.image.DataBufferInt;
 import java.io.File;
 import javax.imageio.ImageIO;
 
-/** Dibujo libre solo con la API de Composicion: un pez (y el océano, una sola gota enorme) con aletas, escamas (textura con alfa), ojo, burbujas y algas. */
+/** Dibujo libre solo con la API de Grafo: un pez (y el océano, una sola gota enorme) con aletas, escamas (textura con alfa), ojo, burbujas y algas. */
 public class Pez {
     static final int W = 700, H = 440;
 
@@ -94,24 +94,24 @@ public class Pez {
     static BufferedImage dibuja() {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         agua(im);
-        alga(70, 440, 190, 22, 0xFF2E7D32, 0xFF9CCC65).render(im);
-        alga(115, 445, 130, -16, 0xFF1B5E20, 0xFF7CB342).render(im);
-        alga(610, 445, 160, 20, 0xFF2E7D32, 0xFF9CCC65).render(im);
+        Plotter.raster(im).plot(alga(70, 440, 190, 22, 0xFF2E7D32, 0xFF9CCC65));
+        Plotter.raster(im).plot(alga(115, 445, 130, -16, 0xFF1B5E20, 0xFF7CB342));
+        Plotter.raster(im).plot(alga(610, 445, 160, 20, 0xFF2E7D32, 0xFF9CCC65));
         for (double[] b : new double[][] { { 600, 160, 9 }, { 622, 118, 6 }, { 606, 82, 4 }, { 640, 50, 3 } })
             disco(im, b[0], b[1], b[2], 0xFFEAF9FF, 0xFFA7E1F0);
-        cola().render(im);
-        aleta(385, 200, 36, 318, 104, 3.5, -10, -50, 1.0).render(im);               // dorsal
-        aleta(415, 282, 26, 372, 358, 3, -6, 30, 1.0).render(im);                // ventral
+        Plotter.raster(im).plot(cola());
+        Plotter.raster(im).plot(aleta(385, 200, 36, 318, 104, 3.5, -10, -50, 1.0));               // dorsal
+        Plotter.raster(im).plot(aleta(415, 282, 26, 372, 358, 3, -6, 30, 1.0));                // ventral
         Grafo cuerpo = cuerpo();
-        cuerpo.render(im);
-        cuerpo.render(im, ESCAMAS);
-        aleta(486, 270, 17, 420, 330, 3, -25, 14, 1.0).render(im);               // pectoral
+        Plotter.raster(im).plot(cuerpo);
+        Plotter.raster(im).plot(cuerpo.textura(ESCAMAS));
+        Plotter.raster(im).plot(aleta(486, 270, 17, 420, 330, 3, -25, 14, 1.0));               // pectoral
         // agalla
         Grafo ag = new Grafo();
         var g0 = ag.nodo(522, 205, 2.2).color(OSC);
         var g1 = ag.nodo(516, 272, 2.2).color(OSC);
         ag.arista(g0, g1).tiradores(new Gota.Vec(-26, 18), null);
-        ag.render(im);
+        Plotter.raster(im).plot(ag);
         // ojo
         disco(im, 552, 226, 11, 0xFFFFFFFF, 0xFFE0E0E0);
         disco(im, 555, 226, 6, 0xFF222222, 0xFF000000);

@@ -5,6 +5,7 @@ import color.Relleno;
 import coordenadas.Opciones;
 import coordenadas.Coordenadas;
 import forma.Gota;
+import geometria.Geometria;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.awt.image.SinglePixelPackedSampleModel;
@@ -14,7 +15,7 @@ import java.util.stream.IntStream;
 /**
  * Dibuja una gota en algún sitio: {@code plotter.plot(gota, relleno, opciones)}. Cada plotter es una forma distinta de hacerlo:
  * {@link #raster(BufferedImage)} la rasteriza en una imagen con antialiasing y composición alfa; el modo alambre y la exportación
- * a SVG serían otros plotters. La gota solo guarda sus parámetros: la máscara está en {@link Silueta}, las coordenadas en
+ * a SVG serían otros plotters. La gota solo guarda sus parámetros: la máscara está en {@code Silueta}, las coordenadas en
  * {@link Coordenadas} y el color en {@link Relleno}; el plotter los ensambla.
  *
  * <p>{@link PlotterAlambre} y {@link PlotterSvg} siguen la convención (prefijo {@code Plotter} y verbo {@code plot}) sin
@@ -24,6 +25,15 @@ public interface Plotter {
 
     /** Dibuja la gota con el relleno y las opciones dadas. */
     void plot(Gota g, Relleno relleno, Opciones op);
+
+    /**
+     * Dibuja una geometría: por cada píxel de su {@link Geometria#bounds()} (con un margen de 2 píxeles para el
+     * antialiasing) compone, de abajo a arriba y en orden de altura, las capas que ella entrega.
+     */
+    void plot(Geometria g, Opciones op);
+
+    /** Igual, con las opciones por defecto. */
+    default void plot(Geometria g) { plot(g, Opciones.POR_DEFECTO); }
 
     /** Dibuja la gota con las opciones por defecto. */
     default void plot(Gota g, Relleno relleno) { plot(g, relleno, Opciones.POR_DEFECTO); }
@@ -37,10 +47,10 @@ public interface Plotter {
         private final int stride, base, ancho, alto;
 
         /** Zona de píxeles a recorrer: [x0, x1) x [y0, y1). */
-        public record Zona(int x0, int x1, int y0, int y1) {}
+        record Zona(int x0, int x1, int y0, int y1) {}
 
         /** Lo que se hace en cada píxel (i, j) de una zona. */
-        public interface Celda { void pinta(int i, int j); }
+        interface Celda { void pinta(int i, int j); }
 
         public Raster(BufferedImage dst) {
             if (dst.getType() != BufferedImage.TYPE_INT_ARGB)
@@ -58,22 +68,22 @@ public interface Plotter {
         }
 
         /** La parte de la imagen que cubre el rectángulo (con un margen), o null si queda fuera. */
-        public Zona zona(double minX, double maxX, double minY, double maxY, double margen) {
+        Zona zona(double minX, double maxX, double minY, double maxY, double margen) {
             int x0 = Math.max(0, (int) Math.floor(minX - margen)), x1 = Math.min(ancho, (int) Math.ceil(maxX + margen));
             int y0 = Math.max(0, (int) Math.floor(minY - margen)), y1 = Math.min(alto, (int) Math.ceil(maxY + margen));
             return x0 >= x1 || y0 >= y1 ? null : new Zona(x0, x1, y0, y1);
         }
 
         /** Recorre la zona repartiendo las filas en paralelo; cada celda solo debe escribir su píxel. */
-        public void recorre(Zona z, Celda celda) {
+        void recorre(Zona z, Celda celda) {
             IntStream.range(z.y0(), z.y1()).parallel().forEach(j -> {
                 for (int i = z.x0(); i < z.x1(); i++) celda.pinta(i, j);
             });
         }
 
-        public int get(int i, int j) { return datos[base + j * stride + i]; }
+        int get(int i, int j) { return datos[base + j * stride + i]; }
 
-        public void set(int i, int j, int argb) { datos[base + j * stride + i] = argb; }
+        void set(int i, int j, int argb) { datos[base + j * stride + i] = argb; }
 
         @Override public void plot(Gota g, Relleno relleno, Opciones op) {
             final Rectangle2DView b = new Rectangle2DView(g.bounds());
@@ -84,6 +94,16 @@ public interface Plotter {
             final Coordenadas coord = Coordenadas.de(g, op);
             recorre(z, (i, j) -> solape.capas(g, coord, i + 0.5, j + 0.5,
                     capa -> set(i, j, componer(get(i, j), rel.argb(capa.punto()), capa.cobertura()))));
+        }
+
+        @Override public void plot(Geometria g, Opciones op) {
+            java.util.Objects.requireNonNull(g, "geometria");
+            java.util.Objects.requireNonNull(op, "opciones");
+            final java.awt.geom.Rectangle2D b = g.bounds();
+            final Zona z = zona(b.getMinX(), b.getMaxX(), b.getMinY(), b.getMaxY(), 2);
+            if (z == null) return;
+            recorre(z, (i, j) -> g.capas(i + 0.5, j + 0.5, op,
+                    t -> set(i, j, componer(get(i, j), t.argb(), t.cobertura()))));
         }
 
         /** Composición alfa src-over, no premultiplicada: src con su cobertura sobre dst. */

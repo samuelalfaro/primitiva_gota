@@ -1,4 +1,4 @@
-import composicion.Grafo;
+import geometria.composicion.Grafo;
 import pintado.Plotter;
 import color.Mezcla;
 import color.Colores;
@@ -13,7 +13,7 @@ import javax.imageio.ImageIO;
 /**
  * Ballena – Versión 1 (primer intento)
  * Composiciones independientes para cada parte.
- * Aprendizaje: API básica de Composicion, lados vs sectores, tiradores.
+ * Aprendizaje: API básica de Grafo, lados vs sectores, tiradores.
  */
 public class BallenaV1 {
     static final int W = 900, H = 600;
@@ -44,33 +44,33 @@ public class BallenaV1 {
         cuerpo.arista(c1, c2).tiradores(new Gota.Vec(65, 5), new Gota.Vec(-60, -2));
         cuerpo.arista(c2, c3).tiradores(new Gota.Vec(55, -3), new Gota.Vec(-50, 5));
         cuerpo.arista(c3, cabeza).tiradores(new Gota.Vec(50, 8), new Gota.Vec(-35, -8));
-        cuerpo.render(im);
+        Plotter.raster(im).plot(cuerpo);
 
         // Flukes independientes
         Grafo flukeSup = new Grafo().suavizado(1.8);
         var fs1 = flukeSup.nodo(185, 325, 24).centro(CENTRO).sectores(LADO1);
         var fs2 = flukeSup.nodo(95, 245, 13).centro(CENTRO).sectores(LADO1);
         flukeSup.arista(fs1, fs2).tiradores(new Gota.Vec(-35, -45), new Gota.Vec(25, 18));
-        flukeSup.render(im);
+        Plotter.raster(im).plot(flukeSup);
 
         Grafo flukeInf = new Grafo().suavizado(1.8);
         var fi1 = flukeInf.nodo(185, 365, 22).centro(CENTRO).sectores(LADO1);
         var fi2 = flukeInf.nodo(100, 430, 12).centro(CENTRO).sectores(LADO1);
         flukeInf.arista(fi1, fi2).tiradores(new Gota.Vec(-30, 40), new Gota.Vec(20, -12));
-        flukeInf.render(im);
+        Plotter.raster(im).plot(flukeInf);
 
         // Aletas independientes
         Grafo dorsal = new Grafo().suavizado(1.4);
         var d1 = dorsal.nodo(435, 238, 14).centro(CENTRO).sectores(LADO1);
         var d2 = dorsal.nodo(460, 180, 8).centro(CENTRO).sectores(LADO1);
         dorsal.arista(d1, d2).tiradores(new Gota.Vec(8, -35), new Gota.Vec(-8, 18));
-        dorsal.render(im);
+        Plotter.raster(im).plot(dorsal);
 
         Grafo pectoral = new Grafo().suavizado(1.6);
         var p1 = pectoral.nodo(525, 360, 20).centro(CENTRO).sectores(LADO1);
         var p2 = pectoral.nodo(490, 445, 13).centro(CENTRO).sectores(LADO1);
         pectoral.arista(p1, p2).tiradores(new Gota.Vec(-18, 45), new Gota.Vec(12, -18));
-        pectoral.render(im);
+        Plotter.raster(im).plot(pectoral);
 
         // Ojo
         Point2D.Double oe = new Point2D.Double(645, 278);
@@ -85,7 +85,7 @@ public class BallenaV1 {
         var b1 = boca.nodo(695, 330, 5).color(LADO1);
         var b2 = boca.nodo(730, 342, 3.5).color(LADO1);
         boca.arista(b1, b2).tiradores(new Gota.Vec(18, 6), new Gota.Vec(-12, 0));
-        boca.render(im);
+        Plotter.raster(im).plot(boca);
 
         System.out.printf("BallenaV1 render: %.2f s%n", (System.nanoTime() - t0) / 1e9);
         ImageIO.write(im, "png", new File("ballena_v1.png"));

@@ -1,4 +1,5 @@
-import composicion.Grafo;
+import pintado.Plotter;
+import geometria.composicion.Grafo;
 import coordenadas.Solape;
 import color.Mezcla;
 import color.Degradado;
@@ -99,7 +100,7 @@ public class Ochos {
     static BufferedImage pinta(Grafo c, Solape s) {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), 0xFFF4F1EA);
-        c.render(im, Opciones.POR_DEFECTO.conSolape(s));
+        Plotter.raster(im).plot(c, Opciones.POR_DEFECTO.conSolape(s));
         return im;
     }
 

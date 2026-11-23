@@ -7,7 +7,7 @@ import java.util.Objects;
 
 /**
  * Composición de rellenos al estilo de glTexEnv: combina un relleno de color (Cf) con otro de textura (Ct) o con cualquier otro relleno. No
- * confundir con {@link Composicion}, que es la composición topológica de gotas.
+ * confundir con {@code Grafo}, que es la composición topológica de gotas.
  */
 public final class Combinacion {
 

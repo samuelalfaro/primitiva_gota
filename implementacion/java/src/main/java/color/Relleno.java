@@ -8,7 +8,7 @@ import forma.Gota;
 /**
  * Cómo se colorea un píxel de una {@link Gota}: recibe el {@link Punto} y devuelve un color ARGB. El punto calcula su
  * muestra y sus coordenadas de textura solo si el relleno las pide. Las fábricas están en {@link Colores} (por color)
- * y {@link Texturas} (por textura); {@link ComposicionColor} combina dos rellenos.
+ * y {@link Texturas} (por textura); {@link Combinacion} combina dos rellenos.
  */
 @FunctionalInterface
 public interface Relleno {

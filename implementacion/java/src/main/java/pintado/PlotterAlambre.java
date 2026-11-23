@@ -1,14 +1,15 @@
 package pintado;
 
 import forma.Gota;
+import geometria.Geometria;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.Objects;
 
 /**
- * Dibuja una gota en modo alambre. API propia, separada de {@link Plotter}: no usa {@link Relleno} ni
- * {@link Costura}; las opciones son las de {@link Trazos.Ajustes}.
+ * Dibuja una gota en modo alambre. API propia, separada de {@link Plotter}: no usa {@link color.Relleno} ni
+ * {@link coordenadas.Costura}; las opciones son las de {@link Trazos.Ajustes}.
  *
  * <p>Uso típico:
  * <pre>{@code
@@ -76,6 +77,36 @@ public final class PlotterAlambre {
             Trazos.render(gi, trazos);
         } finally {
             gi.dispose();
+        }
+    }
+
+    /** Dibuja el alambre de todas las gotas de la geometría (un grupo, un grafo...) con los ajustes de este plotter. */
+    public void plot(Geometria geometria) {
+        plot(geometria, ajustes);
+    }
+
+    /** Dibuja el alambre de todas las gotas de la geometría con los ajustes indicados, cada una con su transformación. */
+    public void plot(Geometria geometria, Trazos.Ajustes aj) {
+        Objects.requireNonNull(geometria, "geometria");
+        Objects.requireNonNull(aj, "ajustes");
+        Graphics2D gi = dst == null ? g : dst.createGraphics();
+        try {
+            geometria.recorre((camino, t) -> {
+                List<Trazos.Trazo> trazos = Trazos.trazos(camino, aj);
+                if (t.isIdentity()) {
+                    Trazos.render(gi, trazos);
+                    return;
+                }
+                java.awt.geom.AffineTransform previa = gi.getTransform();
+                gi.transform(t);
+                try {
+                    Trazos.render(gi, trazos);
+                } finally {
+                    gi.setTransform(previa);
+                }
+            });
+        } finally {
+            if (dst != null) gi.dispose();
         }
     }
 

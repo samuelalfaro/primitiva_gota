@@ -316,14 +316,14 @@ public class GotaCadena {
         // longitud de arco: en el camino recto con velocidad constante fraccion(t) = t; en una curva con tiradores desiguales es creciente y no lineal
         boolean lin = true;
         for (int i = 0; i <= 10; i++) lin &= Math.abs(g.fraccion(i / 10.0) - i / 10.0) < 1e-3;
-        comprueba("Geometria.fraccion: camino recto uniforme da fraccion(t) = t", lin && g.fraccion(0) == 0 && Math.abs(g.fraccion(1) - 1) < 1e-12, "");
+        comprueba("Camino.fraccion: camino recto uniforme da fraccion(t) = t", lin && g.fraccion(0) == 0 && Math.abs(g.fraccion(1) - 1) < 1e-12, "");
         Gota gc = Gota.curva(p(60.5, 150.5), 30, new Gota.Vec(150, 0), p(240.5, 150.5), 30, new Gota.Vec(10, 0), Perfil.radioMedio(30, 0.5, 1));
         boolean crece = true, noLin = false;
         for (int i = 1; i <= 100; i++) {
             crece &= gc.fraccion(i / 100.0) > gc.fraccion((i - 1) / 100.0);
             noLin |= Math.abs(gc.fraccion(i / 100.0) - i / 100.0) > 0.05;
         }
-        comprueba("Geometria.fraccion: creciente de 0 a 1 y distinta de t con tiradores desiguales", crece && noLin && Math.abs(gc.fraccion(1) - 1) < 1e-12, "");
+        comprueba("Camino.fraccion: creciente de 0 a 1 y distinta de t con tiradores desiguales", crece && noLin && Math.abs(gc.fraccion(1) - 1) < 1e-12, "");
         Cortes cl = Tira.porLongitud(Tira.POR_DEFECTO).cortes(gc);
         comprueba("Tira.porLongitud: mismos c1 y c3 y marca porLongitud", cl.porLongitud() && cl.c1() == 0.25 && cl.c3() == 0.75
                   && !Tira.POR_DEFECTO.cortes(gc).porLongitud(), "");

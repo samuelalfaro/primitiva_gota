@@ -1,4 +1,4 @@
-import composicion.Grafo;
+import geometria.composicion.Grafo;
 import pintado.Plotter;
 import color.Mezcla;
 import color.Degradado;
@@ -85,7 +85,7 @@ public class Medusa {
             }
             prev = nd;
         }
-        c.render(im);
+        Plotter.raster(im).plot(c);
     }
 
     // ---------- campana ----------
@@ -134,7 +134,7 @@ public class Medusa {
             int punta = conAlfa(col, 0.6);
             var b = nodo(c, x + 5 * k * Math.sin(t * 6), y + 26 * k, 1.5 * k, punta, lado(punta, 0.95));
             c.arista(a, b).espina(s -> mezcla(col, punta, s));
-            c.render(im);
+            Plotter.raster(im).plot(c);
         }
     }
 
@@ -230,15 +230,15 @@ public class Medusa {
         for (double x0 = cx - 4 * paso; x0 <= cx + 4.1 * paso; x0 += paso) {
             double t = (x0 - (cx - 4 * paso)) / (8 * paso);
             double y0 = cy - 14 * k - 12 * k * Math.sin(Math.PI * t);
-            tentacula(x0, y0, (210 + 90 * Math.sin(Math.PI * t)) * k, fase + 1.9 * t,
-                mezcla(CIAN, VIOLETA_CLARO, t), VIOLETA_CLARO, k * (0.8 + 0.4 * Math.sin(Math.PI * t))).render(im);
+            Plotter.raster(im).plot(tentacula(x0, y0, (210 + 90 * Math.sin(Math.PI * t)) * k, fase + 1.9 * t,
+                mezcla(CIAN, VIOLETA_CLARO, t), VIOLETA_CLARO, k * (0.8 + 0.4 * Math.sin(Math.PI * t))));
         }
         luzCampana(im, cx, cy, rc);
-        campana(cx, cy, rc).render(im);
+        Plotter.raster(im).plot(campana(cx, cy, rc));
         flecos(im, cx, cy, rc);
         if (k > 0.8) {
-            brazo(cx - 16, cy + 64, 210, 0.6, -1).render(im);
-            brazo(cx + 16, cy + 64, 230, 2.2, 1).render(im);
+            Plotter.raster(im).plot(brazo(cx - 16, cy + 64, 210, 0.6, -1));
+            Plotter.raster(im).plot(brazo(cx + 16, cy + 64, 230, 2.2, 1));
         }
     }
 

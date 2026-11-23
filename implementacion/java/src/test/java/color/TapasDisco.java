@@ -1,7 +1,7 @@
 package color;
 
-import composicion.ComposicionPruebas;
-import composicion.Grafo;
+import geometria.composicion.GrafoPruebas;
+import geometria.composicion.Grafo;
 import pintado.Plotter;
 import color.Relleno;
 import color.Mezcla;
@@ -267,14 +267,14 @@ public class TapasDisco {
     // ---------- Composición ----------
 
     static void composicion() throws Exception {
-        Grafo[] cs = { ComposicionPruebas.cadena(), ComposicionPruebas.estrella(0) };
+        Grafo[] cs = { GrafoPruebas.cadena(), GrafoPruebas.estrella(0) };
         int W = 440, H = 400, FONDO = 0xFFF4F1EA;
         BufferedImage out = new BufferedImage(W * 2, H, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(datos(out), FONDO);
         for (int c = 0; c < 2; c++) {
             BufferedImage panel = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
             java.util.Arrays.fill(datos(panel), FONDO);
-            cs[c].render(panel);
+            Plotter.raster(panel).plot(cs[c]);
             out.getGraphics().drawImage(panel, c * W, 0, null);
         }
         // textura sobre la composición: misma silueta que con color (la gota de menor rho manda en cada píxel)
@@ -282,8 +282,8 @@ public class TapasDisco {
         Texturas.Textura tex = (u, v) -> 0xFF000000 | ((int) (255 * Math.min(1, Math.max(0, u))) << 8);
         for (int c = 0; c < 2; c++) {
             BufferedImage a = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB), b = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
-            cs[c].render(a);
-            cs[c].render(b, tex);
+            Plotter.raster(a).plot(cs[c]);
+            geometria.composicion.GrafoPruebas.pintaConTextura(cs[c], b, tex, Opciones.POR_DEFECTO);
             int[] da = datos(a), db = datos(b);
             int difAlfa = 0, pintados = 0;
             for (int k = 0; k < da.length; k++) {
@@ -294,7 +294,7 @@ public class TapasDisco {
                     difAlfa == 0 && pintados > 1000, "píxeles " + pintados + ", alfa distinta " + difAlfa);
         }
         boolean lanza = false;
-        try { cs[0].render(new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB), (Texturas.Textura) null); } catch (NullPointerException e) { lanza = true; }
+        try { cs[0].textura(null); } catch (NullPointerException e) { lanza = true; }
         comprueba("composición: render con textura null se rechaza", lanza, "");
         ImageIO.write(out, "png", new File("tapas_disco.png"));
         comprueba("composición: cadena y estrella se renderizan con tapas de semidisco (tapas_disco.png)", true, "");

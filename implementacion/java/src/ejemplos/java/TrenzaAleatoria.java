@@ -1,4 +1,5 @@
-import composicion.Grafo;
+import pintado.Plotter;
+import geometria.composicion.Grafo;
 import coordenadas.Solape;
 import color.Mezcla;
 import coordenadas.Opciones;
@@ -16,7 +17,7 @@ import java.util.Random;
 import javax.imageio.ImageIO;
 
 /**
- * Prueba de fuego de {@link Grafo#alisar()} y {@link Composicion.Arista#altura}: una única composición cerrada
+ * Prueba de fuego de {@link Grafo#alisar()} y {@link Grafo.Arista#altura}: una única composición cerrada
  * de puntos, radios y colores aleatorios (semilla fija, replicable), con muchos cruces de la cinta consigo misma.
  * <ul>
  * <li>A: por defecto (tiradores automáticos, TRAZO).</li>
@@ -168,7 +169,7 @@ public class TrenzaAleatoria {
     static BufferedImage pinta(Grafo c) {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), FONDO);
-        c.render(im, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
+        Plotter.raster(im).plot(c, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
         return im;
     }
 

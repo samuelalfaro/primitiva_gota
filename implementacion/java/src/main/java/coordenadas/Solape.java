@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Cómo se resuelve lo que pasa donde el camino de una {@link Gota} se cruza consigo mismo o los círculos se solapan:
+ * Cómo se resuelve lo que pasa donde el camino de una {@link forma.Gota} se cruza consigo mismo o los círculos se solapan:
  * dado un píxel, el solape produce las capas que se pintan, de la de abajo a la de arriba. Es independiente de la
  * {@link Costura} (que dice cómo se reparten las coordenadas) y de la forma (la silueta es la misma en los dos).
  * La diferencia se ve con colores translúcidos y con texturas: PLANO pinta la unión una sola vez y TRAZO acumula una

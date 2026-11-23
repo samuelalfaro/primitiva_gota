@@ -4,8 +4,8 @@ package coordenadas;
 import coordenadas.Coordenadas;
 
 /**
- * Un punto del plano visto desde una {@link Gota}: da, solo cuando se piden, su muestra (t, rho, axial, lateral) y sus
- * coordenadas de textura (u, v). Un {@link Relleno} recibe el punto y consulta lo que necesita: un color sólido no
+ * Un punto del plano visto desde una {@link forma.Gota}: da, solo cuando se piden, su muestra (t, rho, axial, lateral) y sus
+ * coordenadas de textura (u, v). Un {@link color.Relleno} recibe el punto y consulta lo que necesita: un color sólido no
  * calcula nada, un degradado pide la muestra y una textura pide las coordenadas.
  */
 public interface Punto {
