@@ -5,7 +5,7 @@ Experimento opt-in: `-Dgota.rigidaCurva=true` (margen `-Dgota.rigidaCurvaMargen`
 ## Motivo
 Una cinta hecha con muchos nodos cercanos (cuerdas <= r1 + r2) se compone de gotas rígidas: espina recta, tiradores
 ignorados, contorno facetado con quiebros de hasta 18° en los nodos (trébol de 60 nodos, r = 17: 18 gotas rígidas).
-`Composicion.rigidas()` las lista.
+`Grafo.rigidas()` las lista.
 
 ## Criterio
 Una gota rígida se trata como la envolvente de su curva (la de siempre para d > r1 + r2) solo si no hay pliegue en
@@ -21,7 +21,7 @@ todo el camino: kappa * r < margen, |r'| / |c'| < margen, y centros distintos. S
 | polígono cerrado de 8 nodos, r = 30, cuerdas ~40 (giros cerrados) | 8 de 8 | 8 de 8 (el criterio las mantiene rígidas) |
 
 - Desalineo máximo de tangentes en nodos (trébol N = 60): 17,96° -> 0,002°.
-- Suites: GotaRegresion y GotaCadena sin cambios; ComposicionPruebas falla 1 con el experimento activo, la que cuenta
+- Suites: GotaRegresion y GotaCadena sin cambios; GrafoPruebas falla 1 con el experimento activo, la que cuenta
   rígidas esperando el comportamiento por defecto (esperado).
 - Imágenes: `estudio_rigida_trebol.png` (rígida | curvada), `estudio_rigida_octogono.png` (los dos iguales).
 
