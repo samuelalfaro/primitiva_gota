@@ -19,7 +19,8 @@ public class Todas {
     static final String[][] NIVELES = {
          // Lógica y matemática, sin referencias que comparar: segundos.
         {"unitarias",
-          "composicion.ComposicionPruebas"
+          "common.ArquitecturaPruebas"
+         ,"composicion.ComposicionPruebas"
          ,"composicion.PintadaPruebas"
          ,"composicion.GrafoGeometriaPruebas"
          ,"composicion.GrupoPruebas"},
