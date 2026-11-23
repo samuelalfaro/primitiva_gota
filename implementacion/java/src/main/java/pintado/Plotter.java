@@ -47,10 +47,10 @@ public interface Plotter {
         private final int stride, base, ancho, alto;
 
         /** Zona de píxeles a recorrer: [x0, x1) x [y0, y1). */
-        public record Zona(int x0, int x1, int y0, int y1) {}
+        record Zona(int x0, int x1, int y0, int y1) {}
 
         /** Lo que se hace en cada píxel (i, j) de una zona. */
-        public interface Celda { void pinta(int i, int j); }
+        interface Celda { void pinta(int i, int j); }
 
         public Raster(BufferedImage dst) {
             if (dst.getType() != BufferedImage.TYPE_INT_ARGB)
@@ -68,22 +68,22 @@ public interface Plotter {
         }
 
         /** La parte de la imagen que cubre el rectángulo (con un margen), o null si queda fuera. */
-        public Zona zona(double minX, double maxX, double minY, double maxY, double margen) {
+        Zona zona(double minX, double maxX, double minY, double maxY, double margen) {
             int x0 = Math.max(0, (int) Math.floor(minX - margen)), x1 = Math.min(ancho, (int) Math.ceil(maxX + margen));
             int y0 = Math.max(0, (int) Math.floor(minY - margen)), y1 = Math.min(alto, (int) Math.ceil(maxY + margen));
             return x0 >= x1 || y0 >= y1 ? null : new Zona(x0, x1, y0, y1);
         }
 
         /** Recorre la zona repartiendo las filas en paralelo; cada celda solo debe escribir su píxel. */
-        public void recorre(Zona z, Celda celda) {
+        void recorre(Zona z, Celda celda) {
             IntStream.range(z.y0(), z.y1()).parallel().forEach(j -> {
                 for (int i = z.x0(); i < z.x1(); i++) celda.pinta(i, j);
             });
         }
 
-        public int get(int i, int j) { return datos[base + j * stride + i]; }
+        int get(int i, int j) { return datos[base + j * stride + i]; }
 
-        public void set(int i, int j, int argb) { datos[base + j * stride + i] = argb; }
+        void set(int i, int j, int argb) { datos[base + j * stride + i] = argb; }
 
         @Override public void plot(Gota g, Relleno relleno, Opciones op) {
             final Rectangle2DView b = new Rectangle2DView(g.bounds());

@@ -30,7 +30,7 @@ import java.awt.geom.Point2D;
  * La formulación cubre todo el rango de d, también los círculos contenidos uno en otro y los concéntricos: los ángulos salen de la
  * misma energía y, en los casos medidos, siempre con conector ELIPSE; el biarco queda de respaldo. Con dos círculos idénticos y d = 0, psi = 45° (la X).
  */
-public final class Silueta {
+final class Silueta {
     /** Radio mínimo, relativo a r1 + r2, con el que se sustituye un radio nulo (el área converge ya con 1e-4 y es estable hasta 1e-9). */
     static final double EPS_RADIO = 1e-6;
 
