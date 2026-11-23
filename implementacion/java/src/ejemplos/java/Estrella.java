@@ -1,3 +1,4 @@
+import pintado.Plotter;
 import composicion.Grafo;
 import coordenadas.Solape;
 import color.Mezcla;
@@ -65,7 +66,7 @@ public class Estrella {
     static BufferedImage pinta(Grafo comp) {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), 0xFFF4F1EA);
-        comp.render(im, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
+        Plotter.raster(im).plot(comp, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
         return im;
     }
 

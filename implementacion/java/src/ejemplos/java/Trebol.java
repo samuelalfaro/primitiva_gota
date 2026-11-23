@@ -1,3 +1,4 @@
+import pintado.Plotter;
 import composicion.Grafo;
 import coordenadas.Solape;
 import color.Mezcla;
@@ -60,7 +61,7 @@ public class Trebol {
     static BufferedImage pinta(Solape solape) {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), 0xFFF4F1EA);
-        trebol().render(im, Opciones.POR_DEFECTO.conSolape(solape));
+        Plotter.raster(im).plot(trebol(), Opciones.POR_DEFECTO.conSolape(solape));
         return im;
     }
 

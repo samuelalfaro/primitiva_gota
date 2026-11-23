@@ -72,14 +72,14 @@ public class Caracol {
         java.util.Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), FONDO);
         sol(im, 540, 215);
         Grafo hoja = Hoja.limbo(new Hoja.Tr(30, 440, Math.toRadians(-4), 0.9), 3.6);
-        hoja.render(im);
-        Hoja.venas(hoja, 1.0, 0.55).render(im);
-        cuerpo().render(im);
-        antena(458, 308, 484, 236, 4, -30).render(im);
-        antena(440, 306, 432, 232, -6, -30).render(im);
+        Plotter.raster(im).plot(hoja);
+        Plotter.raster(im).plot(Hoja.venas(hoja, 1.0, 0.55));
+        Plotter.raster(im).plot(cuerpo());
+        Plotter.raster(im).plot(antena(458, 308, 484, 236, 4, -30));
+        Plotter.raster(im).plot(antena(440, 306, 432, 232, -6, -30));
         Grafo concha = concha(300, 300);
-        concha.render(im);
-        concha.render(im, ESTRIAS);            // las estrías de crecimiento: líneas transversales al camino, con alfa, sobre el color
+        Plotter.raster(im).plot(concha);
+        Plotter.raster(im).plot(concha.textura(ESTRIAS));          // las estrías de crecimiento: líneas transversales al camino, con alfa, sobre el color
         // ojos
         for (double[] o : new double[][] { { 484, 236 }, { 432, 232 } }) {
             java.awt.geom.Point2D.Double a = new java.awt.geom.Point2D.Double(o[0] + 1, o[1] - 1), b = new java.awt.geom.Point2D.Double(o[0] + 1.5, o[1] - 1);

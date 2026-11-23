@@ -1,3 +1,4 @@
+import pintado.Plotter;
 import composicion.Grafo;
 import coordenadas.Solape;
 import color.Mezcla;
@@ -197,7 +198,7 @@ public class Verdolaga_by_Grok {
         flor(c, puntoRama(mid4[0], mid4[1], ang3 + Math.toRadians(25), 140, 1.0)[0],
                 puntoRama(mid4[0], mid4[1], ang3 + Math.toRadians(25), 140, 1.0)[1], 0.7);
 
-        c.render(im, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
+        Plotter.raster(im).plot(c, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
         return im;
     }
 

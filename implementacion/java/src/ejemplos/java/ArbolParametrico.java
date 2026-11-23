@@ -1,3 +1,4 @@
+import pintado.Plotter;
 import composicion.Grafo;
 import color.Mezcla;
 import java.awt.image.BufferedImage;
@@ -124,7 +125,7 @@ public final class ArbolParametrico {
                 .getDataBuffer()).getData();
         java.util.Arrays.fill(pixeles, FONDO);
 
-        crear(p).render(imagen);
+        Plotter.raster(imagen).plot(crear(p));
         return imagen;
     }
 

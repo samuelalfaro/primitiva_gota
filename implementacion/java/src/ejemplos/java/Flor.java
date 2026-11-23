@@ -62,10 +62,10 @@ public class Flor {
         java.util.Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), FONDO);
         // la hoja nace en el nudo del tallo, sube a la derecha, y se pinta antes que el tallo para que éste tape su base
         Grafo hoja = Hoja.limbo(new Hoja.Tr(246, 505, Math.toRadians(-48), 0.34), 3.6);
-        hoja.render(im);
-        Hoja.venas(hoja, 1.0, 0.55).render(im);
-        tallo().render(im);
-        flor(rPetalo).render(im);
+        Plotter.raster(im).plot(hoja);
+        Plotter.raster(im).plot(Hoja.venas(hoja, 1.0, 0.55));
+        Plotter.raster(im).plot(tallo());
+        Plotter.raster(im).plot(flor(rPetalo));
         corazon(im);
         return im;
     }

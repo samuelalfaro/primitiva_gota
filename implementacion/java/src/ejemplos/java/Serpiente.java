@@ -89,10 +89,10 @@ public class Serpiente {
         lengua.arista(l0, l1);
         lengua.arista(l1, l2);
         lengua.arista(l1, l3);
-        lengua.render(im);
+        Plotter.raster(im).plot(lengua);
         Grafo cu = cuerpo(n);
-        cu.render(im);
-        cu.render(im, ROMBOS);
+        Plotter.raster(im).plot(cu);
+        Plotter.raster(im).plot(cu.textura(ROMBOS));
         // ojos
         for (int s = -1; s <= 1; s += 2) {
             double ex = h[0] + ca * 4 - sa * 11 * s, ey = h[1] + sa * 4 + ca * 11 * s;

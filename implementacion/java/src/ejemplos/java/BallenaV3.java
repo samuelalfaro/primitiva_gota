@@ -76,7 +76,7 @@ public class BallenaV3 {
                 .centro(C_CUERPO).sectores(C_PUNTA);
         ballena.arista(anterior, pectoral).tiradores(new Gota.Vec(-25, 48), new Gota.Vec(12, -18));
 
-        ballena.render(im);
+        Plotter.raster(im).plot(ballena);
 
         // Ojo
         Point2D.Double oe  = new Point2D.Double(705, 278);
@@ -91,7 +91,7 @@ public class BallenaV3 {
         var b0 = boca.nodo(755, 335, 4.8).color(C_SOMBRA);
         var b1 = boca.nodo(798, 350, 3.4).color(C_SOMBRA);
         boca.arista(b0, b1).tiradores(new Gota.Vec(24, 9), new Gota.Vec(-15, 2));
-        boca.render(im);
+        Plotter.raster(im).plot(boca);
 
         // Chorro
         dibujarChorro(im, 730, 205);
@@ -106,16 +106,16 @@ public class BallenaV3 {
         var a = c.nodo(x, y, 5.8).color(agua);
         var b = c.nodo(x - 3, y - 100, 2.6).color(clara);
         c.arista(a, b).tiradores(new Gota.Vec(0, -38), new Gota.Vec(2, 16));
-        c.render(im);
+        Plotter.raster(im).plot(c);
         Grafo c2 = new Grafo().suavizado(0.9);
         var a2 = c2.nodo(x - 9, y + 6, 4.4).color(agua);
         var b2 = c2.nodo(x - 42, y - 82, 2.1).color(clara);
         c2.arista(a2, b2).tiradores(new Gota.Vec(-14, -32), new Gota.Vec(9, 14));
-        c2.render(im);
+        Plotter.raster(im).plot(c2);
         Grafo c3 = new Grafo().suavizado(0.9);
         var a3 = c3.nodo(x + 9, y + 6, 4.4).color(agua);
         var b3 = c3.nodo(x + 36, y - 80, 2.1).color(clara);
         c3.arista(a3, b3).tiradores(new Gota.Vec(14, -30), new Gota.Vec(-7, 13));
-        c3.render(im);
+        Plotter.raster(im).plot(c3);
     }
 }

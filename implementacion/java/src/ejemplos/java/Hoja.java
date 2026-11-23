@@ -1,3 +1,4 @@
+import pintado.Plotter;
 import composicion.Grafo;
 import forma.Gota;
 import java.awt.geom.Point2D;
@@ -85,8 +86,8 @@ public class Hoja {
         java.util.Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), FONDO);
         long t0 = System.nanoTime();
         Grafo l = limbo(Tr.identidad(), 6);
-        l.render(im);
-        venas(l, 2.4, 0.9).render(im);
+        Plotter.raster(im).plot(l);
+        Plotter.raster(im).plot(venas(l, 2.4, 0.9));
         System.out.printf("render: %.1f s%n", (System.nanoTime() - t0) / 1e9);
         ImageIO.write(im, "png", new File("hoja.png"));
     }

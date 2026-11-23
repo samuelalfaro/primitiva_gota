@@ -160,16 +160,16 @@ public class Medusa_by_Grok {
             double y0 = 268 + 6 * Math.sin(frac * Math.PI * 2);
             double ang = Math.toRadians(12 * (frac - 0.5));
             double largo = 400 + 70 * Math.sin(frac * Math.PI);
-            tentaculo(x0, y0, ang, largo, k, n)
-                .render(im, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
+            Plotter.raster(im).plot(tentaculo(x0, y0, ang, largo, k, n),
+                Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
         }
 
         // brazos orales
         int[] tonos = { 0xFF5AD8F0, 0xFF48B8D8, 0xFF6BE8C8, 0xFF3AA8C8, 0xFF7AD0E8 };
         for (int k = 0; k < 5; k++) {
             double ang = Math.toRadians(-28 + 14 * k);
-            brazoOral(W * 0.5 + (k - 2) * 14, 258, ang, 125 + 18 * ((k + 1) % 2), tonos[k])
-                .render(im, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
+            Plotter.raster(im).plot(brazoOral(W * 0.5 + (k - 2) * 14, 258, ang, 125 + 18 * ((k + 1) % 2), tonos[k]),
+                Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
         }
 
         campana(im);

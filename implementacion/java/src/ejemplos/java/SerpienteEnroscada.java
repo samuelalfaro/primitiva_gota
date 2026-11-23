@@ -79,7 +79,7 @@ public class SerpienteEnroscada {
         }
         System.out.println("nodos: " + n);
         Opciones op = Opciones.POR_DEFECTO.conSolape(args.length > 0 && args[0].equals("plano") ? Solape.PLANO : Solape.TRAZO);
-        c.render(im, op);
+        Plotter.raster(im).plot(c, op);
         // cabeza: ojos y lengua
         double[] h = nodos.get(n - 1), h0 = nodos.get(n - 3);
         double ang = Math.atan2(h[1] - h0[1], h[0] - h0[0]), ca = Math.cos(ang), sa = Math.sin(ang);
@@ -96,7 +96,7 @@ public class SerpienteEnroscada {
         lengua.arista(l0, l1);
         lengua.arista(l1, l2);
         lengua.arista(l1, l3);
-        lengua.render(im);
+        Plotter.raster(im).plot(lengua);
         ImageIO.write(im, "png", new File(args.length > 0 && args[0].equals("plano") ? "enroscada_plano.png" : "enroscada.png"));
         System.out.printf("render: %.1f s%n", (System.nanoTime() - t0) / 1e9);
     }

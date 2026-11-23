@@ -1,3 +1,4 @@
+import pintado.Plotter;
 import composicion.Grafo;
 import coordenadas.Solape;
 import color.Mezcla;
@@ -57,7 +58,7 @@ public class Malva {
     static BufferedImage pinta(Solape solape, boolean boton) {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         java.util.Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), 0xFFF4F1EA);
-        malva().render(im, Opciones.POR_DEFECTO.conSolape(solape));
+        Plotter.raster(im).plot(malva(), Opciones.POR_DEFECTO.conSolape(solape));
         if (boton) {
             Graphics2D g = im.createGraphics();
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);

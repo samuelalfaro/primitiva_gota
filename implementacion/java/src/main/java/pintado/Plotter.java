@@ -97,6 +97,8 @@ public interface Plotter {
         }
 
         @Override public void plot(Geometria g, Opciones op) {
+            java.util.Objects.requireNonNull(g, "geometria");
+            java.util.Objects.requireNonNull(op, "opciones");
             final java.awt.geom.Rectangle2D b = g.bounds();
             final Zona z = zona(b.getMinX(), b.getMaxX(), b.getMinY(), b.getMaxY(), 2);
             if (z == null) return;

@@ -1,3 +1,4 @@
+import pintado.Plotter;
 import composicion.Grafo;
 import coordenadas.Solape;
 import color.Mezcla;
@@ -69,7 +70,7 @@ public class FuncionesDemo {
             if (prev != null) c.arista(prev, nd).espina(pn.espina((double) (i - 1) / (n - 1), t));
             prev = nd;
         }
-        c.render(im, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
+        Plotter.raster(im).plot(c, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
         return im;
     }
 

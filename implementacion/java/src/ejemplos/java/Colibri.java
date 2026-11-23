@@ -109,36 +109,36 @@ public class Colibri {
         disco(im, 700, 110, 46, 0xFFFFF7CF, 0xFFF4E39A);                       // un halo de luz
         // hojas y flor
         Grafo hoja = Hoja.limbo(new Hoja.Tr(40, 560, Math.toRadians(-62), 0.42), 3.6);
-        hoja.render(im);
-        Hoja.venas(hoja, 0.8, 0.5).render(im);
+        Plotter.raster(im).plot(hoja);
+        Plotter.raster(im).plot(Hoja.venas(hoja, 0.8, 0.5));
         Grafo tallo = new Grafo();
         var t0n = tallo.nodo(40, 570, 6).centro(0xFF558B2F).sectores(0xFF33691E);
         var t1n = tallo.nodo(70, 420, 5.5).centro(0xFF7CB342).lados(0xFF33691E, 0xFF8BC34A);
         var t2n = tallo.nodo(98, 300, 5).centro(0xFF7CB342).sectores(0xFF558B2F);
         tallo.arista(t0n, t1n);
         tallo.arista(t1n, t2n);
-        tallo.render(im);
+        Plotter.raster(im).plot(tallo);
         Grafo flor = new Grafo();
         var fb = flor.nodo(98, 300, 7).centro(0xFFFFB74D).sectores(0xFFE65100);
         var fo = flor.nodo(138, 218, 40).centro(0xFFFFEE58).sectores(0xFFD32F2F);
         flor.arista(fb, fo).tiradores(new Gota.Vec(10, -40), new Gota.Vec(-22, 18));
-        flor.render(im);
+        Plotter.raster(im).plot(flor);
         disco(im, 150, 205, 14, 0xFF7A1F10, 0xFFB5341D);                      // la boca de la flor
         // pájaro: ala trasera, cola, cuerpo, ala delantera
         int ALA = 0xB0C5DCD8, ALA2 = 0xC08FB3B0;
-        ala(372, 352, 34, 640, 270, 3, 120, 30, ALA2).render(im);
+        Plotter.raster(im).plot(ala(372, 352, 34, 640, 270, 3, 120, 30, ALA2));
         for (double[] f : new double[][] { { 470, 478, 520, 548, 8 }, { 462, 480, 468, 556, 8 }, { 466, 478, 560, 520, 8 } })
-            ala(f[0], f[1], 10, f[2], f[3], 3.5, 8, 30, 0xFF1F6F57).render(im);
+            Plotter.raster(im).plot(ala(f[0], f[1], 10, f[2], f[3], 3.5, 8, 30, 0xFF1F6F57));
         double[][] cuerpo = { { 208, 238, 1.5 }, { 262, 262, 2.8 }, { 296, 286, 20 }, { 334, 326, 28 }, { 386, 384, 38 }, { 432, 434, 30 }, { 466, 474, 12 } };
         Grafo c = cadena(cuerpo, 0xFF3BB37A, 0xFF1A1A1A, 0xFF1F6F57, 0xFFE8E4D2, 0xFF2E9E6B, 0.42);
-        c.render(im);
+        Plotter.raster(im).plot(c);
         // garganta rubí: otro trazo sobre el lado del vientre de la cabeza
         double[][] garg = { { 292, 298, 6 }, { 312, 326, 14 }, { 332, 352, 10 } };
-        cadena(garg, 0xFFD81B60, 0xFFD81B60, 0xFFAD1457, 0xFFAD1457, 0xFFE91E63, 0.5).render(im);
-        ala(372, 352, 40, 560, 140, 3, 60, -70, ALA).render(im);
+        Plotter.raster(im).plot(cadena(garg, 0xFFD81B60, 0xFFD81B60, 0xFFAD1457, 0xFFAD1457, 0xFFE91E63, 0.5));
+        Plotter.raster(im).plot(ala(372, 352, 40, 560, 140, 3, 60, -70, ALA));
         disco(im, 293, 281, 4.2, 0xFF111111, 0xFF000000);
         disco(im, 294.5, 279.5, 1.3, 0xFFFFFFFF, 0xFFFFFFFF);
-        firma(540, 470, 0.9, 5.5).render(im);
+        Plotter.raster(im).plot(firma(540, 470, 0.9, 5.5));
         ImageIO.write(im, "png", new File("colibri.png"));
         System.out.printf("render: %.1f s%n", (System.nanoTime() - t0) / 1e9);
     }

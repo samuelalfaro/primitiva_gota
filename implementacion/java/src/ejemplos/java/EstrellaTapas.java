@@ -1,3 +1,4 @@
+import pintado.Plotter;
 import composicion.ComposicionPruebas;
 import composicion.Grafo;
 import color.Mezcla;
@@ -24,13 +25,13 @@ public class EstrellaTapas {
         for (int c = 0; c < 3; c++) {
             BufferedImage p = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
             java.util.Arrays.fill(datos(p), FONDO);
-            col[c].render(p);
+            Plotter.raster(p).plot(col[c]);
             out.getGraphics().drawImage(p, c * W, 0, null);
         }
         for (int c = 0; c < 2; c++) {
             BufferedImage p = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
             java.util.Arrays.fill(datos(p), FONDO);
-            txt[c].render(p, tex);
+            Plotter.raster(p).plot(txt[c].textura(tex));
             out.getGraphics().drawImage(p, c * W, H, null);
         }
         ImageIO.write(out, "png", new File("estrella_tapas.png"));

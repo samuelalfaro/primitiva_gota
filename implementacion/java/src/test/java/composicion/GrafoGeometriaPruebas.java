@@ -15,9 +15,9 @@ import java.util.Random;
 import pintado.Plotter;
 
 /**
- * Pruebas de {@link Grafo} como {@link Geometria}: pintarlo con {@code Plotter.plot(grafo, op)} da los mismos píxeles que
- * {@code grafo.render(dst, op)} (el color lateral de siempre), con todos los solapes y costuras, con suavizado y con
- * alturas por arista; y su silueta, sus límites y sus metadatos son coherentes con {@code contiene} y {@code sdf}.
+ * Pruebas de {@link Grafo} como {@link Geometria}: pintarlo con {@code Plotter.plot(grafo, op)} es estable con la memoria
+ * por opciones (todos los solapes y costuras, con suavizado y con alturas por arista) y se invalida al modificar el grafo;
+ * su silueta, sus límites y sus metadatos son coherentes con {@code contiene} y {@code sdf}; y la textura es del grafo.
  */
 public class GrafoGeometriaPruebas {
     static int pruebas = 0, fallos = 0;
@@ -68,10 +68,10 @@ public class GrafoGeometriaPruebas {
             for (Solape s : Solape.values()) for (Costura co : Costura.values()) {
                 Opciones op = Opciones.POR_DEFECTO.conSolape(s).conCostura(co);
                 BufferedImage a = lienzo(), b = lienzo();
-                k.grafo().render(a, op);
-                Plotter.raster(b).plot(k.grafo(), op);
+                Plotter.raster(a).plot(k.grafo(), op);          // calcula la memoria por opciones
+                Plotter.raster(b).plot(k.grafo(), op);          // y esta vez la usa
                 int[] d = diferencias(a, b);
-                comprueba(k.nombre() + " / " + s + " / " + co + ": mismos píxeles", d[0] == 0, d[0] + " distintos, canal hasta " + d[1]);
+                comprueba(k.nombre() + " / " + s + " / " + co + ": pintado repetido, mismos píxeles", d[0] == 0 && diferencias(a, lienzo())[0] > 0, d[0] + " distintos, canal hasta " + d[1]);
             }
         }
 
@@ -101,51 +101,45 @@ public class GrafoGeometriaPruebas {
         var p1 = g.nodo(200, 200, 14).centro(0xFF2F6DB5);
         g.arista(p0, p1);
         BufferedImage a = lienzo(), b = lienzo();
-        Plotter.raster(a).plot(g, Opciones.POR_DEFECTO);
+        Plotter.raster(a).plot(g);
         g.arista(p1, g.nodo(300, 320, 10).centro(0xFF4FA36A));
-        Plotter.raster(b).plot(g, Opciones.POR_DEFECTO);
+        Plotter.raster(b).plot(g);
+        Grafo nuevo = new Grafo();
+        var q0 = nuevo.nodo(80, 200, 14).centro(0xFFD94A38);
+        var q1 = nuevo.nodo(200, 200, 14).centro(0xFF2F6DB5);
+        nuevo.arista(q0, q1);
+        nuevo.arista(q1, nuevo.nodo(300, 320, 10).centro(0xFF4FA36A));
         BufferedImage c = lienzo();
-        g.render(c, Opciones.POR_DEFECTO);
-        comprueba("al añadir una arista, plot sigue coincidiendo con render", diferencias(b, c)[0] == 0 && diferencias(a, b)[0] > 0, "");
+        Plotter.raster(c).plot(nuevo);
+        comprueba("al añadir una arista, el pintado coincide con el de un grafo nuevo igual", diferencias(b, c)[0] == 0 && diferencias(a, b)[0] > 0, "");
 
-        // la textura es del Grafo: textura(...) + plot == los render con textura de siempre
+        // la textura es del Grafo y pasa por capas
         Texturas.Textura tex = Texturas.referenciaLados();
-        Texturas.Textura blanca = new Texturas.Textura() {
-            @Override public double aspecto() { return 0.5; }
-            @Override public int muestrea(double u, double v) { return 0xFFFFFFFF; }
-        };
-        for (Caso k : casos()) {
-            for (Opciones op : new Opciones[] { Opciones.POR_DEFECTO, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO) }) {
-                String n = k.nombre() + " / " + (op.solape() == Solape.TRAZO ? "TRAZO" : "PLANO");
-                BufferedImage r = lienzo(), p = lienzo();
-                k.grafo().render(r, tex, op);
-                Plotter.raster(p).plot(k.grafo().textura(tex), op);
-                comprueba(n + ": textura == render(tex)", diferencias(r, p)[0] == 0, diferencias(r, p)[0] + " distintos");
-                for (Combinacion.Modo m : new Combinacion.Modo[] { Combinacion.Modo.MODULATE, Combinacion.Modo.DECAL, Combinacion.Modo.REPLACE }) {
-                    BufferedImage r2 = lienzo(), p2 = lienzo();
-                    k.grafo().render(r2, tex, m, op);
-                    Plotter.raster(p2).plot(k.grafo().textura(tex, m), op);
-                    comprueba(n + ": textura(" + m + ") == render(tex, " + m + ")", diferencias(r2, p2)[0] == 0, diferencias(r2, p2)[0] + " distintos");
-                }
-                BufferedImage c0 = lienzo(), c1 = lienzo();
-                Plotter.raster(c0).plot(k.grafo().sinTextura(), op);
-                k.grafo().render(c1, op);
-                comprueba(n + ": sinTextura() vuelve al color lateral", diferencias(c0, c1)[0] == 0, "");
-            }
+        for (Solape s : Solape.values()) {
+            Opciones op = Opciones.POR_DEFECTO.conSolape(s);
+            Grafo gt = ComposicionPruebas.cadena();
+            BufferedImage lat = lienzo(), t1 = lienzo(), t2 = lienzo(), rep = lienzo(), sin = lienzo(), md = lienzo(), dc = lienzo(), re = lienzo();
+            Plotter.raster(lat).plot(gt, op);
+            Plotter.raster(t1).plot(gt.textura(tex), op);
+            Plotter.raster(t2).plot(gt, op);                     // sigue configurada
+            Plotter.raster(re).plot(gt.textura(tex, Combinacion.Modo.REPLACE), op);
+            Plotter.raster(md).plot(gt.textura(tex, Combinacion.Modo.MODULATE), op);
+            Plotter.raster(dc).plot(gt.textura(tex, Combinacion.Modo.DECAL), op);
+            Plotter.raster(sin).plot(gt.sinTextura(), op);
+            comprueba("textura / " + s + ": cambia lo pintado y se queda configurada", diferencias(lat, t1)[0] > 0 && diferencias(t1, t2)[0] == 0, "");
+            comprueba("textura / " + s + ": REPLACE == textura sola", diferencias(t1, re)[0] == 0, "");
+            comprueba("textura / " + s + ": MODULATE y DECAL se distinguen de REPLACE", diferencias(re, md)[0] > 0 && diferencias(re, dc)[0] > 0, "");
+            comprueba("textura / " + s + ": sinTextura() vuelve al color lateral", diferencias(lat, sin)[0] == 0, "");
         }
-        Grafo gt = ComposicionPruebas.cadena();
-        BufferedImage u0 = lienzo(), u1 = lienzo(), u2 = lienzo();
-        Plotter.raster(u0).plot(gt, Opciones.POR_DEFECTO);
-        Plotter.raster(u1).plot(gt.textura(tex), Opciones.POR_DEFECTO);
-        Plotter.raster(u2).plot(gt.textura(tex, Combinacion.Modo.BLEND, 0xFFFF8000), Opciones.POR_DEFECTO);
-        BufferedImage u3 = lienzo(), u4 = lienzo();
-        Plotter.raster(u3).plot(gt.textura(tex, Combinacion.Modo.BLEND, 0xFF0080FF), Opciones.POR_DEFECTO);
-        gt.render(u4, tex, Combinacion.Modo.BLEND, 0xFF0080FF, Opciones.POR_DEFECTO);
-        comprueba("la textura cambia lo que se pinta (invalida la memoria)", diferencias(u0, u1)[0] > 0 && diferencias(u1, u2)[0] > 0, "");
-        comprueba("BLEND con color de entorno == render con entorno", diferencias(u3, u4)[0] == 0 && diferencias(u2, u3)[0] > 0, "");
+        Grafo gb = ComposicionPruebas.cadena();
+        BufferedImage u1 = lienzo(), u2 = lienzo(), u3 = lienzo();
+        Plotter.raster(u1).plot(gb.textura(tex, Combinacion.Modo.BLEND, 0xFFFF8000));
+        Plotter.raster(u2).plot(gb.textura(tex, Combinacion.Modo.BLEND, 0xFF0080FF));
+        Plotter.raster(u3).plot(gb.textura(tex, Combinacion.Modo.BLEND, 0xFF0080FF));
+        comprueba("BLEND: el color de entorno cambia el resultado", diferencias(u1, u2)[0] > 0 && diferencias(u2, u3)[0] == 0, "");
         boolean nulo = false, nuloModo = false;
-        try { gt.textura(null); } catch (NullPointerException e) { nulo = true; }
-        try { gt.textura(tex, null); } catch (NullPointerException e) { nuloModo = true; }
+        try { gb.textura(null); } catch (NullPointerException e) { nulo = true; }
+        try { gb.textura(tex, null); } catch (NullPointerException e) { nuloModo = true; }
         comprueba("textura nula o modo nulo: NullPointerException", nulo && nuloModo, "");
 
         System.out.printf("%d pruebas, %d fallos%n", pruebas, fallos);

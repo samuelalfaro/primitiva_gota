@@ -202,7 +202,7 @@ public class PezAbisal {
         cadena(c, new double[] { 662, 714, 756 }, new double[] { 316, 350, 380 },
                     new double[] { 8, 5, 2 }, COLA, conAlfa(MEMBRANA, 0.5), true);
 
-        c.render(im, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
+        Plotter.raster(im).plot(c, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
 
         // ----- ojo, encima de todo (discos directos, como los del pulpo) -----
         disco(im, 322, 294, 12, OJO, oscuro(OJO, 0.30));

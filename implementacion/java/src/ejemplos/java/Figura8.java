@@ -1,3 +1,4 @@
+import pintado.Plotter;
 import composicion.Grafo;
 import forma.Gota;
 import java.awt.image.BufferedImage;
@@ -27,7 +28,7 @@ public class Figura8 {
             BufferedImage img = new BufferedImage(480, 300, BufferedImage.TYPE_INT_ARGB);
             java.util.Arrays.fill(((DataBufferInt) img.getRaster().getDataBuffer()).getData(), 0xFFF4F1EA);
             long t0 = System.nanoTime();
-            c.render(img);
+            Plotter.raster(img).plot(c);
             System.out.printf("r=%s render %.0f ms; centro dentro=%b hueco derecho=%b hueco izquierdo=%b%n", java.util.Arrays.toString(rr),
                 (System.nanoTime() - t0) / 1e6, c.contiene(240, 150), !c.contiene(310, 150), !c.contiene(170, 150));
             out.getGraphics().drawImage(img, i++ * 480, 0, null);

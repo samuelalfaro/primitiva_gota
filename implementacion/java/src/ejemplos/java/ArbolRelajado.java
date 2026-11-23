@@ -1,3 +1,4 @@
+import pintado.Plotter;
 import composicion.Grafo;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -25,7 +26,7 @@ public class ArbolRelajado {
             if (m >= 2) c.alisar();
             BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
             java.util.Arrays.fill(((DataBufferInt) im.getRaster().getDataBuffer()).getData(), ArbolParametrico.FONDO);
-            c.render(im);
+            Plotter.raster(im).plot(c);
             g.drawImage(im, m * W, 0, null);
             System.out.printf("%-22s %d aristas, %d rígidas, %d plegadas%n", nombre[m], c.gotas().size(), c.rigidas().size(), c.plegadas().size());
         }
