@@ -27,6 +27,8 @@ public final class Zonas {
     private static final int NW = 128;           // muestras del contorno al eje de la curva de un extremo
     private static final double HM = 0.72;       // tangente del Hermite, en radios (ajustada sobre la figura de referencia)
     private static final int M = 512;            // tabla de semianchuras (ORTOGONAL)
+    /** EXPERIMENTAL (por defecto activo; -Dgota.primeraSalida=false restablece la bisección): la semianchura de la tira ORTOGONAL es la primera salida de la normal de la máscara. */
+    private static final boolean PRIMERA_SALIDA = !"false".equals(System.getProperty("gota.primeraSalida"));
 
     /**
      * Marco de la figura de la familia en t: centro, ejes (T, N = (Ty, -Tx)), radio r, y el
@@ -44,6 +46,8 @@ public final class Zonas {
     private final Fr[] tabla = new Fr[NS + 1];
     private final double[][][] dist = new double[2][2][NW + 1], fase = new double[2][2][NW + 1];   // curva de cada extremo y lado
     private volatile Ortogonal ort;
+    private volatile java.util.List<Pliegue> pliegues = java.util.List.of();
+    private volatile boolean pliegueCalculado;
 
     public Zonas(Camino g, Costura modo, Cortes cortes) {
         this.g = g;
@@ -161,6 +165,20 @@ public final class Zonas {
         return out;
     }
 
+    /** EXPERIMENTAL: -Dgota.v=longitud usa la longitud de arco de la espina (normalizada a cada lado de tm) en lugar de t como coordenada v de la banda. */
+    private static final boolean V_LONGITUD = "longitud".equals(System.getProperty("gota.v"));
+    private volatile double[] acum;
+
+    private double[] acumulada() {
+        double[] a = acum;
+        if (a == null) {
+            a = new double[NS + 1];
+            for (int i = 1; i <= NS; i++) a[i] = a[i - 1] + Math.hypot(tabla[i].cx - tabla[i - 1].cx, tabla[i].cy - tabla[i - 1].cy);
+            acum = a;
+        }
+        return a;
+    }
+
     /** v en el cuerpo: lineal entre c1 y c3, en t o en la longitud de arco según los cortes. */
     private double vCuerpo(double t) {
         return cortes.c1() + (cortes.c3() - cortes.c1()) * (cortes.porLongitud() ? g.fraccion(t) : t);
@@ -170,7 +188,7 @@ public final class Zonas {
         double v = vCuerpo(t);
         return new Coordenadas.Costurado(t, new Coordenadas.Uv(0.5 + 0.5 * s * Utils.acota(w, 0, 1), Utils.acota(v, 0, 1)));
     }
-
+    
     /** Raíces de t en las que el punto está sobre la costilla (recta) de algún lado: {t, w, s}. */
     private List<double[]> raices(double x, double y) {
         List<double[]> out = new ArrayList<>();
@@ -263,6 +281,43 @@ public final class Zonas {
         return new Candidato(e == 0 ? -rho : 1 + rho, new Coordenadas.Costurado(e, new Coordenadas.Uv((l + 1) / 2, v)));
     }
 
+    /**
+     * EXPERIMENTAL (Solape.PLIEGUE): coordenadas del píxel si cae en la zona polar del pliegue de la costura ORTOGONAL, o null
+     * (costura SUAVIZADO, sin pliegue, o fuera de la zona). Ver {@link Pliegue}.
+     */
+    Coordenadas.Costurado pliegue(double x, double y) {
+        if (modo == Costura.SUAVIZADO) return null;      // pendiente: el Hermite no tiene costilla recta
+        if (!pliegueCalculado) synchronized (this) {
+            if (!pliegueCalculado) {
+                pliegues = MULTIPLE
+                    ? Pliegue.todos(g, this, modo == Costura.ORTOGONAL ? ortogonal().hw : null, modo == Costura.ORTOGONAL ? M : 512, modo == Costura.ORTOGONAL)
+                    : java.util.stream.Stream.of(modo == Costura.ORTOGONAL ? Pliegue.de(g, this, ortogonal().hw, M) : Pliegue.espiga(g, this, 512)).filter(java.util.Objects::nonNull).toList();
+                pliegueCalculado = true;
+            }
+        }
+        // Si un píxel cae en varias zonas (cuñas ORTOGONAL que se pisan), manda aquella en cuya mitad interior cae (donde el polar hace falta de verdad);
+        // la mitad exterior de una cuña es solo su prolongación. Con empate, la de mayor |q|. -Dgota.prioridad=primera: la primera de la lista.
+        double[] tq = null; Pliegue pg = null;
+        for (Pliegue p : pliegues) {
+            double[] c = Pliegue.localiza(pliegues, p, x, y);
+            if (c == null) continue;
+            if (pg == null) { tq = c; pg = p; if (!PRIORIDAD_INTERIOR) break; continue; }
+            boolean ci = p.interior(c), gi = pg.interior(tq);
+            if ((ci && !gi) || (ci == gi && Math.abs(c[1]) > Math.abs(tq[1]))) { tq = c; pg = p; }
+        }
+        return tq == null ? null : enBanda(tq[0], Math.abs(tq[1]), tq[1] < 0 ? -1 : 1);
+    }
+
+    private static final boolean PRIORIDAD_INTERIOR = !"primera".equals(System.getProperty("gota.prioridad"));
+
+    /** EXPERIMENTAL: -Dgota.pliegues=uno restaura el tratamiento de un solo pliegue (el de mayor tramo de t). */
+    private static final boolean MULTIPLE = !"uno".equals(System.getProperty("gota.pliegues"));
+
+    java.util.List<Pliegue> zonasPliegue() { pliegue(0, 0); return pliegues; }
+
+    /** La primera zona de pliegue (la de menor ta), o null. */
+    Pliegue zonaPliegue() { java.util.List<Pliegue> l = zonasPliegue(); return l.isEmpty() ? null : l.get(0); }
+
     private Ortogonal ortogonal() {
         Ortogonal o = ort;
         if (o == null) synchronized (this) { if ((o = ort) == null) ort = o = new Ortogonal(); }
@@ -280,6 +335,13 @@ public final class Zonas {
                 Fr f = marco(i / (double) M);
                 for (int s = 0; s < 2; s++) {
                     double sg = s == 1 ? 1 : -1, lo = 0, hi = 4 * f.r + 50;
+                    if (PRIMERA_SALIDA) {          // EXPERIMENTAL: la primera salida de la normal, no la que encuentre la bisección
+                        double paso = Math.max(f.r, 1) / 32;
+                        for (double d = paso; d <= hi; d += paso) {
+                            if (!g.mascara().contiene(f.cx + sg * d * f.nx, f.cy + sg * d * f.ny)) { hi = d; break; }
+                            lo = d;
+                        }
+                    }
                     for (int it = 0; it < 45; it++) {
                         double mid = (lo + hi) / 2;
                         if (g.mascara().contiene(f.cx + sg * mid * f.nx, f.cy + sg * mid * f.ny)) lo = mid; else hi = mid;
@@ -287,6 +349,20 @@ public final class Zonas {
                     hw[s][i] = Math.max(lo, 1e-6);
                 }
             }
+        }
+
+        /** Primera salida de la normal del marco f por el lado sg (+1: +N), con el paso y la bisección de la tabla. */
+        private double salida(Fr f, double sg) {
+            double lo = 0, hi = 4 * f.r + 50, paso = Math.max(f.r, 1) / 32;
+            for (double d = paso; d <= hi; d += paso) {
+                if (!g.mascara().contiene(f.cx + sg * d * f.nx, f.cy + sg * d * f.ny)) { hi = d; break; }
+                lo = d;
+            }
+            for (int it = 0; it < 45; it++) {
+                double mid = (lo + hi) / 2;
+                if (g.mascara().contiene(f.cx + sg * mid * f.nx, f.cy + sg * mid * f.ny)) lo = mid; else hi = mid;
+            }
+            return Math.max(lo, 1e-6);
         }
 
         private double d2(double x, double y, double t) {
@@ -353,7 +429,9 @@ public final class Zonas {
             }
             double fi = t * M;
             int i0 = Math.min(M - 1, (int) fi), side = S >= 0 ? 1 : 0;
-            double fr = fi - i0, h = hw[side][i0] * (1 - fr) + hw[side][i0 + 1] * fr;
+            double fr = fi - i0, h0 = hw[side][i0], h1 = hw[side][i0 + 1], h = h0 * (1 - fr) + h1 * fr;
+            if (PRIMERA_SALIDA && Math.max(h0, h1) > 1.3 * Math.min(h0, h1))
+                h = salida(f, side == 1 ? 1 : -1);      // celda a caballo de un pliegue: la interpolación mezclaría una salida disparada con una normal
             if (estricto && Math.abs(Sp) > h * 1.02) return null;
             double q = Utils.acota(Sp / h, -1, 1);
             double v = vCuerpo(t);

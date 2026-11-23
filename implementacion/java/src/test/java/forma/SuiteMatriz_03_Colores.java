@@ -7,8 +7,6 @@ import color.Relleno;
 import color.Mezcla;
 import color.Colores;
 import coordenadas.Opciones;
-import forma.Perfil;
-import forma.Gota;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;

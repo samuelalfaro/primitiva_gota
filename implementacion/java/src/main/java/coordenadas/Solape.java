@@ -31,15 +31,7 @@ public enum Solape {
      */
     TRAZO {
         @Override public void capas(Camino g, Coordenadas c, double x, double y, Consumer<Capa> out) {
-            List<Camino.Hebra> hs = g.mascara().hebras(x, y);
-            Memo memo = new Memo(c, x, y);
-            for (int h = 0; h < hs.size(); h++) {            // t creciente: la posterior tapa a la anterior
-                Camino.Hebra hb = hs.get(h);
-                double cob = hb.cobertura();
-                if (cob <= 0) continue;
-                final double limite = h == hs.size() - 1 ? Double.POSITIVE_INFINITY : 0.5 * (hb.t() + hs.get(h + 1).t());
-                out.accept(new Capa(cob, c.punto(x, y, () -> elige(memo.candidatos(), limite, c, x, y))));
-            }
+            capasTrazo(g, c, x, y, java.util.List.of(), out);
         }
 
         @Override Coordenadas.Costurado ganador(Coordenadas c, double x, double y) {
@@ -47,24 +39,127 @@ public enum Solape {
             for (Zonas.Candidato k : c.candidatos(x, y)) if (mejor == null || k.clave() > mejor.clave()) mejor = k;
             return mejor != null ? mejor.c() : c.costurado(x, y);
         }
+    },
 
-        /** El de mayor clave que no pase de limite; si ninguno, el de menor clave; si no hay candidatos, la solución única. */
-        private static Coordenadas.Costurado elige(List<Zonas.Candidato> cs, double limite, Coordenadas c, double x, double y) {
-            double kb = Double.NEGATIVE_INFINITY, kmin = Double.POSITIVE_INFINITY;
-            Coordenadas.Costurado best = null, primero = null;
-            for (Zonas.Candidato k : cs) {
-                if (k.clave() <= limite && k.clave() > kb) { best = k.c(); kb = k.clave(); }
-                if (k.clave() < kmin) { primero = k.c(); kmin = k.clave(); }
+    /**
+     * EXPERIMENTAL (rama de estudio, ver ESTUDIO_SOLAPES.md; no está en las suites de matriz). Como TRAZO, pero la capa
+     * superior no tapa a la inferior de golpe: su opacidad es el factor de mezcla de la mínima suave cuadrática de Quilez
+     * entre las distancias con signo de las dos pasadas (a = la anterior, b = la nueva). Domina la pasada en la que el píxel
+     * está más adentro y la transición dura 4K píxeles (K = 6 por defecto, -Dsolape.k=...).
+     */
+    PONDERADO {
+        static final double K = Double.parseDouble(System.getProperty("solape.k", "6"));
+
+        @Override public void capas(Camino g, Coordenadas c, double x, double y, Consumer<Capa> out) {
+            List<Camino.Hebra> hs = g.mascara().hebras(x, y);
+            Memo memo = new Memo(c, x, y);
+            for (int h = 0; h < hs.size(); h++) {
+                Camino.Hebra hb = hs.get(h);
+                double cob = hb.cobertura();
+                if (cob <= 0) continue;
+                double w = 1;
+                if (h > 0) {
+                    double a = hs.get(h - 1).distancia(), b = hb.distancia();
+                    double q = 1 - Math.min(Math.abs(a - b) / (4 * K), 1), m = 0.5 * q * q;
+                    w = a < b ? m : 1 - m;                       // peso de la pasada nueva
+                }
+                final double limite = h == hs.size() - 1 ? Double.POSITIVE_INFINITY : 0.5 * (hb.t() + hs.get(h + 1).t());
+                out.accept(new Capa(cob * w, c.punto(x, y, () -> elige(memo.candidatos(), limite, c, x, y))));
             }
-            return best != null ? best : primero != null ? primero : c.costurado(x, y);
+        }
+
+        @Override Coordenadas.Costurado ganador(Coordenadas c, double x, double y) { return TRAZO.ganador(c, x, y); }
+    },
+
+    /**
+     * EXPERIMENTAL. Como PONDERADO en los pesos (mínima suave de Quilez entre las distancias con signo de las pasadas), pero se
+     * mezclan las coordenadas (t y uv) de las pasadas y se emite una sola capa con la cobertura máxima: un único punto
+     * para colorear o muestrear la textura, sin fundir dos colores.
+     */
+    PONDERADO_UV {
+        static final double K = Double.parseDouble(System.getProperty("solape.k", "6"));
+
+        @Override public void capas(Camino g, Coordenadas c, double x, double y, Consumer<Capa> out) {
+            List<Camino.Hebra> hs = g.mascara().hebras(x, y);
+            Memo memo = new Memo(c, x, y);
+            double t = 0, u = 0, v = 0, cob = 0; boolean hay = false;
+            for (int h = 0; h < hs.size(); h++) {
+                Camino.Hebra hb = hs.get(h);
+                double cb = hb.cobertura();
+                if (cb <= 0) continue;
+                final double limite = h == hs.size() - 1 ? Double.POSITIVE_INFINITY : 0.5 * (hb.t() + hs.get(h + 1).t());
+                Coordenadas.Costurado k = elige(memo.candidatos(), limite, c, x, y);
+                double w = 1;
+                if (hay && h > 0) {
+                    double a = hs.get(h - 1).distancia(), b = hb.distancia();
+                    double q = 1 - Math.min(Math.abs(a - b) / (4 * K), 1), m = 0.5 * q * q;
+                    w = a < b ? m : 1 - m;
+                }
+                if (!hay) { t = k.t(); u = k.uv().u(); v = k.uv().v(); hay = true; }
+                else { t += w * (k.t() - t); u += w * (k.uv().u() - u); v += w * (k.uv().v() - v); }
+                cob = Math.max(cob, cb);
+            }
+            if (!hay) return;
+            final Coordenadas.Costurado mezcla = new Coordenadas.Costurado(t, new Coordenadas.Uv(u, v));
+            out.accept(new Capa(cob, c.punto(x, y, () -> mezcla)));
+        }
+
+        @Override Coordenadas.Costurado ganador(Coordenadas c, double x, double y) { return TRAZO.ganador(c, x, y); }
+    },
+
+    /**
+     * EXPERIMENTAL (issue #29, rama de estudio). Como TRAZO, pero con la costura ORTOGONAL el tramo de t donde el contorno
+     * interior se cruza a sí mismo (codo con radios mayores que el radio de curvatura) usa polares con centro en el punto de
+     * cruce (ver {@link Pliegue}) y una sola capa; fuera de esa zona, y con cualquier otra costura, se comporta como TRAZO.
+     */
+    PLIEGUE {
+        @Override public void capas(Camino g, Coordenadas c, double x, double y, Consumer<Capa> out) {
+            Coordenadas.Costurado p = c.pliegue(x, y);
+            double cob = p == null ? 0 : g.mascara().cobertura(x, y);
+            if (p != null && cob > 0) { out.accept(new Capa(cob, c.punto(x, y, () -> p))); return; }
+            capasTrazo(g, c, x, y, c.zonasPliegue(), out);
+        }
+
+        @Override Coordenadas.Costurado ganador(Coordenadas c, double x, double y) {
+            Coordenadas.Costurado p = c.pliegue(x, y);
+            if (p != null) return p;
+            List<Pliegue> z = c.zonasPliegue();
+            Zonas.Candidato mejor = null;
+            for (Zonas.Candidato k : c.candidatos(x, y))
+                if (!Pliegue.sustituye(z, k) && (mejor == null || k.clave() > mejor.clave())) mejor = k;
+            return mejor != null ? mejor.c() : c.costurado(x, y);
         }
     };
+
+    /** El de mayor clave que no pase de limite; si ninguno, el de menor clave; si no hay candidatos, la solución única. */
+    static Coordenadas.Costurado elige(List<Zonas.Candidato> cs, double limite, Coordenadas c, double x, double y) {
+        double kb = Double.NEGATIVE_INFINITY, kmin = Double.POSITIVE_INFINITY;
+        Coordenadas.Costurado best = null, primero = null;
+        for (Zonas.Candidato k : cs) {
+            if (k.clave() <= limite && k.clave() > kb) { best = k.c(); kb = k.clave(); }
+            if (k.clave() < kmin) { primero = k.c(); kmin = k.clave(); }
+        }
+        return best != null ? best : primero != null ? primero : c.costurado(x, y);
+    }
 
     /** Una capa del píxel: la fracción que cubre (antialiasing) y el punto con el que se colorea. */
     public record Capa(double cobertura, Punto punto) {}
 
     /** Entrega, de abajo a arriba, las capas que se pintan en el píxel (x, y). */
     public abstract void capas(Camino g, Coordenadas c, double x, double y, Consumer<Capa> out);
+
+    /** TRAZO; con zona de pliegue, los candidatos de la mitad interior con t dentro de [ta, tb] no cuentan (los sustituye la polar). */
+    private static void capasTrazo(Camino g, Coordenadas c, double x, double y, List<Pliegue> zona, Consumer<Capa> out) {
+        List<Camino.Hebra> hs = g.mascara().hebras(x, y);
+        Memo memo = new Memo(c, x, y, zona);
+        for (int h = 0; h < hs.size(); h++) {            // t creciente: la posterior tapa a la anterior
+            Camino.Hebra hb = hs.get(h);
+            double cob = hb.cobertura();
+            if (cob <= 0) continue;
+            final double limite = h == hs.size() - 1 ? Double.POSITIVE_INFINITY : 0.5 * (hb.t() + hs.get(h + 1).t());
+            out.accept(new Capa(cob, c.punto(x, y, () -> elige(memo.candidatos(), limite, c, x, y))));
+        }
+    }
 
     /** Las coordenadas con las que se ve el píxel como un todo: la solución única en PLANO, la más tardía del trazo en TRAZO. */
     abstract Coordenadas.Costurado ganador(Coordenadas c, double x, double y);
@@ -75,10 +170,21 @@ public enum Solape {
         private final double x, y;
         private List<Zonas.Candidato> cs;
 
-        Memo(Coordenadas c, double x, double y) { this.c = c; this.x = x; this.y = y; }
+        private final List<Pliegue> zona;
+
+        Memo(Coordenadas c, double x, double y) { this(c, x, y, List.of()); }
+
+        Memo(Coordenadas c, double x, double y, List<Pliegue> zona) { this.c = c; this.x = x; this.y = y; this.zona = zona; }
 
         List<Zonas.Candidato> candidatos() {
-            if (cs == null) cs = c.candidatos(x, y);
+            if (cs == null) {
+                cs = c.candidatos(x, y);
+                if (!zona.isEmpty()) {
+                    List<Zonas.Candidato> f = new java.util.ArrayList<>();
+                    for (Zonas.Candidato k : cs) if (!Pliegue.sustituye(zona, k)) f.add(k);
+                    if (!f.isEmpty()) cs = f;
+                }
+            }
             return cs;
         }
     }

@@ -88,6 +88,15 @@ public final class Coordenadas {
     /** Solución única del píxel (solape PLANO). */
     Costurado costurado(double x, double y) { return zonas().calcula(x, y); }
 
+    /** EXPERIMENTAL: coordenadas polares de la zona de pliegue (solape PLIEGUE), o null si el píxel no cae en ella. */
+    Costurado pliegue(double x, double y) { return zonas().pliegue(x, y); }
+
+    /** La zona de pliegue de la gota con esta costura (ORTOGONAL o ESPIGA), o null. */
+    Pliegue zonaPliegue() { return zonas().zonaPliegue(); }
+
+    /** Todas las zonas de pliegue, por ta creciente. */
+    java.util.List<Pliegue> zonasPliegue() { return zonas().zonasPliegue(); }
+
     /** Todas las soluciones del píxel, con su clave de orden (solape TRAZO). */
     java.util.List<Zonas.Candidato> candidatos(double x, double y) { return zonas().candidatos(x, y); }
 
