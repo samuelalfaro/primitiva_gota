@@ -112,20 +112,28 @@ Esta transformación permite utilizar una misma tira de coordenadas para aplicar
 
 ### Requisitos
 
-- Java 17 o superior.
-- Maven 3.6+ (opcional).
+- Un JDK 17 o superior: 17 es la versión mínima, y nada impide compilar y ejecutar con versiones posteriores (JDK 21, etc.).
+- Maven 3.6+ es **opcional**: es una ayuda de compilación, no un requisito. Con solo `javac` basta (ver el `Makefile`).
+- Funciona sin entorno gráfico (`java.awt.headless=true`): el raster es píxel a píxel sobre un `BufferedImage`.
+- No hacen falta fuentes del sistema, salvo para escribir texto sobre una imagen (el modo alambre con etiquetas y las
+  suites que rotulan). El export a SVG no las necesita, ni los ejemplos y suites de imagen que no llevan texto.
 
 ### Compilación y Ejecución
 
 ```bash
-# Compilar todo y ejecutar pruebas
-mvn test
+# Con Maven (opcional)
+mvn test                    # compila todo y ejecuta las pruebas rápidas
+./ejemplos.sh Flor          # ejecuta un ejemplo específico
 
-# Ejecutar un ejemplo específico
-./ejemplos.sh Flor
+# Solo con el JDK (javac), sin Maven
+cd implementacion/java
+make                        # compila la biblioteca, las pruebas y los ejemplos
+make test                   # pruebas rápidas (unitarias + regresion); make test-todo añade las matrices de estudio
+make ejemplo EJ=Flor        # ejecuta un ejemplo
 ```
 
-Las imágenes generadas se guardan en `target/imagenes/`.
+Las imágenes generadas se guardan en `target/imagenes/`. En un entorno sin fuentes del sistema, las suites que rotulan
+dibujan sin texto en lugar de fallar.
 
 ## 🔗 Recursos Adicionales
 
