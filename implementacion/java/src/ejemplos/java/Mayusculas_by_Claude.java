@@ -1,3 +1,5 @@
+import geometria.Geometria;
+import geometria.Grupo;
 import geometria.composicion.Grafo;
 import pintado.Plotter;
 import color.Mezcla;
@@ -68,6 +70,20 @@ public class Mayusculas_by_Claude {
         return g.relajar().alisar();
     }
 
+    /**
+     * La geometría del carácter. El cero lleva la barra oblicua de «cero cortado» (para distinguirlo de la O), y va como un
+     * {@link Grupo} de dos grafos (el óvalo y la barra), no como parte del mismo grafo: la barra cruza el óvalo sin ser un nodo suyo.
+     */
+    static Geometria geometria(Letra l, double ox, double oy, double k) {
+        Grafo g = grafo(l, ox, oy, k);
+        if (l.c() != '0') return g;
+        Grafo barra = new Grafo().mezcla(Mezcla.RGB);
+        var a = barra.nodo(ox + 14 * k, oy + 82 * k, 4.5 * k).color(NEGRO);
+        var b = barra.nodo(ox + 42 * k, oy + 18 * k, 4.5 * k).color(NEGRO);
+        barra.arista(a, b);
+        return new Grupo(g, barra).label("cero");
+    }
+
     public static void main(String[] args) throws Exception {
         double k = 1.8, cw = 70 * k, ch = 120 * k;
         int cols = 12, filas = 3;
@@ -79,7 +95,7 @@ public class Mayusculas_by_Claude {
             Grafo g = grafo(l, 20 + (i % cols) * cw + 10, 20 + (i / cols) * ch + 10, k);
             int m = g.plegadas().size();
             if (m > 0) plegadas.append(l.c()).append('=').append(m).append(' ');
-            Plotter.raster(im).plot(g);
+            Plotter.raster(im).plot(geometria(l, 20 + (i % cols) * cw + 10, 20 + (i / cols) * ch + 10, k));
         }
         System.out.println("plegadas: " + (plegadas.length() == 0 ? "ninguna" : plegadas));
         ImageIO.write(im, "png", new File("mayusculas_by_claude.png"));
