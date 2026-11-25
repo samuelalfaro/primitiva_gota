@@ -1,6 +1,11 @@
 import geometria.Geometria;
 import geometria.Grupo;
 import geometria.composicion.Grafo;
+import geometria.composicion.Pintada;
+import forma.Gota;
+import forma.Perfil;
+import color.Colores;
+import java.awt.geom.Point2D;
 import pintado.Plotter;
 import color.Mezcla;
 import java.awt.image.BufferedImage;
@@ -71,17 +76,16 @@ public class Mayusculas_by_Claude {
     }
 
     /**
-     * La geometría del carácter. El cero lleva la barra oblicua de «cero cortado» (para distinguirlo de la O), y va como un
-     * {@link Grupo} de dos grafos (el óvalo y la barra), no como parte del mismo grafo: la barra cruza el óvalo sin ser un nodo suyo.
+     * La geometría del carácter. El cero lleva la barra oblicua de «cero cortado» (para distinguirlo de la O): una gota
+     * simple, sin grafo, pintada de negro y agrupada con el óvalo en un {@link Grupo}. Así el grupo une una geometría de
+     * grafo y una de gota suelta.
      */
     static Geometria geometria(Letra l, double ox, double oy, double k) {
         Grafo g = grafo(l, ox, oy, k);
         if (l.c() != '0') return g;
-        Grafo barra = new Grafo().mezcla(Mezcla.RGB);
-        var a = barra.nodo(ox + 14 * k, oy + 82 * k, 4.5 * k).color(NEGRO);
-        var b = barra.nodo(ox + 42 * k, oy + 18 * k, 4.5 * k).color(NEGRO);
-        barra.arista(a, b);
-        return new Grupo(g, barra).label("cero");
+        Gota barra = Gota.lineal(new Point2D.Double(ox + 14 * k, oy + 82 * k), 4.5 * k,
+                                 new Point2D.Double(ox + 42 * k, oy + 18 * k), 4.5 * k, Perfil.recto());
+        return new Grupo(g, Pintada.de(barra, Colores.dosColores(NEGRO, NEGRO))).label("cero");
     }
 
     public static void main(String[] args) throws Exception {
