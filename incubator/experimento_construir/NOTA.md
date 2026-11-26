@@ -17,11 +17,19 @@ de la librería. Se ejecuta con `UnaArista` (necesita las clases de `src/main/ja
 - La **silueta** coincide siempre: la gota que da el `Grafo` es la misma.
 - En **recta** el color coincide al píxel con `Colores.dosColores`.
 - En **curva** hay una diferencia de color de hasta 28/255 (no es de forma ni de las pendientes del radio: no cambia con
-  `ajustarPendientes(false)`). Hipótesis: el `Grafo` reparte el color por longitud de arco y `dosColores` usa otro parámetro;
-  por confirmar.
+  `ajustarPendientes(false)`).
+
+### Causa (medida con `Grafo.rellenoDe(i)`, visibilidad de paquete)
+- No es el relleno: pintar la gota con el relleno lateral exacto que construye el `Grafo` da la misma diferencia (17182 px, 28).
+- Es el **reparto**: con `Reparto.POR_GOTA` el `Grafo` de una arista coincide con `Pintada.de(gota, dosColores)` en los cinco
+  casos, 0 píxeles distintos. La diferencia aparece solo con el valor por defecto, `Reparto.GLOBAL`, y solo en curva.
+- Con una única arista, `GLOBAL` debería dar los mismos cortes que `POR_GOTA` (v0 = c1, v1 = c3); si no es así, la diferencia
+  está en cómo `cortesGlobales` / `Tira.fija` reparte v frente a la tira propia de la gota (longitud de arco de `sTotal` frente
+  a la parametrización de la gota). Sin aclarar cuál de las dos es la «correcta»; no lo toco.
+- Para `construir()`: devolver la gota con un `Grafo` de una arista es seguro en silueta y, en color, con `POR_GOTA`.
 
 ## Siguiente
-- Averiguar qué relleno exacto emplea el `Grafo` en una arista (`rellenosPintado()`), para comparar con ese y no con `dosColores`.
+- Decidir si en una arista `GLOBAL` debe coincidir con `POR_GOTA` (ver arriba).
 - Después, `label`, `altura` y `textura` (propiedades del `Grafo` que habría que trasladar).
 - ~~Y el disco (nodo sin aristas)~~: hecho, ver abajo.
 

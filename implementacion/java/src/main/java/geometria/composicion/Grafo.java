@@ -341,6 +341,9 @@ public final class Grafo implements Geometria {
 
     public List<Gota> gotas() { construye(); return Collections.unmodifiableList(gotas); }
 
+    /** Experimento (solo visibilidad de paquete): el relleno lateral exacto con el que se pinta la arista i. */
+    Relleno rellenoDe(int i) { construye(); return rellenos.get(i); }
+
     @Override public List<Gota> caminos() { return gotas(); }
 
     public Gota gota(Arista e) { construye(); return gotas.get(e.id); }
