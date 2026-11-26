@@ -190,7 +190,7 @@ public final class Trazos {
         camino.curveTo(x1, y1, x2, y2, x3, y3);
         conHalo(out, Rol.CAMINO, camino);
 
-        var zonas = new Zonas(geo, Costura.ORTOGONAL, Tira.POR_DEFECTO.cortes(geo));
+        var zonas = new Zonas(geo, Costura.ORTOGONAL, Tira.EN_T.cortes(geo));
         if (aj.contorno()) silueta(geo, zonas, aj, out);
         if (aj.tapas()) tapas(geo, zonas, out);
         if (aj.radios()) {
@@ -355,7 +355,7 @@ public final class Trazos {
 
     /** El punto medio del arco de la tapa e (0 o 1); null si el radio es 0. Para las pruebas. */
     static double[] mitadTapa(Camino geo, int e) {
-        Zonas zonas = new Zonas(geo, Costura.ORTOGONAL, Tira.POR_DEFECTO.cortes(geo));
+        Zonas zonas = new Zonas(geo, Costura.ORTOGONAL, Tira.EN_T.cortes(geo));
         double[] bs = arcoTapa(geo, zonas, e);
         if (bs == null) return null;
         Zonas.Fr f = zonas.marco(e);

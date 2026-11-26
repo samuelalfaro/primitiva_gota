@@ -54,20 +54,20 @@ public class Reparto078 {
 
     static void caso(String nombre, Grafo g) {
         BufferedImage glob = grafo(g, Grafo.Reparto.GLOBAL), pg = grafo(g, Grafo.Reparto.POR_GOTA);
-        BufferedImage enT = gota(g, Tira.POR_DEFECTO), enS = gota(g, Tira.porLongitud(Tira.POR_DEFECTO));
+        BufferedImage enT = gota(g, Tira.EN_T), enS = gota(g, Tira.POR_DEFECTO);
         Colores.Lateral lr = Colores.Lateral.uniforme(R), lb = Colores.Lateral.uniforme(B);
-        BufferedImage latT = lateral(g, lr, lb, Tira.POR_DEFECTO), latS = lateral(g, lr, lb, Tira.fija(0.25, 0.75));
+        BufferedImage latT = lateral(g, lr, lb, Tira.EN_T), latS = lateral(g, lr, lb, Tira.POR_DEFECTO);
         System.out.println(nombre);
         System.out.println("   --- con el relleno lateral del propio Grafo (cadenaLateral) ---");
-        System.out.println("   Grafo POR_GOTA vs gota, cadenaLateral, tira por defecto (v lineal en t):   " + dif(pg, latT));
-        System.out.println("   Grafo GLOBAL   vs gota, cadenaLateral, Tira.fija(1/4, 3/4) (v por s):      " + dif(glob, latS));
-        System.out.println("   Grafo GLOBAL   vs gota, cadenaLateral, tira por defecto (v lineal en t):   " + dif(glob, latT));
-        System.out.println("   Grafo POR_GOTA vs gota, cadenaLateral, Tira.fija(1/4, 3/4) (v por s):      " + dif(pg, latS));
+        System.out.println("   Grafo POR_GOTA vs gota, cadenaLateral, Tira.EN_T (v lineal en t):   " + dif(pg, latT));
+        System.out.println("   Grafo GLOBAL   vs gota, cadenaLateral, Tira.POR_DEFECTO (v por s):      " + dif(glob, latS));
+        System.out.println("   Grafo GLOBAL   vs gota, cadenaLateral, Tira.EN_T (v lineal en t):   " + dif(glob, latT));
+        System.out.println("   Grafo POR_GOTA vs gota, cadenaLateral, Tira.POR_DEFECTO (v por s):      " + dif(pg, latS));
         System.out.println("   --- con dosColores (mezcla por t, sin v) ---");
-        System.out.println("   Grafo POR_GOTA vs gota con la tira por defecto (lineal en t):     " + dif(pg, enT));
-        System.out.println("   Grafo GLOBAL   vs gota con la tira por defecto (lineal en t):     " + dif(glob, enT));
-        System.out.println("   Grafo GLOBAL   vs gota con Tira.porLongitud(por defecto):         " + dif(glob, enS));
-        System.out.println("   Grafo POR_GOTA vs gota con Tira.porLongitud(por defecto):         " + dif(pg, enS));
+        System.out.println("   Grafo POR_GOTA vs gota con Tira.EN_T (lineal en t):     " + dif(pg, enT));
+        System.out.println("   Grafo GLOBAL   vs gota con Tira.EN_T (lineal en t):     " + dif(glob, enT));
+        System.out.println("   Grafo GLOBAL   vs gota con Tira.POR_DEFECTO (longitud de arco):         " + dif(glob, enS));
+        System.out.println("   Grafo POR_GOTA vs gota con Tira.POR_DEFECTO (longitud de arco):         " + dif(pg, enS));
     }
 
     /** Tres paneles: GLOBAL, POR_GOTA y la diferencia absoluta por canal ×8. */

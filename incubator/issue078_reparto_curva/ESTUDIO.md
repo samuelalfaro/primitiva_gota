@@ -35,19 +35,26 @@ Cada reparto del `Grafo` es **exactamente** una gota con su tira. `global_vs_por
 (`Tira.porLongitud(...)` da lo mismo que la tira por defecto). Coincide con `POR_GOTA` porque ambas son lineales en t; por eso
 la comparación del experimento `experimento_construir` salía bien en `POR_GOTA` y mal en `GLOBAL`, sin que el relleno fuese distinto.
 
-## Qué hay que decidir (no es un arreglo)
+## Criterio adoptado (2026-11-26) y cambio en esta rama
 
-`GLOBAL` por longitud de arco es intencionado: la textura no se estira donde la curva acelera y continúa entre gotas
-(documentado en `Tira.porLongitud` y `Grafo.cortes`). La gota suelta, por defecto, va lineal en t. Para que
-«un `Grafo` de una arista» y «su gota» pinten igual hay tres salidas:
+Decisión de Samuel: `d` (longitud de arco) por defecto y la t disponible como opción para los estudios donde no se quiere
+suavizar los problemas (pliegues, solapes). Cambios:
 
-1. **Dejarlo y documentarlo**: la equivalencia vale con `Tira.fija(c1, c3)` (o `Tira.porLongitud(Tira.POR_DEFECTO)`) en las `Opciones`.
-2. **`construir()` devuelve la gota** con la tira de longitud de arco (necesita que la geometría pueda llevar su tira, hoy solo la llevan las `Opciones` de `plot`).
-3. **Cambiar el valor por defecto de la gota a longitud de arco** (`Tira.POR_DEFECTO`): afecta a todos los rellenos y texturas de gota suelta y a las referencias de las suites de color.
+- `Tira.POR_DEFECTO` pasa a ser `new PorLongitud(new Pesos(1, 2, 1))` (v lineal en la longitud de arco). Nueva `Tira.EN_T`
+  (`Pesos(1, 2, 1)`): lo que era el valor por defecto.
+- Los tres rellenos que leían t sin pasar por v (`Colores.dosColores`, `Colores.conGamma` y el mapeo en disco de
+  `Texturas`) toman en `para(g, op)` la fracción de longitud de arco cuando la tira lo pide (`argb(t, rho)` directo sigue por t).
+- `Contorno` y `Trazos` (zonas para el contorno y el alambre, no para el color) siguen con `Tira.EN_T`, como antes.
+- Las gotas rectas (y las rígidas de 4 arcos) no cambian: `fraccion(t) = t`.
 
-Recomendación: 1 por ahora; 2 cuando exista el `construir()` de `Geometria`, porque decide la tira en el mismo sitio donde se decide el tipo.
+Con ello, un `Grafo` de una arista curva coincide a 0 píxeles con su gota (`Pintada.de(gota, dosColores)`), con `GLOBAL` y
+con `POR_GOTA` (prueba `GrafoPruebas.unaAristaCurva`). Con `Tira.EN_T` el reparto vuelve a diferir (17182 px, máx 28/255 en
+la curva con tiradores; 14465 px, máx 19 en la suave).
 
-## Una comprobación que sale de paso
+Pruebas: 19 suites, 0 fallos. Dos pruebas se actualizaron porque daban por hecho «tira por defecto = t»
+(`GotaCadena`: v del cuerpo y `Tira.porLongitud`; `GrafoPruebas`: cortes de `POR_GOTA`).
 
-`Tira.porLongitud(Tira.POR_DEFECTO)` y `Tira.fija(1/4, 3/4)` son el mismo `Cortes` (`Cortes(1/4, 3/4, true)`), de modo que esa tira
-reproduce `GLOBAL` con una arista; con varias, `GLOBAL` reparte la banda [c1, c3] por la s acumulada de cada gota.
+## Pendiente
+
+- Impacto visual en los ejemplos con gotas curvas y color/textura (cambian ligeramente: máx 28/255 en las medidas).
+- Revisar si algún estudio (`incubator`, ejemplos de pliegues) debe fijar `Tira.EN_T` de forma explícita.

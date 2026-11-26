@@ -25,7 +25,7 @@ public record Contorno(Shape borde, Shape oculta) {
     public static Contorno de(Camino geo) { return de(geo, MUESTRAS); }
 
     public static Contorno de(Camino geo, int muestras) {
-        return de(geo, new Zonas(geo, Costura.ORTOGONAL, Tira.POR_DEFECTO.cortes(geo)), muestras);
+        return de(geo, new Zonas(geo, Costura.ORTOGONAL, Tira.EN_T.cortes(geo)), muestras);
     }
 
     /** Un punto de la envolvente: posición, normal hacia fuera (sin normalizar) y distancia del test de pertenencia. */
