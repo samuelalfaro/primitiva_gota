@@ -34,5 +34,7 @@ separados 0,5 (imagen `disco_coincidente_vs_separado.png`, coincidente a la izqu
 - **Orientación por defecto: el eje x**, como decían las reglas de la gota de cuatro arcos: el extremo 1 queda a la izquierda y
   el 2 a la derecha. Dibujada es indistinguible de la de centros separados 0,5; difieren 136 píxeles de borde en la silueta y
   hay diferencias numéricas pequeñas de color, sin efecto visible.
-- Por tanto, un nodo sin aristas puede construirse como esa gota sin caso especial en la forma; lo único por decidir es si la
-  orientación debe poder darse (por ejemplo, un ángulo opcional en el nodo).
+- Conclusión (Samuel): no hace falta parámetro de orientación en el disco. Si la orientación se da por arista en el `Grafo`, el
+  caso de una arista no es distinto; si es intrínseca a los centros o a las curvas, el valor por defecto (−x para un centro y +x
+  para el otro, en cada centro solapado) también es correcto. La orientación que se quiera se dará después con la transformada
+  de `Grupo` (`Transformada`, pendiente), que arrastra con ella las coordenadas de color y textura.
