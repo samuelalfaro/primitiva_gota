@@ -54,7 +54,35 @@ la curva con tiradores; 14465 px, máx 19 en la suave).
 Pruebas: 19 suites, 0 fallos. Dos pruebas se actualizaron porque daban por hecho «tira por defecto = t»
 (`GotaCadena`: v del cuerpo y `Tira.porLongitud`; `GrafoPruebas`: cortes de `POR_GOTA`).
 
+## Impacto en los ejemplos (medido 2026-11-26)
+
+Se ejecutaron los ejemplos con las clases de `main` (antes) y las de esta rama (después), en una carpeta aparte cada uno, y se
+compararon los PNG píxel a píxel. 53 ejemplos con `main`; 52 imágenes (6 no generan PNG; `EstrellaTapas` y `GaleriaTapas` no
+compilan solos porque dependen de `GrafoPruebas`, pendiente «ejemplos→test» del #68).
+
+**Láminas: sin cambios.** Betta, Medusa_by_Grok, Escarabajo_by_Gemini, Monarca_by_Claude y Manta_by_Claude (y el resto de las
+láminas) son idénticas byte a byte. Todas son `Grafo` con el reparto `GLOBAL` por defecto, que ya usaba la longitud de arco, y
+ninguna llama a `dosColores`, `conGamma`, texturas en disco ni `reparto(...)`. Las imágenes de `arte/` siguen siendo válidas.
+
+**Cambian 9 imágenes, todas demos de gotas sueltas curvas (43 de 52 idénticas):**
+
+| Ejemplo | Imagen | Píxeles distintos | Máx. por canal |
+|---|---|---|---|
+| CasosDegenerados | degeneradas_degradados.png | 23797 | 25 |
+| CasosDegenerados | degeneradas_texturas.png | 8496 | 215 |
+| CosturasDemo | costuras_circulos_degradados.png | 154451 | 3 |
+| CosturasDemo | costuras_circulos_texturas.png | 38076 | 215 |
+| GotaAdversos | gota_adversos.png | 61915 | 13 |
+| GotaColorDemo | gota_tonos.png | 76743 | 16 |
+| GotaSolape | gota_solape.png | 62070 | 30 |
+| GotaTextura | gota_textura.png | 9883 | 230 |
+| LadosDemo | lados_demo.png | 399 | 88 |
+
+Degradados: un matiz suave (hasta 30/255 salvo LadosDemo). Texturas: las rejillas de las gotas curvas se desplazan, de ahí
+los máximos de 215 a 230 en las líneas; las gotas rectas no cambian (`impacto_demos.png`: antes, después y diferencia ×6).
+
 ## Pendiente
 
-- Impacto visual en los ejemplos con gotas curvas y color/textura (cambian ligeramente: máx 28/255 en las medidas).
-- Revisar si algún estudio (`incubator`, ejemplos de pliegues) debe fijar `Tira.EN_T` de forma explícita.
+- Regenerar las imágenes de los ejemplos de gota suelta que cambian (las demos de `media/` o `arte/` que las usen), si se quiere.
+- Revisar si algún estudio de `incubator` debe fijar `Tira.EN_T` de forma explícita.
+- Idea de Samuel, sin prioridad: separar en módulos para que cada lámina pueda generarse con la versión de la API de su creación.
