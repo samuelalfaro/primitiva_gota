@@ -23,4 +23,16 @@ de la librería. Se ejecuta con `UnaArista` (necesita las clases de `src/main/ja
 ## Siguiente
 - Averiguar qué relleno exacto emplea el `Grafo` en una arista (`rellenosPintado()`), para comparar con ese y no con `dosColores`.
 - Después, `label`, `altura` y `textura` (propiedades del `Grafo` que habría que trasladar).
-- Y el disco (nodo sin aristas): `Gota` de centros coincidentes; comprobar la orientación por defecto.
+- ~~Y el disco (nodo sin aristas)~~: hecho, ver abajo.
+
+## Segunda medida: el disco (`Gota` de centros coincidentes y radios iguales)
+
+`Disco.java`: `Gota.lineal(p, 100, p, 100, Perfil.recto())` con `Colores.cuatroColores`, frente a la misma gota con los centros
+separados 0,5 (imagen `disco_coincidente_vs_separado.png`, coincidente a la izquierda).
+
+- Es un **círculo**: 31 700 píxeles no blancos frente a los 31 416 del círculo ideal (el exceso es el borde suavizado).
+- **Orientación por defecto: el eje x**, como decían las reglas de la gota de cuatro arcos: el extremo 1 queda a la izquierda y
+  el 2 a la derecha. Dibujada es indistinguible de la de centros separados 0,5; difieren 136 píxeles de borde en la silueta y
+  hay diferencias numéricas pequeñas de color, sin efecto visible.
+- Por tanto, un nodo sin aristas puede construirse como esa gota sin caso especial en la forma; lo único por decidir es si la
+  orientación debe poder darse (por ejemplo, un ángulo opcional en el nodo).
