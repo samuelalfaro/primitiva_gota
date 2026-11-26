@@ -545,6 +545,46 @@ public class GrafoPruebas {
         comprueba("nodo suelto (sin aristas) se rechaza al construir", lanza(IllegalStateException.class, f::gotas), "");
     }
 
+    /** Un único nodo sin aristas es un disco: una gota de centros coincidentes y radios iguales. */
+    static void discoSuelto() {
+        final int ROJO = 0xFFD02020;
+        Grafo c = new Grafo();
+        c.nodo(150, 100, 40).color(ROJO);
+        List<Gota> gs = c.gotas();
+        comprueba("nodo suelto: una única gota", gs.size() == 1, "");
+        boolean dentro = c.contiene(150, 100) && c.contiene(150 + 39, 100) && c.contiene(150, 100 - 39) && c.contiene(150 - 39, 100);
+        boolean fuera = !c.contiene(150 + 41, 100) && !c.contiene(150, 100 + 41) && !c.contiene(150 + 30, 100 + 30);
+        comprueba("nodo suelto: la silueta es el círculo de su radio", dentro && fuera, "");
+        comprueba("nodo suelto: sdf del borde y del centro", Math.abs(c.sdf(150 + 40, 100)) < 1e-3 && Math.abs(c.sdf(150, 100) + 40) < 1e-3, "");
+        int[] d = datos(pinta(c));
+        comprueba("nodo suelto: se pinta de su color", d[100 * W + 150] == ROJO && d[100 * W + 150 + 30] == ROJO && d[10 * W + 10] == FONDO, "");
+        Grafo sinColor = new Grafo();
+        sinColor.nodo(150, 100, 40);
+        comprueba("nodo suelto sin color: se pinta con el gris por defecto", datos(pinta(sinColor))[100 * W + 150] == 0xFFCCCCCC, "");
+        comprueba("nodo suelto con lados() se rechaza", lanza(IllegalStateException.class, () -> {
+            Grafo g = new Grafo();
+            g.nodo(0, 0, 10).lados(0xFF000000, 0xFFFFFFFF);
+            g.gotas();
+        }), "");
+        comprueba("nodo suelto con sectores() se rechaza", lanza(IllegalStateException.class, () -> {
+            Grafo g = new Grafo();
+            g.nodo(0, 0, 10).sectores(0xFF000000);
+            g.gotas();
+        }), "");
+        comprueba("composición vacía se rechaza", lanza(IllegalStateException.class, () -> new Grafo().gotas()), "");
+        comprueba("dos nodos sin aristas se rechazan", lanza(IllegalStateException.class, () -> {
+            Grafo g = new Grafo();
+            g.nodo(0, 0, 10);
+            g.nodo(50, 0, 10);
+            g.gotas();
+        }), "");
+        Grafo crece = new Grafo();
+        var a = crece.nodo(50, 50, 10).color(ROJO);
+        comprueba("nodo suelto: añadir una arista deja de ser disco", crece.gotas().size() == 1, "");
+        crece.arista(a, crece.nodo(150, 50, 10).color(ROJO));
+        comprueba("nodo suelto que recibe una arista se reconstruye como cinta", crece.gotas().size() == 1 && crece.contiene(100, 50) && crece.gotas().get(0).longitud() > 50, "");
+    }
+
     static void tiradoresExplicitos() {
         Grafo auto = new Grafo();
         Grafo man = new Grafo();
@@ -853,6 +893,7 @@ public class GrafoPruebas {
         coherencia();
         invalidacion();
         tiradoresExplicitos();
+        discoSuelto();
         pruebaOcho();
         opciones();
         galeria();

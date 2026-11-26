@@ -42,6 +42,9 @@ import java.util.function.DoubleUnaryOperator;
  *
  * <h3>Reglas</h3>
  * <ul>
+ *   <li><b>Un único nodo sin aristas</b> es un disco: una gota de centros coincidentes y radios iguales, del color del nodo
+ *       ({@code color(c)} o {@code centro(c)}; sin sectores, lados ni {@code radio(f)}). Con más nodos, un nodo sin aristas sigue
+ *       siendo un error.</li>
  *   <li><b>Los nodos son círculos</b>: el círculo es la única forma que no depende de la orientación, así que es la
  *       misma vista desde todas las gotas que llegan al nodo.</li>
  *   <li><b>Tiradores automáticos</b> (si no se dan): en un nodo de grado 2 la tangente es la de Catmull-Rom entre sus
@@ -702,7 +705,7 @@ public final class Grafo implements Geometria {
 
     /** Cortes de v con que se pinta la gota i: los globales o, con {@link Reparto#POR_GOTA}, los de la tira de las opciones aplicada a esa gota. */
     private Cortes cortesDe(int i, Opciones op) {
-        return reparto == Reparto.GLOBAL ? cortesGlobales(i, op) : op.tira().cortes(gotas.get(i));
+        return reparto == Reparto.GLOBAL && !aristas.isEmpty() ? cortesGlobales(i, op) : op.tira().cortes(gotas.get(i));
     }
 
     private Cortes cortesGlobales(int i, Opciones op) {
@@ -814,10 +817,16 @@ public final class Grafo implements Geometria {
 
     private void construye() {
         if (gotas != null) return;
-        if (aristas.isEmpty()) throw new IllegalStateException("la composición no tiene aristas");
+        final boolean disco = aristas.isEmpty() && nodos.size() == 1;      // un único nodo sin aristas es un disco: una gota de centros coincidentes
+        if (aristas.isEmpty() && !disco) throw new IllegalStateException("la composición no tiene aristas");
         for (Nodo n : nodos) {
             int g = grado(n);
-            if (g == 0) throw new IllegalStateException("nodo " + n.id + " sin aristas");
+            if (g == 0 && !disco) throw new IllegalStateException("nodo " + n.id + " sin aristas");
+        }
+        if (disco) {
+            Nodo n = nodos.get(0);
+            if (n.sectores != null || n.contra != null || n.normal != null || n.fNormal != null || n.fContra != null)
+                throw new IllegalStateException("nodo " + n.id + " sin aristas: un disco solo admite color(c) o centro(c), sin sectores, lados ni radio(f)");
         }
         // Tiradores.
         List<Ar> ars = new ArrayList<>();
@@ -858,6 +867,16 @@ public final class Grafo implements Geometria {
             Rectangle2D gb = g.bounds();
             if (bb == null) bb = new Rectangle2D.Double(gb.getX(), gb.getY(), gb.getWidth(), gb.getHeight());
             else bb.add(gb);
+        }
+        if (disco) {
+            Nodo n = nodos.get(0);
+            Point2D.Double c = new Point2D.Double(n.x, n.y);
+            Gota g = Gota.lineal(c, n.radio, c, n.radio, Perfil.recto());
+            gotas.add(g);
+            Colores.Lateral lat = Colores.Lateral.uniforme(n.centro != null ? n.centro : 0xFFCCCCCC);
+            rellenos.add(Colores.cadenaLateral(lat, lat, mezcla));
+            Rectangle2D gb = g.bounds();
+            bb = new Rectangle2D.Double(gb.getX(), gb.getY(), gb.getWidth(), gb.getHeight());
         }
         bounds = bb;
         ordena(pasos, inv);
