@@ -53,6 +53,9 @@ src/ejemplos/java  dibujos y demos (Flor, Hoja, Figura8, ...); se compilan con l
 
 ## Uso
 
+Maven es una ayuda de compilación, no un requisito: solo hace falta un JDK 17 o posterior (también valen versiones
+posteriores) y todo funciona sin entorno gráfico.
+
 ```
 mvn test                 # compila todo y ejecuta los niveles rápidos: unitarias + regresion (los segundos)
 mvn test -Pestudio       # añade las matrices de estudio (el render completo; ~9 min en hardware modesto)
@@ -60,8 +63,31 @@ mvn test -Dsuites.niveles=estudio    # solo un nivel: unitarias, regresion o est
 ./ejemplos.sh Flor       # ejecuta un ejemplo; la imagen queda en target/imagenes
 ```
 
-Sin Maven: compilar `src/main/java` en un directorio, `src/test/java` y `src/ejemplos/java` en otro con el primero en el
+Sin Maven, con el `Makefile` (solo `javac` y `java`; mismos directorios `target/` que Maven):
+
+```
+make                         # compila la biblioteca (target/classes) y las pruebas y ejemplos (target/test-classes)
+make test                    # niveles rápidos: unitarias + regresion
+make test NIVELES=estudio    # un nivel concreto, o varios separados por comas; make test-todo ejecuta los tres
+make ejemplo EJ=Flor         # ejecuta un ejemplo; la imagen queda en target/imagenes
+make clean
+make RELEASE=17              # (opcional) exige el nivel 17; con SOURCE=17 si al JDK le falta lib/ct.sym
+```
+
+A mano: compilar `src/main/java` en un directorio, `src/test/java` y `src/ejemplos/java` en otro con el primero en el
 classpath, copiar `src/test/resources` a este segundo, y lanzar `common.Todas <classpath> [niveles,...]` o cualquier clase.
+
+### Entornos sin pantalla ni fuentes
+
+- **Headless.** Nada abre ventanas: se ejecuta con `-Djava.awt.headless=true` (el `Makefile`, `ejemplos.sh` y `common.Todas`
+  ya lo ponen).
+- **Fuentes.** El texto solo hace falta para escribir rótulos sobre una imagen: el modo alambre con
+  `Trazos.Ajustes.conEtiquetas(true)` (el valor por defecto) pintado en un `Graphics2D`, y las suites de estudio que
+  rotulan. Sin fuentes del sistema (sin `fontconfig` o sin `libfreetype`, algo típico de los contenedores) esos casos
+  fallan con un mensaje que lo explica, y se arreglan con `conEtiquetas(false)`; las suites lo detectan con
+  `common.Fuentes.hay()` y dibujan sin texto.
+- **SVG.** `PlotterSvg` escribe las etiquetas como elementos `<text>` y no necesita fuentes del sistema (las pone quien
+  abra el SVG). Tampoco las necesita el raster (`Plotter.raster`), ni los ejemplos ni las suites de imagen sin texto.
 
 ## Dependencias entre paquetes
 
