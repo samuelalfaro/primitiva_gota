@@ -20,6 +20,7 @@ public class Todas {
          // Lógica y matemática, sin referencias que comparar: segundos.
         {"unitarias",
           "common.ArquitecturaPruebas"
+         ,"common.MapaParametrizacionPruebas"
          ,"common.ComparaPruebas"
          ,"geometria.composicion.GrafoPruebas"
          ,"coordenadas.ContornoPruebas"
