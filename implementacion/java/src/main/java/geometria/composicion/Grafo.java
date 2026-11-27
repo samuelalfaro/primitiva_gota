@@ -42,9 +42,11 @@ import java.util.function.DoubleUnaryOperator;
  *
  * <h3>Reglas</h3>
  * <ul>
- *   <li><b>Un único nodo sin aristas</b> es un disco: una gota de centros coincidentes y radios iguales, del color del nodo
- *       ({@code color(c)} o {@code centro(c)}; sin sectores, lados ni {@code radio(f)}). Con más nodos, un nodo sin aristas sigue
- *       siendo un error.</li>
+ *   <li><b>Un Grafo es conexo</b>: si sus nodos forman varias componentes (dos nodos sin ninguna arista entre ellos, dos
+ *       trazos separados...), no es un grafo sino un {@code Grupo} de grafos o de gotas, y construirlo lanza
+ *       {@link NodosDesconectadosException} (con las componentes, por si quien llama quiere construir el Grupo).</li>
+ *   <li><b>Un único nodo sin aristas</b> es un grafo conexo mínimo: un disco, una gota de centros coincidentes y radios
+ *       iguales, del color del nodo ({@code color(c)} o {@code centro(c)}; sin sectores, lados ni {@code radio(f)}).</li>
  *   <li><b>Los nodos son círculos</b>: el círculo es la única forma que no depende de la orientación, así que es la
  *       misma vista desde todas las gotas que llegan al nodo.</li>
  *   <li><b>Tiradores automáticos</b> (si no se dan): en un nodo de grado 2 la tangente es la de Catmull-Rom entre sus
@@ -815,14 +817,32 @@ public final class Grafo implements Geometria {
     /** m1 y m2: pendientes dr/dt del radio en los extremos (NaN: sin dato, el radio va en recta). */
     private record Ar(int a, int b, Gota.Vec va, Gota.Vec vb, double m1, double m2, boolean fija) {}
 
+    /** Lanza {@link NodosDesconectadosException} si los nodos forman más de una componente conexa. */
+    private void compruebaConexo() {
+        int n = nodos.size();
+        int[] raiz = new int[n];
+        for (int i = 0; i < n; i++) raiz[i] = i;
+        java.util.IdentityHashMap<Nodo, Integer> indice = new java.util.IdentityHashMap<>();
+        for (int i = 0; i < n; i++) indice.put(nodos.get(i), i);
+        for (Arista e : aristas) {
+            int a = busca(raiz, indice.get(e.a)), b = busca(raiz, indice.get(e.b));
+            if (a != b) raiz[Math.max(a, b)] = Math.min(a, b);
+        }
+        java.util.Map<Integer, List<Integer>> comp = new java.util.TreeMap<>();
+        for (int i = 0; i < n; i++) comp.computeIfAbsent(busca(raiz, i), k -> new ArrayList<>()).add(nodos.get(i).id);
+        if (comp.size() > 1) throw new NodosDesconectadosException(List.copyOf(comp.values()));
+    }
+
+    private static int busca(int[] raiz, int i) {
+        while (raiz[i] != i) { raiz[i] = raiz[raiz[i]]; i = raiz[i]; }
+        return i;
+    }
+
     private void construye() {
         if (gotas != null) return;
-        final boolean disco = aristas.isEmpty() && nodos.size() == 1;      // un único nodo sin aristas es un disco: una gota de centros coincidentes
-        if (aristas.isEmpty() && !disco) throw new IllegalStateException("la composición no tiene aristas");
-        for (Nodo n : nodos) {
-            int g = grado(n);
-            if (g == 0 && !disco) throw new IllegalStateException("nodo " + n.id + " sin aristas");
-        }
+        if (nodos.isEmpty()) throw new IllegalStateException("la composición no tiene aristas");
+        compruebaConexo();                                                  // antes de nada: un Grafo es conexo, varias partes sin unir son un Grupo
+        final boolean disco = aristas.isEmpty();                            // conexo y sin aristas: un único nodo, un disco (gota de centros coincidentes)
         if (disco) {
             Nodo n = nodos.get(0);
             if (n.sectores != null || n.contra != null || n.normal != null || n.fNormal != null || n.fContra != null)

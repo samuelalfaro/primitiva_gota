@@ -605,6 +605,45 @@ public class GrafoPruebas {
         comprueba("una arista curva: con Tira.EN_T el reparto de color cambia respecto de la longitud de arco", !java.util.Arrays.equals(datos(glob), datos(enT)), "");
     }
 
+    /** Un Grafo es conexo: varias componentes se rechazan con NodosDesconectadosException, que lleva las componentes. */
+    static void conexo() {
+        Grafo dos = new Grafo();
+        dos.nodo(0, 0, 10);
+        dos.nodo(50, 0, 10);
+        NodosDesconectadosException e1 = captura(dos);
+        comprueba("dos nodos sin conexión: NodosDesconectadosException con dos componentes", e1 != null && e1.componentes().equals(java.util.List.of(java.util.List.of(0), java.util.List.of(1))), e1 == null ? "no lanza" : e1.componentes().toString());
+
+        Grafo punto = new Grafo();                      // la «i» de Grok: el punto como nodo suelto junto al palo
+        punto.nodo(28, 12, 4.5);
+        var t = punto.nodo(28, 28, 5);
+        var b = punto.nodo(28, 78, 5.5);
+        punto.arista(t, b);
+        NodosDesconectadosException e2 = captura(punto);
+        comprueba("nodo suelto junto a un trazo: componentes [0] y [1, 2]", e2 != null && e2.componentes().equals(java.util.List.of(java.util.List.of(0), java.util.List.of(1, 2))), e2 == null ? "no lanza" : e2.componentes().toString());
+
+        Grafo trazos = new Grafo();                     // dos trazos con aristas, sin ninguna unión
+        var a = trazos.nodo(0, 0, 8);
+        var c = trazos.nodo(60, 0, 8);
+        var d = trazos.nodo(0, 40, 8);
+        var f = trazos.nodo(60, 40, 8);
+        trazos.arista(a, c);
+        trazos.arista(d, f);
+        NodosDesconectadosException e3 = captura(trazos);
+        comprueba("dos trazos con aristas sin unir: dos componentes", e3 != null && e3.componentes().size() == 2, e3 == null ? "no lanza" : e3.componentes().toString());
+
+        trazos.arista(c, f);                            // se unen: ahora es conexo
+        comprueba("al unir las componentes con una arista ya se construye", captura(trazos) == null && trazos.gotas().size() == 3, "");
+        Grafo uno = new Grafo();
+        uno.nodo(0, 0, 10);
+        comprueba("un único nodo sin aristas es conexo (disco)", captura(uno) == null, "");
+        comprueba("la excepción es una IllegalStateException", e1 instanceof IllegalStateException, "");
+    }
+
+    static NodosDesconectadosException captura(Grafo g) {
+        try { g.gotas(); return null; }
+        catch (NodosDesconectadosException e) { return e; }
+    }
+
     static void tiradoresExplicitos() {
         Grafo auto = new Grafo();
         Grafo man = new Grafo();
@@ -915,6 +954,7 @@ public class GrafoPruebas {
         tiradoresExplicitos();
 
         discoSuelto();
+        conexo();
         unaAristaCurva();
 
         pruebaOcho();
