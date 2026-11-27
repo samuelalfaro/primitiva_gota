@@ -49,7 +49,12 @@ public final class Colores {
 
     public static Relleno dosColores(int a, int b, Mezcla m) {
         Objects.requireNonNull(m, "mezcla");
-        return p -> m.mezclar(a, b, clamp01(p.muestra().t()));
+        return new Relleno() {
+            @Override public int argb(Punto p) { return m.mezclar(a, b, clamp01(p.muestra().t())); }
+            @Override public Relleno para(Gota g, Opciones op) {
+                return op.tira().cortes(g).porLongitud() ? p -> m.mezclar(a, b, clamp01(g.fraccion(p.muestra().t()))) : this;
+            }
+        };
     }
 
     /**
@@ -427,13 +432,18 @@ public final class Colores {
         Objects.requireNonNull(centroBorde, "centroBorde");
         if (!(gamma1 > 0) || !(gamma2 > 0))
             throw new IllegalArgumentException("gamma debe ser > 0");
-        return p -> {
-            double tt = clamp01(p.muestra().t());
-            double u = clamp01(p.muestra().rho());
-            double g = gamma1 + (gamma2 - gamma1) * tt;
-            if (g != 1) u = Math.pow(u, g);
-            return centroBorde.mezclar(entreCirculos.mezclar(a, b, tt),
-                                       entreCirculos.mezclar(aBorde, bBorde, tt), u);
+        return new Relleno() {
+            private int pinta(Punto p, double tt) {
+                double u = clamp01(p.muestra().rho());
+                double g = gamma1 + (gamma2 - gamma1) * tt;
+                if (g != 1) u = Math.pow(u, g);
+                return centroBorde.mezclar(entreCirculos.mezclar(a, b, tt),
+                                           entreCirculos.mezclar(aBorde, bBorde, tt), u);
+            }
+            @Override public int argb(Punto p) { return pinta(p, clamp01(p.muestra().t())); }
+            @Override public Relleno para(Gota gota, Opciones op) {
+                return op.tira().cortes(gota).porLongitud() ? p -> pinta(p, clamp01(gota.fraccion(p.muestra().t()))) : this;
+            }
         };
     }
 

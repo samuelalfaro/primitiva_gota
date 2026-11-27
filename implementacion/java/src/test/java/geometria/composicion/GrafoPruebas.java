@@ -284,9 +284,9 @@ public class GrafoPruebas {
         boolean tiras = true;
         for (int i = 0; i < 3; i++) {
             Cortes kk = pg.cortes(pg.aristas().get(i), op);
-            tiras &= Math.abs(kk.c1() - 0.25) < 1e-9 && Math.abs(kk.c3() - 0.75) < 1e-9 && !kk.porLongitud();
+            tiras &= Math.abs(kk.c1() - 0.25) < 1e-9 && Math.abs(kk.c3() - 0.75) < 1e-9 && kk.porLongitud();
         }
-        comprueba("reparto POR_GOTA: cada gota usa los cortes de su tira (1/4, 3/4) y la v por t", tiras, "");
+        comprueba("reparto POR_GOTA: cada gota usa los cortes de su tira (1/4, 3/4) y la v por longitud de arco", tiras, "");
         BufferedImage imG = conV(pg, op);
         int sg = Math.min(saltoV(imG, pg.gotas().get(0), pg.gotas().get(1)), saltoV(imG, pg.gotas().get(1), pg.gotas().get(2)));
         comprueba("reparto POR_GOTA: la v pintada salta en los nodos (se reinicia en cada arista)", sg > 60, "salto " + sg);
@@ -543,6 +543,66 @@ public class GrafoPruebas {
         f.arista(centro, punta);
         f.nodo(0, 0, 1);
         comprueba("nodo suelto (sin aristas) se rechaza al construir", lanza(IllegalStateException.class, f::gotas), "");
+    }
+
+    /** Un único nodo sin aristas es un disco: una gota de centros coincidentes y radios iguales. */
+    static void discoSuelto() {
+        final int ROJO = 0xFFD02020;
+        Grafo c = new Grafo();
+        c.nodo(150, 100, 40).color(ROJO);
+        List<Gota> gs = c.gotas();
+        comprueba("nodo suelto: una única gota", gs.size() == 1, "");
+        boolean dentro = c.contiene(150, 100) && c.contiene(150 + 39, 100) && c.contiene(150, 100 - 39) && c.contiene(150 - 39, 100);
+        boolean fuera = !c.contiene(150 + 41, 100) && !c.contiene(150, 100 + 41) && !c.contiene(150 + 30, 100 + 30);
+        comprueba("nodo suelto: la silueta es el círculo de su radio", dentro && fuera, "");
+        comprueba("nodo suelto: sdf del borde y del centro", Math.abs(c.sdf(150 + 40, 100)) < 1e-3 && Math.abs(c.sdf(150, 100) + 40) < 1e-3, "");
+        int[] d = datos(pinta(c));
+        comprueba("nodo suelto: se pinta de su color", d[100 * W + 150] == ROJO && d[100 * W + 150 + 30] == ROJO && d[10 * W + 10] == FONDO, "");
+        Grafo sinColor = new Grafo();
+        sinColor.nodo(150, 100, 40);
+        comprueba("nodo suelto sin color: se pinta con el gris por defecto", datos(pinta(sinColor))[100 * W + 150] == 0xFFCCCCCC, "");
+        comprueba("nodo suelto con lados() se rechaza", lanza(IllegalStateException.class, () -> {
+            Grafo g = new Grafo();
+            g.nodo(0, 0, 10).lados(0xFF000000, 0xFFFFFFFF);
+            g.gotas();
+        }), "");
+        comprueba("nodo suelto con sectores() se rechaza", lanza(IllegalStateException.class, () -> {
+            Grafo g = new Grafo();
+            g.nodo(0, 0, 10).sectores(0xFF000000);
+            g.gotas();
+        }), "");
+        comprueba("composición vacía se rechaza", lanza(IllegalStateException.class, () -> new Grafo().gotas()), "");
+        comprueba("dos nodos sin aristas se rechazan", lanza(IllegalStateException.class, () -> {
+            Grafo g = new Grafo();
+            g.nodo(0, 0, 10);
+            g.nodo(50, 0, 10);
+            g.gotas();
+        }), "");
+        Grafo crece = new Grafo();
+        var a = crece.nodo(50, 50, 10).color(ROJO);
+        comprueba("nodo suelto: añadir una arista deja de ser disco", crece.gotas().size() == 1, "");
+        crece.arista(a, crece.nodo(150, 50, 10).color(ROJO));
+        comprueba("nodo suelto que recibe una arista se reconstruye como cinta", crece.gotas().size() == 1 && crece.contiene(100, 50) && crece.gotas().get(0).longitud() > 50, "");
+    }
+   
+    /**
+     * Issue #78: un Grafo de una arista curva pinta igual con GLOBAL y con POR_GOTA (v por longitud de arco en la tira por
+     * defecto) y como su gota con dosColores; con Tira.EN_T la v vuelve a ir por t y el color cambia.
+     */
+    static void unaAristaCurva() {
+        final int R = 0xFFD02020, B = 0xFF2040D0;
+        Grafo c = new Grafo().mezcla(Mezcla.RGB);
+        c.arista(c.nodo(80, 220, 30).color(R), c.nodo(320, 80, 20).color(B)).tiradores(new Gota.Vec(100, -150), new Gota.Vec(100, 100));
+        BufferedImage glob = pinta(c.reparto(Grafo.Reparto.GLOBAL)), pg = pinta(c.reparto(Grafo.Reparto.POR_GOTA));
+        BufferedImage gota = new BufferedImage(glob.getWidth(), glob.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        java.util.Arrays.fill(datos(gota), datos(glob)[0]);
+        Plotter.raster(gota).plot(Pintada.de(c.gotas().get(0), color.Colores.dosColores(R, B)));
+        comprueba("una arista curva: GLOBAL == POR_GOTA (0 píxeles distintos)", java.util.Arrays.equals(datos(glob), datos(pg)), "");
+        comprueba("una arista curva: el Grafo == su gota con dosColores", java.util.Arrays.equals(datos(glob), datos(gota)), "");
+        BufferedImage enT = new BufferedImage(glob.getWidth(), glob.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        java.util.Arrays.fill(datos(enT), datos(glob)[0]);
+        Plotter.raster(enT).plot(Pintada.de(c.gotas().get(0), color.Colores.dosColores(R, B)), Opciones.POR_DEFECTO.conTira(Tira.EN_T));
+        comprueba("una arista curva: con Tira.EN_T el reparto de color cambia respecto de la longitud de arco", !java.util.Arrays.equals(datos(glob), datos(enT)), "");
     }
 
     static void tiradoresExplicitos() {
@@ -853,6 +913,10 @@ public class GrafoPruebas {
         coherencia();
         invalidacion();
         tiradoresExplicitos();
+
+        discoSuelto();
+        unaAristaCurva();
+
         pruebaOcho();
         opciones();
         galeria();

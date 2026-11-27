@@ -10,6 +10,7 @@ import geometria.Grupo;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
+import common.Fuentes;
 import java.io.StringWriter;
 import java.util.Arrays;
 
@@ -58,15 +59,17 @@ public class AlambreSvgGeometriaPruebas {
         Pintada pa = Pintada.de(a, Colores.dosColores(0xFFFF0000, 0xFFFF0000)), pb = Pintada.de(b, Colores.dosColores(0xFF0000FF, 0xFF0000FF));
         Grupo g = new Grupo(pa, new Grupo(pb).label("interno")).label("par");
 
+        // Sobre imagen, las etiquetas necesitan fuentes del sistema: sin ellas se compara el alambre sin texto (el SVG no las necesita).
+        Trazos.Ajustes aj = Trazos.Ajustes.POR_DEFECTO.conEtiquetas(Fuentes.hay());
         BufferedImage x = lienzo(), y = lienzo();
-        PlotterAlambre.sobre(x).plot(g);
-        PlotterAlambre.sobre(y).plot(a);
-        PlotterAlambre.sobre(y).plot(b);
+        PlotterAlambre.sobre(x, aj).plot(g);
+        PlotterAlambre.sobre(y, aj).plot(a);
+        PlotterAlambre.sobre(y, aj).plot(b);
         comprueba("alambre de un grupo = alambre de sus gotas una a una", Arrays.equals(datos(x), datos(y)) && !Arrays.equals(datos(x), datos(lienzo())), "");
 
         BufferedImage h = lienzo(), k = lienzo();
-        PlotterAlambre.sobre(h).plot(pa);
-        PlotterAlambre.sobre(k).plot(a);
+        PlotterAlambre.sobre(h, aj).plot(pa);
+        PlotterAlambre.sobre(k, aj).plot(a);
         comprueba("alambre de una Pintada = alambre de su gota", Arrays.equals(datos(h), datos(k)), "");
 
         String sa = svg(p -> p.plot(a)), sb = svg(p -> p.plot(b));
@@ -76,6 +79,8 @@ public class AlambreSvgGeometriaPruebas {
             sg.contains("<g id=\"par\">") && sg.contains("<g id=\"interno\">") && cuenta(sg, "<g") == 2 && cuenta(sg, "</g>") == 2
                 && sg.indexOf("<g id=\"par\">") < sg.indexOf("<g id=\"interno\">") && sg.lastIndexOf("</g>") < sg.indexOf("</svg>"), "");
         comprueba("SVG de una gota sola no lleva <g>", !sa.contains("<g"), "");
+        comprueba("SVG: las etiquetas (C1, C2) son elementos <text>, no contornos: no necesitan fuentes del sistema",
+            cuenta(sa, "<text class=\"nombre\"") == 2 && sa.contains(">C1</text>") && sa.contains(">C2</text>"), cuenta(sa, "<text") + "");
 
         String sl = svg(p -> p.plot(new Grupo(pa.conLabel("a<&\"b")).label("x")));
         comprueba("el label se escapa como atributo XML", sl.contains("<g id=\"a&lt;&amp;&quot;b\">") && cuenta(sl, "<g") == 2, "");

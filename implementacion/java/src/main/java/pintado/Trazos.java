@@ -118,8 +118,20 @@ public final class Trazos {
         }
     }
 
-    /** Una forma vectorial y su papel en el alambre. */
-    public record Trazo(Rol rol, Shape forma) {}
+    /**
+     * Una forma vectorial y su papel en el alambre. Las etiquetas son trazos de texto: llevan la cadena y su centro, y su
+     * {@code forma()} (el contorno de los glifos) solo se calcula al pedirla, que es lo único que necesita una fuente del
+     * sistema. Así un exportador (SVG) escribe el texto sin fuentes, y pintar sobre una imagen sí las exige.
+     */
+    public record Trazo(Rol rol, Shape forma, String texto, double x, double y) {
+        public Trazo(Rol rol, Shape forma) { this(rol, forma, null, 0, 0); }
+
+        /** Un trazo de texto, centrado en (x, y). */
+        public static Trazo texto(Rol rol, String texto, double x, double y) { return new Trazo(rol, null, texto, x, y); }
+
+        /** La forma; en un trazo de texto, el contorno de sus glifos (falla si el entorno no tiene fuentes del sistema). */
+        @Override public Shape forma() { return forma != null ? forma : contornoDelTexto(texto, x, y); }
+    }
 
     /**
      * Qué se dibuja y con cuánto detalle.
@@ -190,7 +202,7 @@ public final class Trazos {
         camino.curveTo(x1, y1, x2, y2, x3, y3);
         conHalo(out, Rol.CAMINO, camino);
 
-        var zonas = new Zonas(geo, Costura.ORTOGONAL, Tira.POR_DEFECTO.cortes(geo));
+        var zonas = new Zonas(geo, Costura.ORTOGONAL, Tira.EN_T.cortes(geo));
         if (aj.contorno()) silueta(geo, zonas, aj, out);
         if (aj.tapas()) tapas(geo, zonas, out);
         if (aj.radios()) {
@@ -251,7 +263,7 @@ public final class Trazos {
                 out.add(new Trazo(Rol.CONTACTO, punto(px, py, 2.6)));
                 double dx = px - f.cx(), dy = py - f.cy(), d = Math.hypot(dx, dy);
                 double ux = d > 1e-9 ? dx / d : 0, uy = d > 1e-9 ? dy / d : -1;
-                if (etiquetas) out.add(new Trazo(Rol.ETIQUETA, etiqueta(nombres[2 * e + l], px + 11 * ux, py + 11 * uy)));
+                if (etiquetas) out.add(Trazo.texto(Rol.ETIQUETA, nombres[2 * e + l], px + 11 * ux, py + 11 * uy));
             }
         }
     }
@@ -269,8 +281,8 @@ public final class Trazos {
             double[] m = ejes(f);
             double sg = e == 0 ? -1 : 1, r = f.r();
             out.add(new Trazo(Rol.SEMIEJE, new Line2D.Double(f.cx(), f.cy(), f.cx() + sg * r * m[0], f.cy() + sg * r * m[1])));
-            if (etiquetas) out.add(new Trazo(Rol.NOMBRE, etiqueta("r" + (e + 1),
-                f.cx() + sg * (r + 11) * m[0], f.cy() + sg * (r + 11) * m[1])));
+            if (etiquetas) out.add(Trazo.texto(Rol.NOMBRE, "r" + (e + 1),
+                f.cx() + sg * (r + 11) * m[0], f.cy() + sg * (r + 11) * m[1]));
         }
     }
 
@@ -355,7 +367,7 @@ public final class Trazos {
 
     /** El punto medio del arco de la tapa e (0 o 1); null si el radio es 0. Para las pruebas. */
     static double[] mitadTapa(Camino geo, int e) {
-        Zonas zonas = new Zonas(geo, Costura.ORTOGONAL, Tira.POR_DEFECTO.cortes(geo));
+        Zonas zonas = new Zonas(geo, Costura.ORTOGONAL, Tira.EN_T.cortes(geo));
         double[] bs = arcoTapa(geo, zonas, e);
         if (bs == null) return null;
         Zonas.Fr f = zonas.marco(e);
@@ -368,14 +380,20 @@ public final class Trazos {
             Zonas.Fr f = zonas.marco(e);
             double[] m = ejes(f);
             double sg = e == 0 ? -1 : 1;
-            out.add(new Trazo(Rol.NOMBRE, etiqueta("C" + (e + 1),
-                f.cx() + 11 * (sg * 0.7 * m[0] - 0.7 * m[2]), f.cy() + 11 * (sg * 0.7 * m[1] - 0.7 * m[3]))));
+            out.add(Trazo.texto(Rol.NOMBRE, "C" + (e + 1),
+                f.cx() + 11 * (sg * 0.7 * m[0] - 0.7 * m[2]), f.cy() + 11 * (sg * 0.7 * m[1] - 0.7 * m[3])));
         }
     }
 
-    /** El texto como contorno vectorial, centrado en (x, y). */
-    private static Shape etiqueta(String texto, double x, double y) {
-        Shape s = FUENTE.createGlyphVector(new FontRenderContext(null, true, true), texto).getOutline();
+    /** El texto como contorno vectorial, centrado en (x, y). Necesita fuentes del sistema (y libfreetype/fontconfig). */
+    private static Shape contornoDelTexto(String texto, double x, double y) {
+        Shape s;
+        try {
+            s = FUENTE.createGlyphVector(new FontRenderContext(null, true, true), texto).getOutline();
+        } catch (LinkageError | InternalError | RuntimeException e) {
+            throw new IllegalStateException("este entorno no tiene fuentes del sistema para escribir «" + texto
+                + "»: usa Trazos.Ajustes.conEtiquetas(false) o exporta a SVG (que escribe el texto sin fuentes)", e);
+        }
         Rectangle2D b = s.getBounds2D();
         return AffineTransform.getTranslateInstance(x - b.getCenterX(), y - b.getCenterY()).createTransformedShape(s);
     }

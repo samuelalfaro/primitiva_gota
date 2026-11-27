@@ -13,8 +13,18 @@ public interface Tira {
     /** Los cortes de v para esta geometría. */
     Cortes cortes(Camino g);
 
-    /** Tapa trasera, cuerpo y tapa delantera en proporción 1 : 2 : 1 (v1 = 1/4, v3 = 3/4). */
-    Tira POR_DEFECTO = new Pesos(1, 2, 1);
+    /**
+     * Tapa trasera, cuerpo y tapa delantera en proporción 1 : 2 : 1 (v1 = 1/4, v3 = 3/4), con v lineal en la longitud de arco
+     * del camino: la textura y el degradado no se estiran donde la curva acelera (la t de una Bézier depende de la longitud de
+     * los tiradores, no de la forma).
+     */
+    Tira POR_DEFECTO = new PorLongitud(new Pesos(1, 2, 1));
+
+    /**
+     * La misma tira 1 : 2 : 1 con v lineal en el parámetro t del camino. Es lo que hacía {@link #POR_DEFECTO} antes; sirve para
+     * los estudios (pliegues, solapes) donde no se quiere suavizar con la longitud de arco las irregularidades de t.
+     */
+    Tira EN_T = new Pesos(1, 2, 1);
 
     /**
      * Reparto por pesos: la parte de v que ocupan la tapa trasera, el cuerpo y la tapa delantera. Dentro del cuerpo v

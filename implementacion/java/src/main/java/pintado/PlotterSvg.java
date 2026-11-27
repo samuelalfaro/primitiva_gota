@@ -138,7 +138,13 @@ public final class PlotterSvg implements AutoCloseable {
 
     private static String paths(List<Trazos.Trazo> trazos) {
         StringBuilder sb = new StringBuilder();
-        for (Trazos.Trazo t : trazos) sb.append("<path class=\"").append(t.rol().clase).append("\" d=\"").append(camino(t.forma())).append("\"/>\n");
+        for (Trazos.Trazo t : trazos) {
+            if (t.texto() != null)   // las etiquetas se escriben como texto SVG: no hacen falta fuentes del sistema para exportar
+                sb.append("<text class=\"").append(t.rol().clase).append("\" x=\"").append(num(t.x())).append("\" y=\"").append(num(t.y()))
+                  .append("\">").append(atributo(t.texto())).append("</text>\n");
+            else
+                sb.append("<path class=\"").append(t.rol().clase).append("\" d=\"").append(camino(t.forma())).append("\"/>\n");
+        }
         return sb.toString();
     }
 
@@ -150,6 +156,7 @@ public final class PlotterSvg implements AutoCloseable {
             num(x), num(y), num(w), num(h), num(w), num(h)));
         out.write("<style>\n");
         out.write("  path { fill: none; stroke-linecap: round; stroke-linejoin: round; }\n");
+        out.write("  text { font: bold 11px sans-serif; text-anchor: middle; dominant-baseline: central; }\n");
         for (Trazos.Rol r : Trazos.Rol.values()) {
             String op = r.color.getAlpha() == 255 ? "" : " stroke-opacity: " + num(r.color.getAlpha() / 255.0) + ";";
             String fop = r.color.getAlpha() == 255 ? "" : " fill-opacity: " + num(r.color.getAlpha() / 255.0) + ";";

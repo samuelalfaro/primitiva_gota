@@ -21,6 +21,7 @@ public class Todas {
         {"unitarias",
           "common.ArquitecturaPruebas"
          ,"common.MapaParametrizacionPruebas"
+         ,"common.ComparaPruebas"
          ,"geometria.composicion.GrafoPruebas"
          ,"coordenadas.ContornoPruebas"
          ,"geometria.composicion.PintadaPruebas"

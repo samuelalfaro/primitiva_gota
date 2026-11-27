@@ -97,7 +97,11 @@ public final class Grupo implements Geometria {
 
     private static final Comparator<Tinta> POR_ALTURA = Comparator.comparingDouble(Tinta::altura);
 
-    /** Las capas de todas las geometrías, de abajo a arriba por altura (orden estable: a igual altura, el de añadido y emisión). */
+    /**
+     * Las capas de todas las geometrías, de abajo a arriba por la altura de su {@link Tinta} (la de la geometría desplazada
+     * por la de este grupo; no la de las aristas de un {@code Grafo}, ver {@link Tinta}). Orden estable: a igual altura, el
+     * de añadido y emisión.
+     */
     @Override public void capas(double x, double y, Opciones op, Consumer<Tinta> out) {
         final List<Tinta> ts = new ArrayList<>();
         for (Geometria g : hijos) g.capas(x, y, op, t -> ts.add(altura == 0 ? t : new Tinta(t.argb(), t.cobertura(), t.altura() + altura)));
