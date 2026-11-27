@@ -324,13 +324,14 @@ public class GotaCadena {
             noLin |= Math.abs(gc.fraccion(i / 100.0) - i / 100.0) > 0.05;
         }
         comprueba("Camino.fraccion: creciente de 0 a 1 y distinta de t con tiradores desiguales", crece && noLin && Math.abs(gc.fraccion(1) - 1) < 1e-12, "");
-        Cortes cl = Tira.porLongitud(Tira.POR_DEFECTO).cortes(gc);
-        comprueba("Tira.porLongitud: mismos c1 y c3 y marca porLongitud", cl.porLongitud() && cl.c1() == 0.25 && cl.c3() == 0.75
-                  && !Tira.POR_DEFECTO.cortes(gc).porLongitud(), "");
-        // v del cuerpo: lineal en t por defecto y en la longitud de arco con porLongitud
+        Cortes cl = Tira.porLongitud(Tira.EN_T).cortes(gc);
+        comprueba("Tira.porLongitud: mismos c1 y c3 que EN_T y marca porLongitud", cl.porLongitud() && cl.c1() == 0.25 && cl.c3() == 0.75
+                  && !Tira.EN_T.cortes(gc).porLongitud(), "");
+        comprueba("Tira.POR_DEFECTO es EN_T con v por longitud de arco", Tira.POR_DEFECTO.cortes(gc).equals(cl), "");
+        // v del cuerpo: lineal en la longitud de arco por defecto y en t con Tira.EN_T
         Point2D mc = gc.centro(0.5);
-        double fl = gc.fraccion(0.5), vt = Coordenadas.uv(gc, mc.getX(), mc.getY(), Opciones.POR_DEFECTO).v(), vl = Coordenadas.uv(gc, mc.getX(), mc.getY(), Opciones.POR_DEFECTO.conTira(Tira.porLongitud(Tira.POR_DEFECTO))).v();
-        comprueba("v del cuerpo en t = 0.5: 0.5 por t y 0.25 + 0.5·fraccion por longitud", Math.abs(vt - 0.5) < 1e-2 && Math.abs(vl - (0.25 + 0.5 * fl)) < 1e-2 && Math.abs(vt - vl) > 0.02, String.format("%.3f %.3f fr=%.3f", vt, vl, fl));
+        double fl = gc.fraccion(0.5), vt = Coordenadas.uv(gc, mc.getX(), mc.getY(), Opciones.POR_DEFECTO.conTira(Tira.EN_T)).v(), vl = Coordenadas.uv(gc, mc.getX(), mc.getY(), Opciones.POR_DEFECTO).v();
+        comprueba("v del cuerpo en t = 0.5: 0.5 con EN_T y 0.25 + 0.5·fraccion por defecto (longitud)", Math.abs(vt - 0.5) < 1e-2 && Math.abs(vl - (0.25 + 0.5 * fl)) < 1e-2 && Math.abs(vt - vl) > 0.02, String.format("%.3f %.3f fr=%.3f", vt, vl, fl));
         Cortes p = Tira.pesos(1, 8, 1).cortes(g);
         comprueba("Tira.pesos(1, 8, 1): v1 = 0.1 y v3 = 0.9", Math.abs(p.c1() - 0.1) < 1e-12 && Math.abs(p.c3() - 0.9) < 1e-12, "");
         boolean lanza = true;

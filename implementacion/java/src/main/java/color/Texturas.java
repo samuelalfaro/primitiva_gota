@@ -326,7 +326,7 @@ public final class Texturas {
         Objects.requireNonNull(segundo, "segundo");
         Objects.requireNonNull(orientacion, "orientacion");
         Objects.requireNonNull(giro, "giro");
-        return new DiscoRelleno(tex, primero, segundo, orientacion, giro, null);
+        return new DiscoRelleno(tex, primero, segundo, orientacion, giro, null, false);
     }
 
     private static final class DiscoRelleno implements Relleno {
@@ -338,8 +338,10 @@ public final class Texturas {
         private final double s1, s2, th1, th2;   // escala (en unidades del ancho) y ángulo (grados) de cada extremo
         private final double al;                  // aspecto ancho/alto de la textura
 
-        DiscoRelleno(Textura tex, Disco d1, Disco d2, Orientacion o, Giro giro, Gota gota) {
-            this.tex = tex; this.d1 = d1; this.d2 = d2; this.orientacion = o; this.giro = giro; this.gota = gota;
+        private final boolean porLongitud;        // el avance entre los dos discos va por la longitud de arco, no por t
+
+        DiscoRelleno(Textura tex, Disco d1, Disco d2, Orientacion o, Giro giro, Gota gota, boolean porLongitud) {
+            this.tex = tex; this.d1 = d1; this.d2 = d2; this.orientacion = o; this.giro = giro; this.gota = gota; this.porLongitud = porLongitud;
             al = tex.aspecto();
             if (!(al > 0) || !Double.isFinite(al)) throw new IllegalArgumentException("aspecto de la textura no válido");
             // El radio y el ángulo se miden en unidades del ancho (v se divide por el aspecto ancho/alto), así un
@@ -352,16 +354,17 @@ public final class Texturas {
             th2 = Math.toDegrees(Math.atan2(dv2, du2));
         }
 
-        @Override public Relleno para(Gota g, Opciones op) { return new DiscoRelleno(tex, d1, d2, orientacion, giro, g); }
+        @Override public Relleno para(Gota g, Opciones op) { return new DiscoRelleno(tex, d1, d2, orientacion, giro, g, op.tira().cortes(g).porLongitud()); }
 
         @Override public int argb(Punto p) {
             Coordenadas.Muestra m = p.muestra();
             if (Double.isNaN(m.axial()) || Double.isNaN(m.lateral()))
                 throw new UnsupportedOperationException("el mapeo en disco necesita la muestra completa");
             double t = clamp(m.t());
-            double cu = d1.cu() + (d2.cu() - d1.cu()) * t, cv = d1.cv() + (d2.cv() - d1.cv()) * t;
-            double s = s1 + (s2 - s1) * t;
-            double th = Math.toRadians(interpolaAngulo(th1, th2, t, giro));
+            double a = porLongitud && gota != null ? clamp(gota.fraccion(t)) : t;      // avance entre los discos
+            double cu = d1.cu() + (d2.cu() - d1.cu()) * a, cv = d1.cv() + (d2.cv() - d1.cv()) * a;
+            double s = s1 + (s2 - s1) * a;
+            double th = Math.toRadians(interpolaAngulo(th1, th2, a, giro));
             double x, y;
             if (orientacion == Orientacion.TANGENTE) {
                 x = m.axial(); y = -m.lateral();             // N' = T girado +90° en pantalla (eje u hacia +y)
