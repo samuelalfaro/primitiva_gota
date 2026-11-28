@@ -1,3 +1,5 @@
+import geometria.Geometria;
+import geometria.Grupo;
 import geometria.composicion.Grafo;
 import pintado.Plotter;
 import coordenadas.Solape;
@@ -95,7 +97,8 @@ public class Pulpo_by_Grok {
     static BufferedImage dibuja() {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         fondo(im);
-        Grafo c = new Grafo().mezcla(RGB);
+        Partes partes = new Partes();
+        Grafo c = partes.nueva();
 
         // --- cabeza (manto) ---
         double cx = 350, cy = 250;
@@ -122,10 +125,10 @@ public class Pulpo_by_Grok {
         for (int i = 0; i < 8; i++) {
             double bx = cx + Math.cos(angs[i]) * 35;
             double by = cy + 55 + Math.sin(angs[i]) * 15;
-            tentaculo(c, bx, by, angs[i], largos[i], r0s[i], r1s[i], cols0[i], cols1[i], 9, onds[i]);
+            tentaculo(partes.nueva(), bx, by, angs[i], largos[i], r0s[i], r1s[i], cols0[i], cols1[i], 9, onds[i]);
         }
 
-        Plotter.raster(im).plot(c, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
+        Plotter.raster(im).plot(partes.grupo(), Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
         // ojos encima (discos, sin forzar consistencia de Funciones)
         disco(im, cx - 36, cy - 8, 15, CREMA, mezcla(CREMA, OSCURO, 0.35));
         disco(im, cx - 34, cy - 6, 7, OSCURO, OSCURO);
@@ -139,5 +142,19 @@ public class Pulpo_by_Grok {
     public static void main(String[] args) throws Exception {
         ImageIO.write(dibuja(), "png", new File("pulpo_by_grok.png"));
         System.out.println("pulpo_by_grok.png");
+    }
+
+    /**
+     * Un Grafo es conexo: cada parte sin unir es un Grafo propio y el dibujo es el Grupo de todas. Se agrupan al revés de como
+     * se crean porque, en un único Grafo con Solape.TRAZO, quedaba encima la parte creada antes y en un Grupo queda encima la última.
+     */
+    static final class Partes {
+        private final java.util.List<Grafo> lista = new java.util.ArrayList<>();
+        Grafo nueva() { Grafo g = new Grafo().mezcla(RGB); lista.add(g); return g; }
+        Grupo grupo() {
+            java.util.List<Grafo> alReves = new java.util.ArrayList<>(lista);
+            java.util.Collections.reverse(alReves);
+            return new Grupo(alReves.toArray(new Geometria[0]));
+        }
     }
 }

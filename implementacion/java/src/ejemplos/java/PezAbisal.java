@@ -1,3 +1,5 @@
+import geometria.Geometria;
+import geometria.Grupo;
 import geometria.composicion.Grafo;
 import pintado.Plotter;
 import coordenadas.Solape;
@@ -129,7 +131,8 @@ public class PezAbisal {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         fondo(im);
 
-        Grafo c = new Grafo().mezcla(RGB);
+        Partes partes = new Partes();
+        Grafo c = partes.nueva();
 
         // ----- cuerpo: cadena por la línea media, de la nariz al pedúnculo; normal arriba (lomo), contra abajo (vientre)
         final int N = 16;
@@ -156,19 +159,20 @@ public class PezAbisal {
         }
 
         // ----- illicium: la caña de pescar, curvada hacia adelante; algo más clara para verla contra el fondo -----
-        cadena(c, new double[] { 306, 276, 244, 220 },
+        cadena(partes.nueva(), new double[] { 306, 276, 244, 220 },
                     new double[] { 236, 208, 188, 176 },
                     new double[] { 6.5, 5, 4, 3 },
                     claro(LOMO, 0.15), claro(MEMBRANA, 0.05), false);
 
         // ----- esca: el señuelo que enciende la noche -----
-        var halo = c.nodo(200, 168, 34).centro(conAlfa(ESCA, 0.85))
+        Grafo esca = partes.nueva();
+        var halo = esca.nodo(200, 168, 34).centro(conAlfa(ESCA, 0.85))
             .radio(Degradado.entre(conAlfa(ESCA, 0.85), conAlfa(ESCA, 0.0), RGB).ajustado(0.30));
-        var nucleo = c.nodo(197, 165, 9).centro(NUCLEO).radio(v -> claro(NUCLEO, 0.12 * v));
-        c.arista(halo, nucleo).espina(Degradado.entre(conAlfa(ESCA, 0.85), NUCLEO, RGB));
+        var nucleo = esca.nodo(197, 165, 9).centro(NUCLEO).radio(v -> claro(NUCLEO, 0.12 * v));
+        esca.arista(halo, nucleo).espina(Degradado.entre(conAlfa(ESCA, 0.85), NUCLEO, RGB));
 
         // ----- mandíbula inferior colgando; entre ella y el morro queda la boca entreabierta -----
-        cadena(c, new double[] { 254, 240, 252 },
+        cadena(partes.nueva(), new double[] { 254, 240, 252 },
                     new double[] { 352, 378, 390 },
                     new double[] { 12, 9, 0.01 },
                     oscuro(LOMO, 0.25), oscuro(LOMO, 0.40), false);
@@ -176,33 +180,33 @@ public class PezAbisal {
         // ----- dientes: agujas finas; caen desde el morro y suben desde la mandíbula -----
         double[][] caen = { { 268, 344, 370 }, { 292, 366, 396 }, { 316, 382, 400 }, { 338, 380, 396 } };
         for (double[] d : caen)
-            cadena(c, new double[] { d[0], d[0] + 4 }, new double[] { d[1], d[2] + 26 },
+            cadena(partes.nueva(), new double[] { d[0], d[0] + 4 }, new double[] { d[1], d[2] + 26 },
                         new double[] { 2.6, 0.6 }, DIENTE, conAlfa(DIENTE, 0.8), true);
         double[][] suben = { { 262, 388, 362 }, { 284, 398, 374 }, { 306, 398, 374 } };
         for (double[] d : suben)
-            cadena(c, new double[] { d[0], d[0] - 3 }, new double[] { d[1], d[2] },
+            cadena(partes.nueva(), new double[] { d[0], d[0] - 3 }, new double[] { d[1], d[2] },
                         new double[] { 0.6, 2.4 }, conAlfa(DIENTE, 0.8), DIENTE, false);
 
         // ----- aleta dorsal (la púa del pescador detrás de la caña) -----
-        cadena(c, new double[] { 356, 376, 402 },
+        cadena(partes.nueva(), new double[] { 356, 376, 402 },
                     new double[] { 250, 224, 224 },
                     new double[] { 7, 5, 3 },
                     MEMBRANA, conAlfa(MEMBRANA, 0.7), true);
         // ----- aleta pectoral -----
-        cadena(c, new double[] { 402, 424, 450 },
+        cadena(partes.nueva(), new double[] { 402, 424, 450 },
                     new double[] { 358, 386, 398 },
                     new double[] { 8, 6, 3 },
                     MEMBRANA, conAlfa(MEMBRANA, 0.6), true);
 
         // ----- cola: abanico de tres rayos que se desvanecen -----
-        cadena(c, new double[] { 662, 714, 756 }, new double[] { 306, 272, 252 },
+        cadena(partes.nueva(), new double[] { 662, 714, 756 }, new double[] { 306, 272, 252 },
                     new double[] { 8, 5, 2 }, COLA, conAlfa(MEMBRANA, 0.5), true);
-        cadena(c, new double[] { 662, 728, 770 }, new double[] { 310, 316, 320 },
+        cadena(partes.nueva(), new double[] { 662, 728, 770 }, new double[] { 310, 316, 320 },
                     new double[] { 9, 6, 2.5 }, COLA, conAlfa(MEMBRANA, 0.6), true);
-        cadena(c, new double[] { 662, 714, 756 }, new double[] { 316, 350, 380 },
+        cadena(partes.nueva(), new double[] { 662, 714, 756 }, new double[] { 316, 350, 380 },
                     new double[] { 8, 5, 2 }, COLA, conAlfa(MEMBRANA, 0.5), true);
 
-        Plotter.raster(im).plot(c, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
+        Plotter.raster(im).plot(partes.grupo(), Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
 
         // ----- ojo, encima de todo (discos directos, como los del pulpo) -----
         disco(im, 322, 294, 12, OJO, oscuro(OJO, 0.30));
@@ -224,5 +228,19 @@ public class PezAbisal {
     public static void main(String[] args) throws Exception {
         ImageIO.write(dibuja(), "png", new File("pez_abisal.png"));
         System.out.println("pez_abisal.png");
+    }
+
+    /**
+     * Un Grafo es conexo: cada parte sin unir es un Grafo propio y el dibujo es el Grupo de todas. Se agrupan al revés de como
+     * se crean porque, en un único Grafo con Solape.TRAZO, quedaba encima la parte creada antes y en un Grupo queda encima la última.
+     */
+    static final class Partes {
+        private final java.util.List<Grafo> lista = new java.util.ArrayList<>();
+        Grafo nueva() { Grafo g = new Grafo().mezcla(RGB); lista.add(g); return g; }
+        Grupo grupo() {
+            java.util.List<Grafo> alReves = new java.util.ArrayList<>(lista);
+            java.util.Collections.reverse(alReves);
+            return new Grupo(alReves.toArray(new Geometria[0]));
+        }
     }
 }

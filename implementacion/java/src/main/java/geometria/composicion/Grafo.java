@@ -754,6 +754,7 @@ public final class Grafo implements Geometria {
             double sTop = Double.NEGATIVE_INFINITY, sGan = Double.NEGATIVE_INFINITY;
             for (int k = 0; k < gotas.size(); k++) {
                 if (!(s[k] <= 0)) continue;
+                if (aristas.isEmpty()) { mejor = k; break; }          // el disco (un nodo sin aristas) es una sola gota: no hay nada que ordenar
                 Gota g = gotas.get(k);
                 Cortes ck = ops[k].tira().cortes(g);
                 double v = Coordenadas.uv(g, x, y, ops[k]).v();

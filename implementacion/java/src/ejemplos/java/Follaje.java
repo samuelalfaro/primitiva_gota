@@ -19,15 +19,15 @@ import javax.imageio.ImageIO;
  * dos gotas del limbo de la {@link Hoja}, sin venas: a escala de follaje son sub-pixel), colocadas con la misma
  * proyección que el tronco, y la profundidad de cada base se usa como altura.
  * <p>
- * El panel compara las dos maneras de juntarlo con la arquitectura nueva. En un {@link Grupo} la altura es de cada
- * geometría: una hoja queda por encima o por debajo del tronco entero, aunque la rama que la cruza esté delante. En el
- * mismo {@link Grafo}, la altura por arista (la de siempre del ferry 3D) resuelve el solape por píxel. Con la vista
+ * Tronco y hojas son partes sin unir, y un Grafo es conexo: se juntan en un {@link Grupo}, donde la altura es de cada
+ * geometría y una hoja queda por encima o por debajo del tronco entero, aunque la rama que la cruza esté delante (la
+ * altura por píxel entre componentes, que permitía meterlo todo en un único Grafo, ya no existe). Con la vista
  * desde el lado opuesto (yaw + 180) se comprueba si el orden over/under es el mismo por detrás.
  * <p>
  * Colores: cada hoja parte de la paleta de la Hoja con un tono al azar (más oscura), y se mezcla hacia el fondo según
  * su profundidad (niebla por hoja, no por nodo).
  * Escribe follaje_arbol.png: por filas, frente y yaw + 180; por columnas, árbol desnudo |
- * follaje en Grupo | follaje en el mismo Grafo.
+ * follaje en Grupo.
  */
 public final class Follaje {
     static final int W = 800, H = 700, FONDO = 0xFFF5F0E6;
@@ -184,17 +184,17 @@ public final class Follaje {
         int porPunta = Integer.getInteger("hojas", 3);
         double yaw = args.length > 0 ? Double.parseDouble(args[0]) : 35, pitch = args.length > 1 ? Double.parseDouble(args[1]) : 20;
         ArbolParametrico3D.Modelo m = ArbolParametrico3D.crear(p);
-        BufferedImage panel = new BufferedImage(3 * W, 2 * H, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage panel = new BufferedImage(2 * W, 2 * H, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = panel.createGraphics();
-        String[] cols = { "desnudo", "Grupo (altura por hoja)", "mismo Grafo (altura por píxel)" };
+        String[] cols = { "desnudo", "Grupo (altura por hoja)" };
         for (int fila = 0; fila < 2; fila++) {
             var cam = camara(m, yaw + 180 * fila, pitch, 900);
             List<HojaPos> hojas = follaje(m, p.niveles, cam, porPunta, 0.35, new Random(p.semilla));
-            for (int col = 0; col < 3; col++) {
+            for (int col = 0; col < 2; col++) {
                 Geometria geo;
                 if (col == 0) {
                     geo = tronco(m, cam.nodo());
-                } else if (col == 1) {
+                } else {
                     Grupo gr = new Grupo();
                     for (HojaPos h : hojas) {
                         Grafo hojaAlone = new Grafo().mezcla(Mezcla.RGB);
@@ -203,10 +203,6 @@ public final class Follaje {
                     }
                     gr.anade(tronco(m, cam.nodo()));
                     geo = gr;
-                } else {
-                    Grafo c = tronco(m, cam.nodo());
-                    for (HojaPos h : hojas) hoja(c, h);
-                    geo = c;
                 }
                 g.drawImage(pinta(geo), col * W, fila * H, null);
                 System.out.printf("fila %d (yaw %3.0f)  %-32s %d hojas%n", fila, yaw + 180 * fila, cols[col], col == 0 ? 0 : hojas.size());
@@ -214,6 +210,6 @@ public final class Follaje {
         }
         g.dispose();
         ImageIO.write(panel, "png", new File("follaje_arbol.png"));
-        System.out.println("follaje_arbol.png (filas: yaw y yaw + 180; columnas: desnudo | Grupo | mismo Grafo)");
+        System.out.println("follaje_arbol.png (filas: yaw y yaw + 180; columnas: desnudo | Grupo)");
     }
 }

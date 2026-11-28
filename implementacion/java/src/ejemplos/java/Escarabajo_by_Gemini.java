@@ -1,4 +1,6 @@
 import pintado.Plotter;
+import geometria.Geometria;
+import geometria.Grupo;
 import geometria.composicion.Grafo;
 import coordenadas.Solape;
 import color.Mezcla;
@@ -56,23 +58,24 @@ public class Escarabajo_by_Gemini {
     static BufferedImage dibuja() {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         fondo(im);
-        Grafo c = new Grafo().mezcla(RGB);
+        Partes partes = new Partes();
+        Grafo c = partes.nueva();
 
         double cx = 360, cy = 265;
 
         // Patas traseras, medias y delanteras (arriba y abajo)
-        pata(c, cx - 55, cy - 28, cx - 125, cy - 115, 7.5, 3.0, -25, -45);
-        pata(c, cx - 55, cy + 28, cx - 125, cy + 115, 7.5, 3.0, -25, 45);
+        pata(partes.nueva(), cx - 55, cy - 28, cx - 125, cy - 115, 7.5, 3.0, -25, -45);
+        pata(partes.nueva(), cx - 55, cy + 28, cx - 125, cy + 115, 7.5, 3.0, -25, 45);
 
-        pata(c, cx, cy - 32, cx - 15, cy - 125, 7.0, 2.8, -10, -45);
-        pata(c, cx, cy + 32, cx - 15, cy + 125, 7.0, 2.8, -10, 45);
+        pata(partes.nueva(), cx, cy - 32, cx - 15, cy - 125, 7.0, 2.8, -10, -45);
+        pata(partes.nueva(), cx, cy + 32, cx - 15, cy + 125, 7.0, 2.8, -10, 45);
 
-        pata(c, cx + 55, cy - 26, cx + 105, cy - 105, 6.5, 2.5, 25, -35);
-        pata(c, cx + 55, cy + 26, cx + 105, cy + 105, 6.5, 2.5, 25, 35);
+        pata(partes.nueva(), cx + 55, cy - 26, cx + 105, cy - 105, 6.5, 2.5, 25, -35);
+        pata(partes.nueva(), cx + 55, cy + 26, cx + 105, cy + 105, 6.5, 2.5, 25, 35);
 
         // Antenas hacia la derecha
-        antena(c, cx + 95, cy - 14, 65, -45);
-        antena(c, cx + 95, cy + 14, 65, 45);
+        antena(partes.nueva(), cx + 95, cy - 14, 65, -45);
+        antena(partes.nueva(), cx + 95, cy + 14, 65, 45);
 
         // Cuerpo principal de cola (izquierda) a cabeza (derecha)
         var cola = c.nodo(cx - 105, cy, 18.0).centro(CAP_OSCURO).radio(x -> mezcla(CAP_OSCURO, CAP_CLARO, 0.4 * x));
@@ -86,22 +89,30 @@ public class Escarabajo_by_Gemini {
             .espina(x -> CAP_CLARO)
             .tiradores(new Gota.Vec(35, 10), new Gota.Vec(-30, -10));
 
-        // Dos pequeños ojos amarillos
-        var ojoSup = c.nodo(cx + 84, cy - 12, 4.5).centro(OJO).radio(x -> OJO);
-        var ojoInf = c.nodo(cx + 84, cy + 12, 4.5).centro(OJO).radio(x -> OJO);
+        // Dos pequeños ojos amarillos: un nodo suelto es un Grafo mínimo (un disco)
+        partes.nueva().nodo(cx + 84, cy - 12, 4.5).centro(OJO);
+        partes.nueva().nodo(cx + 84, cy + 12, 4.5).centro(OJO);
 
-        c.arista(ojoSup, ojoSup)
-            .tiradores(new Gota.Vec(0, 0), new Gota.Vec(0, 0));
-
-        c.arista(ojoInf, ojoInf)
-            .tiradores(new Gota.Vec(0, 0), new Gota.Vec(0, 0));
-
-        Plotter.raster(im).plot(c, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
+        Plotter.raster(im).plot(partes.grupo(), Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
         return im;
     }
 
     public static void main(String[] args) throws Exception {
         ImageIO.write(dibuja(), "png", new File("escarabajo_by_gemini.png"));
         System.out.println("escarabajo_by_gemini.png");
+    }
+
+    /**
+     * Un Grafo es conexo: cada parte sin unir es un Grafo propio y el dibujo es el Grupo de todas. Se agrupan al revés de como
+     * se crean porque, en un único Grafo con Solape.TRAZO, quedaba encima la parte creada antes y en un Grupo queda encima la última.
+     */
+    static final class Partes {
+        private final java.util.List<Grafo> lista = new java.util.ArrayList<>();
+        Grafo nueva() { Grafo g = new Grafo().mezcla(RGB); lista.add(g); return g; }
+        Grupo grupo() {
+            java.util.List<Grafo> alReves = new java.util.ArrayList<>(lista);
+            java.util.Collections.reverse(alReves);
+            return new Grupo(alReves.toArray(new Geometria[0]));
+        }
     }
 }

@@ -1,3 +1,5 @@
+import geometria.Geometria;
+import geometria.Grupo;
 import geometria.composicion.Grafo;
 import forma.Gota;
 import pintado.Plotter;
@@ -270,20 +272,33 @@ public class Abecedario {
                 new int[][] { { 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 4 }, { 4, 0 }, { 0, 5 } }));
     }
 
-    static Grafo construye(Glifo g, double dx, double dy) {
-        Grafo c = new Grafo();
-        Grafo.Nodo[] n = new Grafo.Nodo[g.nodos().length];
-        for (int i = 0; i < n.length; i++)
-            n[i] = c.nodo(dx + g.nodos()[i].x(), dy + g.nodos()[i].y(), g.nodos()[i].r()).color(NEGRA);
+    /** Un glifo con varias partes sin unir (la «i», la «j»…) es un Grupo de Grafos conexos; con una sola parte, el Grafo. */
+    static Geometria construye(Glifo g, double dx, double dy) {
+        int m = g.nodos().length;
+        int[] raiz = new int[m];
+        for (int i = 0; i < m; i++) raiz[i] = i;
+        for (A a : g.aristas()) raiz[busca(raiz, a.a())] = busca(raiz, a.b());
+        java.util.Map<Integer, Grafo> partes = new java.util.TreeMap<>();
+        Grafo.Nodo[] n = new Grafo.Nodo[m];
+        for (int i = 0; i < m; i++)
+            n[i] = partes.computeIfAbsent(busca(raiz, i), r -> new Grafo())
+                    .nodo(dx + g.nodos()[i].x(), dy + g.nodos()[i].y(), g.nodos()[i].r()).color(NEGRA);
         for (A a : g.aristas()) {
-            Grafo.Arista e = c.arista(n[a.a()], n[a.b()]);
+            Grafo.Arista e = partes.get(busca(raiz, a.a())).arista(n[a.a()], n[a.b()]);
             if (a.recta()) {
                 N na = g.nodos()[a.a()], nb = g.nodos()[a.b()];
                 e.tiradores(new Gota.Vec((nb.x() - na.x()) / 3, (nb.y() - na.y()) / 3),
                             new Gota.Vec((na.x() - nb.x()) / 3, (na.y() - nb.y()) / 3));
             }
         }
-        return c.relajar().alisar();
+        java.util.List<Geometria> gs = new java.util.ArrayList<>();
+        for (Grafo c : partes.values()) gs.add(c.relajar().alisar());
+        return gs.size() == 1 ? gs.get(0) : new Grupo(gs.toArray(new Geometria[0]));
+    }
+
+    private static int busca(int[] raiz, int i) {
+        while (raiz[i] != i) { raiz[i] = raiz[raiz[i]]; i = raiz[i]; }
+        return i;
     }
 
     static BufferedImage hoja(int ancho, int alto) {

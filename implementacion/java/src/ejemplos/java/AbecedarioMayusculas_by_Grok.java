@@ -1,3 +1,5 @@
+import geometria.Geometria;
+import geometria.Grupo;
 import geometria.composicion.Grafo;
 import pintado.Plotter;
 import coordenadas.Solape;
@@ -53,9 +55,22 @@ public class AbecedarioMayusculas_by_Grok {
         }
     }
 
+    /**
+     * Un Grafo es conexo: una letra de partes sin unir (el travesaño de la «A», los dos trazos de la «X»…) es un Grupo de
+     * Grafos. Se pasan en el orden en que se escribieron y se agrupan al revés, porque en un único Grafo con Solape.TRAZO
+     * quedaba encima la parte escrita antes y en un Grupo queda encima la última.
+     */
+    static Geometria grupo(Grafo... partes) {
+        Geometria[] alReves = new Geometria[partes.length];
+        for (int i = 0; i < partes.length; i++) alReves[i] = partes[partes.length - 1 - i];
+        return new Grupo(alReves);
+    }
+
+    static Grafo parte(double suavizado) { return new Grafo().mezcla(RGB).suavizado(suavizado); }
+
     // ---------- letras ----------
 
-    static Grafo letraA(double ox, double oy) {
+    static Geometria letraA(double ox, double oy) {
         Grafo g = new Grafo().mezcla(RGB).suavizado(1.2);
         // dos diagonales + travesaño
         var top = n(g, ox + 40, oy + 12, 5.5);
@@ -63,10 +78,11 @@ public class AbecedarioMayusculas_by_Grok {
         var der = n(g, ox + 68, oy + 95, 6.5);
         g.arista(top, izq);
         g.arista(top, der);
-        var m1 = n(g, ox + 28, oy + 58, 5.0);
-        var m2 = n(g, ox + 52, oy + 58, 5.0);
-        g.arista(m1, m2);
-        return g;
+        Grafo h = parte(1.2);
+        var m1 = n(h, ox + 28, oy + 58, 5.0);
+        var m2 = n(h, ox + 52, oy + 58, 5.0);
+        h.arista(m1, m2);
+        return grupo(g, h);
     }
 
     static Grafo letraB(double ox, double oy) {
@@ -139,14 +155,14 @@ public class AbecedarioMayusculas_by_Grok {
         return g;
     }
 
-    static Grafo letraH(double ox, double oy) {
-        Grafo g = new Grafo().mezcla(RGB).suavizado(1.0);
+    static Geometria letraH(double ox, double oy) {
+        Grafo g = parte(1.0), h = parte(1.0), barra = parte(1.0);
         tallo(g, ox + 18, oy + 12, oy + 95, 6.0);
-        tallo(g, ox + 62, oy + 12, oy + 95, 6.0);
-        var m1 = n(g, ox + 18, oy + 52, 5.5);
-        var m2 = n(g, ox + 62, oy + 52, 5.5);
-        g.arista(m1, m2);
-        return g;
+        tallo(h, ox + 62, oy + 12, oy + 95, 6.0);
+        var m1 = n(barra, ox + 18, oy + 52, 5.5);
+        var m2 = n(barra, ox + 62, oy + 52, 5.5);
+        barra.arista(m1, m2);
+        return grupo(g, h, barra);
     }
 
     static Grafo letraI(double ox, double oy) {
@@ -164,15 +180,16 @@ public class AbecedarioMayusculas_by_Grok {
         return g;
     }
 
-    static Grafo letraK(double ox, double oy) {
+    static Geometria letraK(double ox, double oy) {
         Grafo g = new Grafo().mezcla(RGB).suavizado(1.1);
         tallo(g, ox + 18, oy + 12, oy + 95, 6.0);
-        var m = n(g, ox + 22, oy + 52, 5.5);
-        var t = n(g, ox + 65, oy + 12, 5.5);
-        var b = n(g, ox + 65, oy + 95, 5.5);
-        g.arista(m, t);
-        g.arista(m, b);
-        return g;
+        Grafo h = parte(1.1);
+        var m = n(h, ox + 22, oy + 52, 5.5);
+        var t = n(h, ox + 65, oy + 12, 5.5);
+        var b = n(h, ox + 65, oy + 95, 5.5);
+        h.arista(m, t);
+        h.arista(m, b);
+        return grupo(g, h);
     }
 
     static Grafo letraL(double ox, double oy) {
@@ -229,13 +246,14 @@ public class AbecedarioMayusculas_by_Grok {
         return g;
     }
 
-    static Grafo letraQ(double ox, double oy) {
+    static Geometria letraQ(double ox, double oy) {
         Grafo g = letraO(ox, oy);
         // cola
-        var c = n(g, ox + 48, oy + 78, 5.5);
-        var q = n(g, ox + 68, oy + 98, 5.0);
-        g.arista(c, q);
-        return g;
+        Grafo h = parte(1.2);
+        var c = n(h, ox + 48, oy + 78, 5.5);
+        var q = n(h, ox + 68, oy + 98, 5.0);
+        h.arista(c, q);
+        return grupo(g, h);
     }
 
     static Grafo letraR(double ox, double oy) {
@@ -300,14 +318,16 @@ public class AbecedarioMayusculas_by_Grok {
         return g;
     }
 
-    static Grafo letraX(double ox, double oy) {
+    static Geometria letraX(double ox, double oy) {
         Grafo g = new Grafo().mezcla(RGB).suavizado(1.1);
         var a = n(g, ox + 16, oy + 12, 5.5);
         var b = n(g, ox + 64, oy + 95, 5.5);
-        var c = n(g, ox + 64, oy + 12, 5.5);
-        var d = n(g, ox + 16, oy + 95, 5.5);
-        g.arista(a, b); g.arista(c, d);
-        return g;
+        g.arista(a, b);
+        Grafo h = parte(1.1);
+        var c = n(h, ox + 64, oy + 12, 5.5);
+        var d = n(h, ox + 16, oy + 95, 5.5);
+        h.arista(c, d);
+        return grupo(g, h);
     }
 
     static Grafo letraY(double ox, double oy) {
@@ -336,12 +356,13 @@ public class AbecedarioMayusculas_by_Grok {
         return letraO(ox, oy);
     }
 
-    static Grafo dig1(double ox, double oy) {
+    static Geometria dig1(double ox, double oy) {
         Grafo g = new Grafo().mezcla(RGB).suavizado(0.9);
         tallo(g, ox + 42, oy + 12, oy + 95, 6.5);
-        var top = n(g, ox + 28, oy + 28, 5.0);
-        g.arista(top, n(g, ox + 42, oy + 12, 5.5));
-        return g;
+        Grafo h = parte(0.9);
+        var top = n(h, ox + 28, oy + 28, 5.0);
+        h.arista(top, n(h, ox + 42, oy + 12, 5.5));
+        return grupo(g, h);
     }
 
     static Grafo dig2(double ox, double oy) {
@@ -362,28 +383,31 @@ public class AbecedarioMayusculas_by_Grok {
         return g;
     }
 
-    static Grafo dig4(double ox, double oy) {
+    static Geometria dig4(double ox, double oy) {
         Grafo g = new Grafo().mezcla(RGB).suavizado(1.1);
         var a = n(g, ox + 22, oy + 12, 5.5);
         var b = n(g, ox + 18, oy + 62, 6.0);
         var c = n(g, ox + 62, oy + 62, 5.5);
-        var d = n(g, ox + 52, oy + 12, 5.5);
-        var e = n(g, ox + 52, oy + 95, 6.0);
-        g.arista(a, b); g.arista(b, c); g.arista(d, e);
-        return g;
+        g.arista(a, b); g.arista(b, c);
+        Grafo h = parte(1.1);
+        var d = n(h, ox + 52, oy + 12, 5.5);
+        var e = n(h, ox + 52, oy + 95, 6.0);
+        h.arista(d, e);
+        return grupo(g, h);
     }
 
-    static Grafo dig5(double ox, double oy) {
+    static Geometria dig5(double ox, double oy) {
         Grafo g = new Grafo().mezcla(RGB).suavizado(1.3);
         var tL = n(g, ox + 58, oy + 14, 5.0);
         var tR = n(g, ox + 18, oy + 14, 5.5);
         var m  = n(g, ox + 22, oy + 48, 5.5);
         g.arista(tL, tR); g.arista(tR, m);
-        curva(g,
+        Grafo h = parte(1.3);
+        curva(h,
             new double[]{ox+22, ox+48, ox+62, ox+48, ox+18},
             new double[]{oy+48, oy+42, oy+62, oy+92, oy+82},
             new double[]{5.5, 6.5, 6.5, 6.5, 5.5});
-        return g;
+        return grupo(g, h);
     }
 
     static Grafo dig6(double ox, double oy) {
@@ -431,7 +455,7 @@ public class AbecedarioMayusculas_by_Grok {
 
     // ---------- lámina ----------
 
-    static Grafo letra(char c, double ox, double oy) {
+    static Geometria letra(char c, double ox, double oy) {
         return switch (c) {
             case 'A' -> letraA(ox, oy);
             case 'B' -> letraB(ox, oy);
@@ -469,7 +493,7 @@ public class AbecedarioMayusculas_by_Grok {
             case '7' -> dig7(ox, oy);
             case '8' -> dig8(ox, oy);
             case '9' -> dig9(ox, oy);
-            default -> new Grafo();
+            default -> new Grupo();
         };
     }
 
@@ -492,7 +516,7 @@ public class AbecedarioMayusculas_by_Grok {
                 if (c == ' ') continue;
                 double ox = OX0 + col * CW;
                 double oy = OY0 + row * CH;
-                Grafo g = letra(c, ox, oy);
+                Geometria g = letra(c, ox, oy);
                 Plotter.raster(im).plot(g, opt);
             }
         }

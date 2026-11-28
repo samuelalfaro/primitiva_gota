@@ -1,4 +1,6 @@
 import pintado.Plotter;
+import geometria.Geometria;
+import geometria.Grupo;
 import geometria.composicion.Grafo;
 import coordenadas.Solape;
 import color.Mezcla;
@@ -110,7 +112,7 @@ public class Verdolaga_by_Grok {
         };
     }
 
-    static void colocarHojas(Grafo c, double x0, double y0, double ang, double largo, int n) {
+    static void colocarHojas(Partes partes, double x0, double y0, double ang, double largo, int n) {
         for (int i = 1; i <= n; i++) {
             double t = (i - 0.3) / (n + 0.4);
             double[] p = puntoRama(x0, y0, ang, largo, t);
@@ -120,10 +122,10 @@ public class Verdolaga_by_Grok {
             double rB = 7.5 + 1.5 * Math.sin(i);
             double rP = 4.2 + 1.0 * Math.cos(i * 1.3);
             int tono = mezcla(VERDE1, VERDE2, 0.3 + 0.4 * ((i % 3) / 2.0));
-            hoja(c, p[0], p[1], angHoja, L, rB, rP, tono);
+            hoja(partes.nueva(), p[0], p[1], angHoja, L, rB, rP, tono);
             if (i % 3 != 0) {
                 double ang2 = ang - lado * Math.toRadians(50 + 10 * Math.cos(i));
-                hoja(c, p[0], p[1], ang2, L * 0.75, rB * 0.85, rP * 0.85, mezcla(tono, VERDE3, 0.15));
+                hoja(partes.nueva(), p[0], p[1], ang2, L * 0.75, rB * 0.85, rP * 0.85, mezcla(tono, VERDE3, 0.15));
             }
         }
     }
@@ -131,7 +133,8 @@ public class Verdolaga_by_Grok {
     static BufferedImage dibuja() {
         BufferedImage im = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         fondo(im);
-        Grafo c = new Grafo().mezcla(RGB);
+        Partes partes = new Partes();
+        Grafo c = partes.nueva();
 
         double bx = 90, by = 430;
         var base = c.nodo(bx, by, 9).centro(ROJO1).radio(radioTallo(ROJO1));
@@ -139,19 +142,19 @@ public class Verdolaga_by_Grok {
         double ang0 = Math.toRadians(-28);
         rama(c, base, bx, by, ang0, 340, 9.0, 5.5, ROJO1, ROJO2, 8);
         double[] mid = puntoRama(bx, by, ang0, 340, 0.45);
-        rama(c, null, mid[0], mid[1], ang0 + Math.toRadians(-38), 160, 5.5, 3.5, ROJO2, ROJO3, 5);
-        rama(c, null, mid[0], mid[1], ang0 + Math.toRadians(32), 140, 5.0, 3.2, ROJO2, ROJO3, 5);
+        rama(partes.nueva(), null, mid[0], mid[1], ang0 + Math.toRadians(-38), 160, 5.5, 3.5, ROJO2, ROJO3, 5);
+        rama(partes.nueva(), null, mid[0], mid[1], ang0 + Math.toRadians(32), 140, 5.0, 3.2, ROJO2, ROJO3, 5);
 
         double ang1 = Math.toRadians(12);
         rama(c, base, bx, by, ang1, 240, 7.5, 4.5, ROJO1, ROJO2, 6);
         double[] mid2 = puntoRama(bx, by, ang1, 240, 0.5);
-        rama(c, null, mid2[0], mid2[1], ang1 + Math.toRadians(-40), 130, 4.5, 2.8, ROJO2, ROJO3, 4);
-        rama(c, null, mid2[0], mid2[1], ang1 + Math.toRadians(28), 120, 4.2, 2.6, ROJO2, ROJO3, 4);
+        rama(partes.nueva(), null, mid2[0], mid2[1], ang1 + Math.toRadians(-40), 130, 4.5, 2.8, ROJO2, ROJO3, 4);
+        rama(partes.nueva(), null, mid2[0], mid2[1], ang1 + Math.toRadians(28), 120, 4.2, 2.6, ROJO2, ROJO3, 4);
 
         double ang2 = Math.toRadians(-55);
         rama(c, base, bx, by, ang2, 200, 6.5, 3.5, ROJO1, ROJO3, 6);
         double[] mid3 = puntoRama(bx, by, ang2, 200, 0.55);
-        rama(c, null, mid3[0], mid3[1], ang2 + Math.toRadians(40), 110, 3.8, 2.4, ROJO2, ROJO3, 4);
+        rama(partes.nueva(), null, mid3[0], mid3[1], ang2 + Math.toRadians(40), 110, 3.8, 2.4, ROJO2, ROJO3, 4);
 
         rama(c, base, bx, by, Math.toRadians(155), 150, 6.0, 3.5, ROJO1, ROJO2, 5);
         rama(c, base, bx, by, Math.toRadians(95), 100, 5.0, 3.0, ROJO1, ROJO2, 4);
@@ -160,50 +163,64 @@ public class Verdolaga_by_Grok {
         double ang3 = Math.toRadians(-8);
         rama(c, base, bx, by, ang3, 300, 7.0, 4.0, ROJO1, ROJO2, 7);
         double[] mid4 = puntoRama(bx, by, ang3, 300, 0.5);
-        rama(c, null, mid4[0], mid4[1], ang3 + Math.toRadians(-30), 150, 4.5, 2.8, ROJO2, ROJO3, 5);
-        rama(c, null, mid4[0], mid4[1], ang3 + Math.toRadians(25), 140, 4.2, 2.6, ROJO2, ROJO3, 5);
+        rama(partes.nueva(), null, mid4[0], mid4[1], ang3 + Math.toRadians(-30), 150, 4.5, 2.8, ROJO2, ROJO3, 5);
+        rama(partes.nueva(), null, mid4[0], mid4[1], ang3 + Math.toRadians(25), 140, 4.2, 2.6, ROJO2, ROJO3, 5);
 
-        colocarHojas(c, bx, by, ang0, 340, 9);
-        colocarHojas(c, mid[0], mid[1], ang0 + Math.toRadians(-38), 160, 6);
-        colocarHojas(c, mid[0], mid[1], ang0 + Math.toRadians(32), 140, 6);
-        colocarHojas(c, bx, by, ang1, 240, 8);
-        colocarHojas(c, mid2[0], mid2[1], ang1 + Math.toRadians(-40), 130, 5);
-        colocarHojas(c, mid2[0], mid2[1], ang1 + Math.toRadians(28), 120, 5);
-        colocarHojas(c, bx, by, ang2, 200, 7);
-        colocarHojas(c, mid3[0], mid3[1], ang2 + Math.toRadians(40), 110, 5);
-        colocarHojas(c, bx, by, Math.toRadians(155), 150, 6);
-        colocarHojas(c, bx, by, Math.toRadians(95), 100, 5);
-        colocarHojas(c, bx, by, ang3, 300, 8);
-        colocarHojas(c, mid4[0], mid4[1], ang3 + Math.toRadians(-30), 150, 5);
-        colocarHojas(c, mid4[0], mid4[1], ang3 + Math.toRadians(25), 140, 5);
+        colocarHojas(partes, bx, by, ang0, 340, 9);
+        colocarHojas(partes, mid[0], mid[1], ang0 + Math.toRadians(-38), 160, 6);
+        colocarHojas(partes, mid[0], mid[1], ang0 + Math.toRadians(32), 140, 6);
+        colocarHojas(partes, bx, by, ang1, 240, 8);
+        colocarHojas(partes, mid2[0], mid2[1], ang1 + Math.toRadians(-40), 130, 5);
+        colocarHojas(partes, mid2[0], mid2[1], ang1 + Math.toRadians(28), 120, 5);
+        colocarHojas(partes, bx, by, ang2, 200, 7);
+        colocarHojas(partes, mid3[0], mid3[1], ang2 + Math.toRadians(40), 110, 5);
+        colocarHojas(partes, bx, by, Math.toRadians(155), 150, 6);
+        colocarHojas(partes, bx, by, Math.toRadians(95), 100, 5);
+        colocarHojas(partes, bx, by, ang3, 300, 8);
+        colocarHojas(partes, mid4[0], mid4[1], ang3 + Math.toRadians(-30), 150, 5);
+        colocarHojas(partes, mid4[0], mid4[1], ang3 + Math.toRadians(25), 140, 5);
 
-        flor(c, puntoRama(bx, by, ang0, 340, 1.0)[0], puntoRama(bx, by, ang0, 340, 1.0)[1], 1.0);
-        flor(c, puntoRama(mid[0], mid[1], ang0 + Math.toRadians(-38), 160, 1.0)[0],
+        flor(partes.nueva(), puntoRama(bx, by, ang0, 340, 1.0)[0], puntoRama(bx, by, ang0, 340, 1.0)[1], 1.0);
+        flor(partes.nueva(), puntoRama(mid[0], mid[1], ang0 + Math.toRadians(-38), 160, 1.0)[0],
                 puntoRama(mid[0], mid[1], ang0 + Math.toRadians(-38), 160, 1.0)[1], 0.85);
-        flor(c, puntoRama(mid[0], mid[1], ang0 + Math.toRadians(32), 140, 1.0)[0],
+        flor(partes.nueva(), puntoRama(mid[0], mid[1], ang0 + Math.toRadians(32), 140, 1.0)[0],
                 puntoRama(mid[0], mid[1], ang0 + Math.toRadians(32), 140, 1.0)[1], 0.8);
-        flor(c, puntoRama(bx, by, ang1, 240, 1.0)[0], puntoRama(bx, by, ang1, 240, 1.0)[1], 0.95);
-        flor(c, puntoRama(mid2[0], mid2[1], ang1 + Math.toRadians(-40), 130, 1.0)[0],
+        flor(partes.nueva(), puntoRama(bx, by, ang1, 240, 1.0)[0], puntoRama(bx, by, ang1, 240, 1.0)[1], 0.95);
+        flor(partes.nueva(), puntoRama(mid2[0], mid2[1], ang1 + Math.toRadians(-40), 130, 1.0)[0],
                 puntoRama(mid2[0], mid2[1], ang1 + Math.toRadians(-40), 130, 1.0)[1], 0.75);
-        flor(c, puntoRama(mid2[0], mid2[1], ang1 + Math.toRadians(28), 120, 1.0)[0],
+        flor(partes.nueva(), puntoRama(mid2[0], mid2[1], ang1 + Math.toRadians(28), 120, 1.0)[0],
                 puntoRama(mid2[0], mid2[1], ang1 + Math.toRadians(28), 120, 1.0)[1], 0.7);
-        flor(c, puntoRama(bx, by, ang2, 200, 1.0)[0], puntoRama(bx, by, ang2, 200, 1.0)[1], 0.9);
-        flor(c, puntoRama(mid3[0], mid3[1], ang2 + Math.toRadians(40), 110, 1.0)[0],
+        flor(partes.nueva(), puntoRama(bx, by, ang2, 200, 1.0)[0], puntoRama(bx, by, ang2, 200, 1.0)[1], 0.9);
+        flor(partes.nueva(), puntoRama(mid3[0], mid3[1], ang2 + Math.toRadians(40), 110, 1.0)[0],
                 puntoRama(mid3[0], mid3[1], ang2 + Math.toRadians(40), 110, 1.0)[1], 0.7);
         double[] midFlor = puntoRama(bx, by, ang0, 340, 0.72);
-        flor(c, midFlor[0] + 8, midFlor[1] - 12, 0.65);
-        flor(c, puntoRama(bx, by, ang3, 300, 1.0)[0], puntoRama(bx, by, ang3, 300, 1.0)[1], 0.9);
-        flor(c, puntoRama(mid4[0], mid4[1], ang3 + Math.toRadians(-30), 150, 1.0)[0],
+        flor(partes.nueva(), midFlor[0] + 8, midFlor[1] - 12, 0.65);
+        flor(partes.nueva(), puntoRama(bx, by, ang3, 300, 1.0)[0], puntoRama(bx, by, ang3, 300, 1.0)[1], 0.9);
+        flor(partes.nueva(), puntoRama(mid4[0], mid4[1], ang3 + Math.toRadians(-30), 150, 1.0)[0],
                 puntoRama(mid4[0], mid4[1], ang3 + Math.toRadians(-30), 150, 1.0)[1], 0.75);
-        flor(c, puntoRama(mid4[0], mid4[1], ang3 + Math.toRadians(25), 140, 1.0)[0],
+        flor(partes.nueva(), puntoRama(mid4[0], mid4[1], ang3 + Math.toRadians(25), 140, 1.0)[0],
                 puntoRama(mid4[0], mid4[1], ang3 + Math.toRadians(25), 140, 1.0)[1], 0.7);
 
-        Plotter.raster(im).plot(c, Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
+        Plotter.raster(im).plot(partes.grupo(), Opciones.POR_DEFECTO.conSolape(Solape.TRAZO));
         return im;
     }
 
     public static void main(String[] args) throws Exception {
         ImageIO.write(dibuja(), "png", new File("verdolaga_by_grok.png"));
         System.out.println("verdolaga_by_grok.png");
+    }
+
+    /**
+     * Un Grafo es conexo: cada parte sin unir es un Grafo propio y el dibujo es el Grupo de todas. Se agrupan al revés de como
+     * se crean porque, en un único Grafo con Solape.TRAZO, quedaba encima la parte creada antes y en un Grupo queda encima la última.
+     */
+    static final class Partes {
+        private final java.util.List<Grafo> lista = new java.util.ArrayList<>();
+        Grafo nueva() { Grafo g = new Grafo().mezcla(RGB); lista.add(g); return g; }
+        Grupo grupo() {
+            java.util.List<Grafo> alReves = new java.util.ArrayList<>(lista);
+            java.util.Collections.reverse(alReves);
+            return new Grupo(alReves.toArray(new Geometria[0]));
+        }
     }
 }
