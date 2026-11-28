@@ -149,3 +149,27 @@ Prueba de comportamiento de la Rejilla con los tres tipos de geometría a distin
 5. **Coste.** N=1 es más rápido que el `Plotter` (0,8 s frente a 1,1 s); N=3 vuelve a costar ≈ N² (5,0 s), coherente con `Sol` y la trenza.
 
 **Limitaciones.** Escena sintética fija con un solo juego de alturas; la serpiente no se cruza consigo misma (el orden interno con alturas de arista lo cubre la trenza); alfa fijo 0x99; los tiempos son de una sola ejecución.
+
+### 6. La llama con humo: el «add» y el «multiplicado» con la pila de aportes (`rejilla/prototipo/Llama_by_Mistral.java`)
+
+Lámina y prueba de comportamiento a la vez. El recuerdo de partida: en los tiempos de OpenGL, la explosión «a base de add» y el humo «a base de multiplicar» no podían reordenarse píxel a píxel — la tarjeta no da una pila ordenada de aportes; la Rejilla sí. La escena (800×800, 33 geometrías, noche con estrellas) usa los ingredientes de la nube:
+
+- **El «add»**: el núcleo caliente son tres `Gota`s claras semitransparentes apiladas (alfa 0x30–0x3A) sobre el cuerpo naranja; se acumulan hacia el blanco sin que nadie escriba un blanco. Las chispas (16 discos, semilla fija) y las brasas del suelo son el mismo truco a escala pequeña.
+- **El «multiplicado»/«sustracción»**: el humo son capas oscuras semitransparentes que apagan lo de debajo; las estrellas (alfa 0xB0) se ven atenuadas o desaparecen donde el humo pasa por delante.
+- **Los tres tipos**: la llama es un `Grafo` (tira de cinco nodos, base ancha y punta fina, cuerpo fusionado, altura 10); el núcleo y las chispas son `Gota`s (`Pintada`, alturas 11–12); la serpentina de humo es un `Grupo` de tramos **cada uno a su altura** (20, 17, 14, 11, 8): cruza la llama por delante abajo y pasa por detrás arriba, cambiando de plano a lo largo de ella — el orden por píxel que la tarjeta no daba. Nubes frontales a altura 25 rematan el apagado.
+
+| Variante | tiempo | diferencias |
+|---|---:|---|
+| A: `Plotter` con un `Grupo` raíz | 2,0 s | – |
+| B: Rejilla N=1, TAL_CUAL (maxProf 7, 593 515 aportes) | 1,3 s | 92 981 px con A, canal hasta 1 |
+| C: Rejilla N=3, ESTRECHADA (maxProf 7, 5 310 736 aportes) | 9,5 s | 4 846 px con B, canal hasta 12 |
+
+![la llama con humo en la Rejilla N=3 (variante C)](rejilla/prototipo/llama_C_rejilla_n3.png)
+
+**Qué muestra.**
+
+1. **La pila ordenada de aportes permite los modos «aditivos» sin añadir nada al modelo.** «Add» y «multiplicar» dejan de ser modos de composición del que pinta y pasan a ser consecuencias del apilado: capas claras semitransparentes acumulan luz; capas oscuras la quitan. El `Aporte` solo necesita (color, cobertura, altura), y la altura puede variar dentro de una geometría (la serpentina) porque la ordenación es por píxel.
+2. **La equivalencia con el `Plotter` aguanta una escena muy apilada**: 92 981 píxeles de diferencia con alfa 0x30–0xB0 apilados, pero todos de 1 nivel de canal. Cuantas más capas semitransparentes tocan un píxel, más redondeo se ve; sigue sin haber desacuerdo de orden.
+3. **Profundidad**: maxProf 7 en el cuerpo de la llama (llama, núcleo ×3, chispas, serpentina); 5 310 736 aportes con N=3 en una escena de 33 geometrías. El humo, que cubre medio lienzo con 2–4 capas tenues, es el caso intermedio entre las láminas de contornos finos (1 capa) y el Monarca (≥6).
+
+**Limitaciones.** «Add» y «multiplicado» son aproximaciones por src-over (no suman ni multiplican canales de verdad: con capas muy tenues la acumulación se satura antes que un add real); la serpentina cambia de altura por tramos, no con una función continua; los tiempos son de una sola ejecución.
