@@ -2,6 +2,8 @@
 
 Implementación de referencia (raster, píxel a píxel sobre un `BufferedImage` ARGB) de la primitiva y de la composición.
 Está repartida en paquetes por capas: cada paquete solo depende de los anteriores (lo comprueba `common.ArquitecturaPruebas`).
+El [GLOSARIO.md](GLOSARIO.md) define los conceptos que usa el código (familias de coordenadas, tira, solape, altura...) y
+anota los homónimos declarados, de cara a refactorizar sin ambigüedades.
 
 ## Organización
 
@@ -21,7 +23,7 @@ src/main/java      la biblioteca, de abajo a arriba
     Zonas.java           reparto de la tira en banda y tapas según la costura (lo usa Coordenadas; solo conoce Camino)
     Opciones.java        record (costura, solape, tira) que se pasa a los plotters y a las geometrías; por defecto ESPIGA, PLANO y la tira 1 : 2 : 1
     Tira.java            reparto del eje v entre tapas y cuerpo: pesos(a, b, c), proporcional() o POR_DEFECTO; produce los Cortes
-    Cortes.java          record (c1, c2, c3) con los cortes de v de la tira
+    Cortes.java          record (c1, c3, porLongitud) con los cortes de v de la tira
     Solape.java          PLANO o TRAZO: cómo se resuelven los solapes; produce las capas (cobertura + Punto), independiente de Costura
     Contorno.java        el contorno de una gota: borde real (la silueta) y envolvente oculta (lazos, cuellos, pliegues)
   color/             de un Punto a un color
