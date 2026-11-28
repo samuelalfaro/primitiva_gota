@@ -24,7 +24,7 @@ Preguntas por medir, en orden:
 | 3 | ¿Promediar N² muestras al final equivale a no sobremuestrear? Dónde difieren (bordes, texturas, gamma, orden por altura) | pendiente (el prototipo ya permite medirlo) |
 | 4 | Qué N iguala la calidad actual con cobertura binaria por muestra (con `common.Compara`) | pendiente |
 | 5 | ¿Prensado parcial (seguir añadiendo tras prensar) o solo al final? | abierta |
-| 6 | Prototipo de Rejilla real: qué problemas y decisiones aparecen | primer prototipo, abajo |
+| 6 | Prototipo de Rejilla real: qué problemas y decisiones aparecen | primer prototipo y trenza, abajo |
 
 ### 1. Profundidad de aportes
 
@@ -96,3 +96,29 @@ Lectura provisional:
 8. **El filtro (sRGB frente a lineal) es una decisión de la Rejilla**: está implementado (`Filtro`) pero no se ha medido todavía; el efecto esperado es que promediar en sRGB oscurezca los bordes de formas claras sobre fondo oscuro, y queda por comprobar.
 
 **Siguiente.** Pregunta 3 (equivalencia del promedio al final) con degradados, texturas y gamma; y medir `ESTRECHADA` frente a `BINARIA` en bordes curvos con un N razonable (2 o 3), más la versión adaptativa (N solo en bordes) para ver cuánto del coste N² se recupera.
+
+### 4. La trenza aleatoria con la Rejilla (`rejilla/prototipo/PruebaTrenza.java`)
+
+La «prueba de fuego» de `TrenzaAleatoria` (semilla 7: un lazo cerrado de 16 nodos, 11 cruces consigo mismo, altura por arista que alterna encima/debajo en cada cruce). Se pinta de dos maneras: **A**, el `Grafo` con el `Plotter` actual (una sola capa por píxel: la gota que manda, con la cobertura de la unión); y **B…E**, cada arista como su propia cinta (`Pintada` de su gota) que aporta a la Rejilla color, cobertura propia y la altura del cruce (la misma función que da la altura a las aristas del Grafo), y es la Rejilla quien ordena en cada muestra.
+
+| Variante | tiempo | dif. con A |
+|---|---:|---:|
+| A: Grafo + Plotter | 3,3 s | – |
+| B: Rejilla N = 1 | 2,3 s | 4 620 px |
+| C: Rejilla N = 3 (cobertura estrechada) | 10,2 s | 9 684 px |
+| D: B + prioridad de cuerpo | 1,6 s | 906 px |
+| E: C + prioridad de cuerpo | 14,1 s | 5 997 px |
+
+![filas A, D y E; columnas: un cruce, un nodo, un giro cerrado](rejilla/prototipo/trenza_comparacion.png)
+
+Filas A (Grafo), D (Rejilla N = 1 con prioridad de cuerpo) y E (N = 3); columnas: un cruce, un nodo y un giro cerrado (ampliado ×2).
+
+**Qué muestra.**
+
+1. **El borde de la cinta que pasa por encima queda con antialiasing en la Rejilla y con escalones en el Grafo.** En el Grafo el píxel lleva la cobertura de la *unión* (1 donde hay otra cinta debajo), así que el contorno de la cinta de arriba sobre la de abajo es duro; en la Rejilla cada cinta aporta su propia cobertura y se compone sobre la de debajo. Se ve en el cruce de la primera columna y en el giro cerrado de la tercera. Es la ventaja que se buscaba y es una consecuencia directa del modelo (un aporte por geometría, no uno ya resuelto).
+2. **Aparece un defecto nuevo en los nodos (variante B/C): un disco visible.** En un nodo las dos cintas vecinas tienen la misma altura (la altura es continua), y el empate lo resuelve el orden de emisión, de modo que la tapa de una cinta queda sobre el cuerpo de la siguiente. El `Grafo` lo evita con una regla que no es de altura: entre las gotas que contienen el píxel manda **primero la que lo tiene en su cuerpo** (no en la tapa) y después la altura. Codificada en el aporte (variante D/E: `altura + 1000` si el píxel está en el cuerpo) el disco desaparece y el resultado se parece a A, con 906 píxeles de diferencia en N = 1, que son los bordes suavizados.
+3. **Conclusión de diseño:** el `Aporte` no puede llevar solo `altura`. Hace falta un segundo eje de ordenación que cubra el caso cuerpo/tapa (una **prioridad** entera o un orden lexicográfico `(prioridad, altura)`), o que la regla viva en la propia geometría al emitir. Con eso, un `Grafo` conexo podría **emitir un aporte por gota** (sin resolver el ganador por dentro) y la Rejilla haría el tejido y el antialiasing correctos en los cruces. El `smin` (suavizado entre gotas) sí seguiría siendo del `Grafo`.
+4. **Lo que no resuelve:** los cortes duros en la punta de las cintas (muescas de la #46) siguen igual: no vienen del orden sino de la parametrización TRAZO.
+5. **Coste.** N = 1 es más rápido que el `Plotter` (1,6 s frente a 3,3 s) porque cada cinta solo se evalúa en sus `bounds` y no hay que decidir el ganador por píxel entre 16 gotas; N = 3 vuelve a costar ≈ N² (14 s).
+
+**Limitaciones.** Una sola semilla (la 7); la altura se replica de `TrenzaAleatoria` (no se ha mirado la 42, la de cruces muy juntos); la regla de cuerpo usa los cortes de la tira por defecto (con `Reparto.GLOBAL` el `Grafo` usa cortes por gota); las diferencias se han valorado a ojo en tres zonas.
