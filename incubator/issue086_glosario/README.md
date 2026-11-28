@@ -124,3 +124,52 @@ Filas A (Grafo), D (Rejilla N = 1 con prioridad de cuerpo) y E (N = 3); columnas
 **Variante F: el `Grafo` decide el orden y la Rejilla solo reparte entre geometrías.** Respuesta al comentario de la #86 (11:08) que propone que el `Grafo` entregue un aporte resuelto con su propia lógica de desempate y que la Rejilla ordene solo entre geometrías distintas. Prototipo: `GrafoOrdenado` reúne las capas de sus cintas, las ordena con *su* regla (cuerpo antes que tapa, luego altura) y las emite de abajo a arriba **con la altura de la geometría (0)**; la ordenación estable de la Rejilla respeta ese orden. Resultado: **0 píxeles de diferencia con la variante D** (906 con el `Grafo` actual). Es decir, no hace falta añadir una prioridad al `Aporte`: basta que un `Grafo` emita **varias capas por píxel, ya ordenadas**, en lugar de una sola (que es, además, lo que el nombre `capas` prometía). La decisión del `Grafo` queda donde estaba (dentro) y la regla de la #89 se mantiene; lo que cambia es que la cobertura de cada gota deja de fundirse en la de la unión, y de ahí sale el antialiasing de los cruces.
 
 **Limitaciones.** Una sola semilla (la 7); la altura se replica de `TrenzaAleatoria` (no se ha mirado la 42, la de cruces muy juntos); la regla de cuerpo usa los cortes de la tira por defecto (con `Reparto.GLOBAL` el `Grafo` usa cortes por gota); las diferencias se han valorado a ojo en tres zonas.
+
+### 5. La nube semitransparente: convivencia de las alturas de Gota, Grafo y Grupo (`rejilla/prototipo/Nube_by_Mistral.java`)
+
+Prueba de comportamiento de la Rejilla con los tres tipos de geometría a distintas alturas y solapados. Escena fija de 800×800: tres `Gota`s grandes semitransparentes (alfa 0x99; roja, verde y azul) con alturas 0, 10 y 20; un `Grafo` conexo (una onda de cinco nodos, morada) con altura 15, que atraviesa la zona común; y un `Grupo` de dos gotas pequeñas (alturas internas 0 y 2) con altura 5, de modo que sus hijos quedan entre la roja y la verde. En el centro coinciden las seis geometrías. Con color opaco solo se ve la capa de arriba y los errores de orden se esconden; con alfa 0x99 todas las capas pesan y el orden entre los tres tipos queda a la vista. La semitransparencia del `Grafo` pone también a prueba su fusión interna: la unión emite el color de la gota ganadora con su alfa.
+
+| Variante | tiempo | diferencias |
+|---|---:|---|
+| A: `Plotter` con un `Grupo` raíz (el contrato de hoy) | 1,1 s | – |
+| B: Rejilla N=1, TAL_CUAL | 0,8 s | 8 929 px con A, canal hasta 1 |
+| C: Rejilla N=3, ESTRECHADA | 5,0 s | 3 911 px con B, canal hasta 10 |
+| D: alturas permutadas (roja 20, verde 5, azul 0, Grafo 15, Grupo 10), Rejilla N=1 | 0,6 s | 48 618 px con B, canal hasta 124; 24 552 px con su `Plotter`, canal hasta 1 |
+| E1: todas las alturas 0, orden de aporte | 0,6 s | 14 949 px con su `Plotter`, canal hasta 1 |
+| E2: todas las alturas 0, aporte en orden inverso | 0,6 s | 57 459 px con E1, canal hasta 113 |
+
+![la nube en la Rejilla N=1 (variante B)](rejilla/prototipo/nube_B_rejilla_n1.png)
+
+**Qué muestra.**
+
+1. **Con semitransparencia, la Rejilla N=1 sigue equivaliendo al `Plotter`, y el redondeo se ve.** Las diferencias con A son de 1 nivel de canal en 8 929 píxeles (en `Sol`, opaco, eran 14 píxeles): la Rejilla compone en premultiplicado y deshace el paso al escribir el píxel, un doble redondeo que con alfa < 1 toca a más píxeles, y cuántos depende del apilamiento (D y E1, mismas geometrías y otras alturas, dan 24 552 y 14 949). Nunca más de 1 nivel: es precisión, no un desacuerdo de orden.
+2. **Las alturas de los tres tipos conviven en la misma escala.** Al permutar las alturas (variante D) la mezcla cambia en 48 618 píxeles (hasta 124 niveles): la serpiente (15) queda sobre la verde (10) y bajo la azul (20), y los hijos del `Grupo` (5 y 7) entre la roja y la verde. `Pintada.conAltura`, `Grafo.altura` (que no es la altura de sus aristas) y `Grupo.altura` se ordenan juntos sin ninguna regla especial: la Rejilla solo ordena por la altura de la `Tinta`.
+3. **El empate es visible y lo decide el orden de aporte.** Con todas las alturas iguales (E), invertir el orden de aporte cambia 57 459 píxeles (canal 113). La regla estable (a igual altura, debajo el aportado antes) coincide con la del `Grupo`; con color opaco este caso no se ve, con semitransparencia es una decisión de dibujo del que aporta.
+4. **El mapa de profundidad sale gratis de la consulta por píxel** (`nube_profundidad.png`): en el centro coinciden las seis geometrías; de los 175 491 píxeles tocados, 65,60 % en 1 capa, 22,61 % en 2 y 11,79 % en 3 o más.
+5. **Coste.** N=1 es más rápido que el `Plotter` (0,8 s frente a 1,1 s); N=3 vuelve a costar ≈ N² (5,0 s), coherente con `Sol` y la trenza.
+
+**Limitaciones.** Escena sintética fija con un solo juego de alturas; la serpiente no se cruza consigo misma (el orden interno con alturas de arista lo cubre la trenza); alfa fijo 0x99; los tiempos son de una sola ejecución.
+
+### 6. La llama con humo: el «add» y el «multiplicado» con la pila de aportes (`rejilla/prototipo/Llama_by_Mistral.java`)
+
+Lámina y prueba de comportamiento a la vez. El recuerdo de partida: en los tiempos de OpenGL, la explosión «a base de add» y el humo «a base de multiplicar» no podían reordenarse píxel a píxel — la tarjeta no da una pila ordenada de aportes; la Rejilla sí. La escena (800×800, 33 geometrías, noche con estrellas) usa los ingredientes de la nube:
+
+- **El «add»**: el núcleo caliente son tres `Gota`s claras semitransparentes apiladas (alfa 0x30–0x3A) sobre el cuerpo naranja; se acumulan hacia el blanco sin que nadie escriba un blanco. Las chispas (16 discos, semilla fija) y las brasas del suelo son el mismo truco a escala pequeña.
+- **El «multiplicado»/«sustracción»**: el humo son capas oscuras semitransparentes que apagan lo de debajo; las estrellas (alfa 0xB0) se ven atenuadas o desaparecen donde el humo pasa por delante.
+- **Los tres tipos**: la llama es un `Grafo` (tira de cinco nodos, base ancha y punta fina, cuerpo fusionado, altura 10); el núcleo y las chispas son `Gota`s (`Pintada`, alturas 11–12); la serpentina de humo es un `Grupo` de tramos **cada uno a su altura** (20, 17, 14, 11, 8): cruza la llama por delante abajo y pasa por detrás arriba, cambiando de plano a lo largo de ella — el orden por píxel que la tarjeta no daba. Nubes frontales a altura 25 rematan el apagado.
+
+| Variante | tiempo | diferencias |
+|---|---:|---|
+| A: `Plotter` con un `Grupo` raíz | 2,0 s | – |
+| B: Rejilla N=1, TAL_CUAL (maxProf 7, 593 515 aportes) | 1,3 s | 92 981 px con A, canal hasta 1 |
+| C: Rejilla N=3, ESTRECHADA (maxProf 7, 5 310 736 aportes) | 9,5 s | 4 846 px con B, canal hasta 12 |
+
+![la llama con humo en la Rejilla N=3 (variante C)](rejilla/prototipo/llama_C_rejilla_n3.png)
+
+**Qué muestra.**
+
+1. **La pila ordenada de aportes permite los modos «aditivos» sin añadir nada al modelo.** «Add» y «multiplicar» dejan de ser modos de composición del que pinta y pasan a ser consecuencias del apilado: capas claras semitransparentes acumulan luz; capas oscuras la quitan. El `Aporte` solo necesita (color, cobertura, altura), y la altura puede variar dentro de una geometría (la serpentina) porque la ordenación es por píxel.
+2. **La equivalencia con el `Plotter` aguanta una escena muy apilada**: 92 981 píxeles de diferencia con alfa 0x30–0xB0 apilados, pero todos de 1 nivel de canal. Cuantas más capas semitransparentes tocan un píxel, más redondeo se ve; sigue sin haber desacuerdo de orden.
+3. **Profundidad**: maxProf 7 en el cuerpo de la llama (llama, núcleo ×3, chispas, serpentina); 5 310 736 aportes con N=3 en una escena de 33 geometrías. El humo, que cubre medio lienzo con 2–4 capas tenues, es el caso intermedio entre las láminas de contornos finos (1 capa) y el Monarca (≥6).
+
+**Limitaciones.** «Add» y «multiplicado» son aproximaciones por src-over (no suman ni multiplican canales de verdad: con capas muy tenues la acumulación se satura antes que un add real); la serpentina cambia de altura por tramos, no con una función continua; los tiempos son de una sola ejecución.
