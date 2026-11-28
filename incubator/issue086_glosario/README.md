@@ -21,9 +21,10 @@ Preguntas por medir, en orden:
 |---|---|---|
 | 1 | Profundidad de aportes por píxel en los ejemplos (dimensiona la memoria) | primera medida, abajo |
 | 2 | Costura entre dos gotas de borde común con N = 1, 2, 3, 4 (conflation) | medida, abajo |
-| 3 | ¿Promediar N² muestras al final equivale a no sobremuestrear? Dónde difieren (bordes, texturas, gamma, orden por altura) | pendiente |
+| 3 | ¿Promediar N² muestras al final equivale a no sobremuestrear? Dónde difieren (bordes, texturas, gamma, orden por altura) | pendiente (el prototipo ya permite medirlo) |
 | 4 | Qué N iguala la calidad actual con cobertura binaria por muestra (con `common.Compara`) | pendiente |
 | 5 | ¿Prensado parcial (seguir añadiendo tras prensar) o solo al final? | abierta |
+| 6 | Prototipo de Rejilla real: qué problemas y decisiones aparecen | primer prototipo, abajo |
 
 ### 1. Profundidad de aportes
 
@@ -74,3 +75,24 @@ Lectura provisional:
 - **Con cobertura binaria no hay colado de fondo**: queda solo el error de cuantización, como mucho `|A − B| / (2N)` (≈ 22 con N = 4). Los casos grandes (191 con N = 1 y f = 0,5, 96 con N = 2) son empates: el borde cae justo en el centro de la muestra y el umbral la da por cubierta a las dos formas, de modo que gana la última. Una regla de desempate (fraccionaria, o regla de llenado) en la Rejilla evitaría ese salto.
 - Para elegir entre las dos hay que pesar: la analítica no tiene empates ni saltos de cuantización pero conserva la costura residual; la binaria la elimina pero necesita N ≥ 3–4 y una regla de empate.
 - Limitaciones: es una escena sintética de bordes rectos y color sólido, con promedio en sRGB (no en luz lineal). Falta repetirlo con bordes curvos, degradados y las capas ordenadas por altura al prensar.
+
+### 3. Prototipo de Rejilla real (`rejilla/prototipo/`)
+
+`Rejilla` (≈ 170 líneas, solo contra `Geometria`/`Tinta`/`Opciones`, sin tocar la biblioteca): las geometrías se **aportan** (`aporta(g, op)`) y `prensa(imagen)` reparte la imagen en franjas de `h` filas; por cada píxel muestrea una cuadrícula N×N, pide a todas las geometrías sus `Tinta`s en cada muestra (el contrato `capas` actual), las **materializa** por fila de muestras (arrays planos), las ordena por altura (estable), las compone src-over, promedia las N×N muestras en premultiplicado (filtro sRGB o lineal) y compone el píxel sobre la imagen. Tres tratamientos de cobertura: `TAL_CUAL`, `ESTRECHADA` (reescala la cobertura a la huella de la muestra) y `BINARIA`. `PruebaRejilla` (`ejecutar.sh`) repite la costura y pinta `Sol_by_Claude` con la Rejilla.
+
+**Validación.**
+- Con N = 1 y la cobertura tal cual, la Rejilla coincide con el `Plotter` actual en `Sol_by_Claude`: 14 píxeles de 640 000 difieren en 1 nivel (redondeos).
+- Con `ESTRECHADA` la tabla de la costura reproduce exactamente la de la pregunta 2 (que se había simulado pintando a escala N). `BINARIA` también, salvo un empate (N = 3, f = 0,5: 64 frente a 44).
+
+**Problemas y decisiones que han aparecido.**
+
+1. **La cobertura asume píxel = 1.** Con `TAL_CUAL`, sobremuestrear no arregla la costura: el error se queda en ≈ 36 con N = 2, 3 y 4 (con N = 1 era 52), porque cada muestra recibe la cobertura calculada para un píxel entero, es decir, un borde ya suavizado a la anchura de un píxel que luego se vuelve a promediar. Es el mismo motivo por el que la #68 anota que `Opciones` debe llevar la escala del píxel antes de las transformadas. **Decisión:** o el aporte conoce la huella de la muestra (`Opciones` con la escala del píxel; geometrías calculan cobertura para esa huella), o la Rejilla la fuerza a 0/1 (`BINARIA`), o la reescala (`ESTRECHADA`, que solo vale cuando la cobertura sale de una distancia con signo y no de un alfa de color).
+2. **El empate en el borde exacto.** `BINARIA` cubre en el valor 0,5; si el borde cae justo en el centro de la muestra, las dos formas la cubren y gana la última. Hace falta una regla de desempate (p. ej. reparto de la muestra entre las dos por cobertura, o regla de llenado).
+3. **Coste N² en tiempo, no en memoria.** `Sol_by_Claude` (800×800): Plotter 6,1 s; Rejilla N = 1 6,6 s; **N = 3, 47 s** (7,7× más). El coste es evaluar `capas` en 9 veces más puntos y `Grafo.capas` es lo caro. Aplicar N solo donde el píxel tiene cobertura parcial no es una optimización opcional: sin ella N ≥ 3 no es utilizable por defecto.
+4. **La memoria no obliga a las franjas.** La profundidad máxima en `Sol` es 4 y una franja de 32 filas materializa ≈ 50 000 aportes con N = 1 y ≈ 450 000 con N = 3 (≈ 1 y 11 MB a 24 B por aporte). Las franjas solo harían falta para materializar y **conservar** los aportes (re-prensar sin recalcular); si se prensa en el acto, basta una fila de muestras por hilo.
+5. **El orden entre geometrías cambia de semántica.** Hoy dos llamadas a `plot` se componen en orden de llamada aunque las `Tinta` tengan alturas distintas; la Rejilla ordena **todas** por altura (estable). Con alturas 0 es idéntico (por eso `Sol` coincide), pero es un cambio de contrato que hay que decidir y documentar.
+6. **`Grupo` ya es una Rejilla pequeña.** `Grupo.capas` reúne las capas de sus hijos y las ordena por altura estable en cada punto; la Rejilla sería el muestreo y el almacén encima de eso. Mucho del contrato ya existe.
+7. **Las geometrías no son seguras para hilos al empezar.** `Grafo.bounds()` construye en perezoso y sin sincronizar: llamarlo desde el muestreo en paralelo lanzó `NullPointerException`. La Rejilla debe pedir `bounds()` de todas las geometrías en serie antes de muestrear, como ya hace el `Plotter`; en la API conviene una fase de preparación explícita.
+8. **El filtro (sRGB frente a lineal) es una decisión de la Rejilla**, implementada pero aún sin medir; con color sólido en bordes la diferencia es visible (promediar en sRGB oscurece los bordes claros sobre oscuro).
+
+**Siguiente.** Pregunta 3 (equivalencia del promedio al final) con degradados, texturas y gamma; y medir `ESTRECHADA` frente a `BINARIA` en bordes curvos con un N razonable (2 o 3), más la versión adaptativa (N solo en bordes) para ver cuánto del coste N² se recupera.
