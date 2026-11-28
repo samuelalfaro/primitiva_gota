@@ -20,7 +20,7 @@ Preguntas por medir, en orden:
 | # | Pregunta | Estado |
 |---|---|---|
 | 1 | Profundidad de aportes por píxel en los ejemplos (dimensiona la memoria) | primera medida, abajo |
-| 2 | Costura entre dos gotas de borde común con N = 1, 2, 3, 4 (conflation) | pendiente |
+| 2 | Costura entre dos gotas de borde común con N = 1, 2, 3, 4 (conflation) | medida, abajo |
 | 3 | ¿Promediar N² muestras al final equivale a no sobremuestrear? Dónde difieren (bordes, texturas, gamma, orden por altura) | pendiente |
 | 4 | Qué N iguala la calidad actual con cobertura binaria por muestra (con `common.Compara`) | pendiente |
 | 5 | ¿Prensado parcial (seguir añadiendo tras prensar) o solo al final? | abierta |
@@ -45,3 +45,32 @@ Lectura provisional:
 - **Cautela:** la cuenta incluye los fondos que se pintan con una `Gota` grande (Betta, Monarca, Escarabajo…), que suman una capa a casi todos los píxeles; la profundidad real de las geometrías es una menos en esos casos. Habría que separar el fondo para afinar.
 - Monarca (alas y manchas superpuestas) es el caso exigente: un 16 % de píxeles con 6 o más capas. Es el ejemplo a mirar para dimensionar la memoria por píxel.
 - La cuenta es de **capas emitidas**, no de aportes ordenados con cobertura parcial; para el borde (pregunta 2) hará falta otra medida.
+
+### 2. Costura entre dos geometrías de borde común
+
+Método (`rejilla/Costura086.java`): dos cápsulas (gotas de radios iguales con los centros separados: borde recto) se apilan con el borde común en `y = 50 + f`, con `f` fraccionario; la fila de píxeles que cruza el borde recibe la cobertura `f` de la roja y `1 − f` de la azul. El sobremuestreo se simula pintando la escena a escala N con el plotter actual y promediando cajas N×N (no es todavía una Rejilla). El error es la mayor diferencia de canal (0..255) entre la fila del borde y el color ideal `f·rojo + (1 − f)·azul`; el contraste entre los dos colores es de 176 niveles.
+
+Cobertura **analítica** (la actual, parcial por píxel), composición «over»:
+
+| N \ f | 0,10 | 0,25 | 0,50 | 0,75 | 0,90 |
+|---:|---:|---:|---:|---:|---:|
+| 1 | 18,6 | 39,0 | 52,0 | 39,0 | 19,4 |
+| 2 | 17,2 | 26,0 | 0,0 | 26,0 | 16,8 |
+| 3 | 14,6 | 13,0 | 17,0 | 13,0 | 14,8 |
+| 4 | 12,6 | 0,0 | 0,0 | 0,0 | 12,8 |
+
+Cobertura **binaria** por muestra (umbral 0,5 en la clase sombra, `-Dgota.binaria=true`), que emula muestras puntuales:
+
+| N \ f | 0,10 | 0,25 | 0,50 | 0,75 | 0,90 |
+|---:|---:|---:|---:|---:|---:|
+| 1 | 17,6 | 44,0 | 191,0 | 44,0 | 17,6 |
+| 2 | 17,6 | 96,0 | 0,0 | 96,0 | 17,6 |
+| 3 | 17,6 | 15,0 | 44,0 | 15,0 | 17,6 |
+| 4 | 17,6 | 0,0 | 0,0 | 0,0 | 17,6 |
+
+Lectura provisional:
+- **Con N = 1 la costura existe**: el fondo se cuela hasta 52 niveles (en el peor caso `f = 0,5` el fondo aporta `f·(1 − f)` = 25 %).
+- **Con cobertura analítica, sobremuestrear la reduce en proporción a 1/N**, no la elimina: cada muestra sigue teniendo cobertura parcial y el mismo efecto se repite a escala menor. Es exacta solo cuando `N·f` es entero (N = 4, f = 0,25).
+- **Con cobertura binaria no hay colado de fondo**: queda solo el error de cuantización, como mucho `|A − B| / (2N)` (≈ 22 con N = 4). Los casos grandes (191 con N = 1 y f = 0,5, 96 con N = 2) son empates: el borde cae justo en el centro de la muestra y el umbral la da por cubierta a las dos formas, de modo que gana la última. Una regla de desempate (fraccionaria, o regla de llenado) en la Rejilla evitaría ese salto.
+- Para elegir entre las dos hay que pesar: la analítica no tiene empates ni saltos de cuantización pero conserva la costura residual; la binaria la elimina pero necesita N ≥ 3–4 y una regla de empate.
+- Limitaciones: es una escena sintética de bordes rectos y color sólido, con promedio en sRGB (no en luz lineal). Falta repetirlo con bordes curvos, degradados y las capas ordenadas por altura al prensar.

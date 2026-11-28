@@ -25,6 +25,9 @@ public interface Plotter {
 
     /** ESTUDIO #86 (clase sombra, no es de la biblioteca): cuenta cuántas capas con cobertura > 0 recibe cada píxel de cada imagen. */
     final class Profundidad {
+        /** -Dgota.binaria=true: cobertura 0/1 por muestra (umbral 0,5), para simular un sobremuestreo de muestras puntuales. */
+        static final boolean BINARIA = Boolean.getBoolean("gota.binaria");
+        static double cob(double c) { return BINARIA ? (c >= 0.5 ? 1 : 0) : c; }
         static final java.util.Map<int[], int[]> POR_IMAGEN = new java.util.concurrent.ConcurrentHashMap<>();
         static final java.util.Map<int[], Integer> ANCHO = new java.util.concurrent.ConcurrentHashMap<>();
         static {
@@ -117,7 +120,7 @@ public interface Plotter {
             final Coordenadas coord = Coordenadas.de(g, op);
             recorre(z, (i, j) -> solape.capas(g, coord, i + 0.5, j + 0.5,
                     capa -> { if (capa.cobertura() > 0) Profundidad.suma(datos, base + j * stride + i, 1);
-                              set(i, j, componer(get(i, j), rel.argb(capa.punto()), capa.cobertura())); }));
+                              set(i, j, componer(get(i, j), rel.argb(capa.punto()), Profundidad.cob(capa.cobertura()))); }));
         }
 
         @Override public void plot(Geometria g, Opciones op) {
@@ -128,7 +131,7 @@ public interface Plotter {
             if (z == null) return;
             recorre(z, (i, j) -> g.capas(i + 0.5, j + 0.5, op,
                     t -> { if (t.cobertura() > 0) Profundidad.suma(datos, base + j * stride + i, 1);
-                           set(i, j, componer(get(i, j), t.argb(), t.cobertura())); }));
+                           set(i, j, componer(get(i, j), t.argb(), Profundidad.cob(t.cobertura()))); }));
         }
 
         /** Composición alfa src-over, no premultiplicada: src con su cobertura sobre dst. */
