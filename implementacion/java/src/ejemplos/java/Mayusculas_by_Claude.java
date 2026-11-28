@@ -67,12 +67,37 @@ public class Mayusculas_by_Claude {
         new Letra('Z', n(6,6,6, 50,6,6, 50,6,6, 6,94,6, 6,94,6, 50,94,6), e(0,1, 2,3, 4,5)),
     };
 
-    static Grafo grafo(Letra l, double ox, double oy, double k) {
-        Grafo g = new Grafo().mezcla(Mezcla.RGB);
-        List<Grafo.Nodo> ns = new ArrayList<>();
-        for (double[] nd : l.nodos()) ns.add(g.nodo(ox + nd[0] * k, oy + nd[1] * k, nd[2] * k).color(NEGRO));
-        for (int[] a : l.aristas()) g.arista(ns.get(a[0]), ns.get(a[1]));
-        return g.relajar().alisar();
+    /**
+     * Un Grafo es conexo: cada trazo sin unir es un Grafo propio (la V, la W o la Z forman su vértice con nodos coincidentes de
+     * trazos distintos, no con un nodo compartido), y el carácter es el Grupo de todos sus trazos (y de la barra del cero).
+     */
+    static List<Grafo> partes(Letra l, double ox, double oy, double k) {
+        int n = l.nodos().length;
+        int[] raiz = new int[n];
+        for (int i = 0; i < n; i++) raiz[i] = i;
+        for (int[] a : l.aristas()) {
+            int x = busca(raiz, a[0]), y = busca(raiz, a[1]);
+            if (x != y) raiz[Math.max(x, y)] = Math.min(x, y);
+        }
+        java.util.Map<Integer, List<Integer>> comp = new java.util.TreeMap<>();
+        for (int i = 0; i < n; i++) comp.computeIfAbsent(busca(raiz, i), c -> new ArrayList<>()).add(i);
+        List<Grafo> partes = new ArrayList<>();
+        for (List<Integer> nodos : comp.values()) {
+            Grafo g = new Grafo().mezcla(Mezcla.RGB);
+            java.util.Map<Integer, Grafo.Nodo> ns = new java.util.HashMap<>();
+            for (int i : nodos) {
+                double[] nd = l.nodos()[i];
+                ns.put(i, g.nodo(ox + nd[0] * k, oy + nd[1] * k, nd[2] * k).color(NEGRO));
+            }
+            for (int[] a : l.aristas()) if (ns.containsKey(a[0])) g.arista(ns.get(a[0]), ns.get(a[1]));
+            partes.add(g.relajar().alisar());
+        }
+        return partes;
+    }
+
+    static int busca(int[] raiz, int i) {
+        while (raiz[i] != i) { raiz[i] = raiz[raiz[i]]; i = raiz[i]; }
+        return i;
     }
 
     /**
@@ -80,12 +105,15 @@ public class Mayusculas_by_Claude {
      * simple, sin grafo, pintada de negro y agrupada con el óvalo en un {@link Grupo}. Así el grupo une una geometría de
      * grafo y una de gota suelta.
      */
-    static Geometria geometria(Letra l, double ox, double oy, double k) {
-        Grafo g = grafo(l, ox, oy, k);
-        if (l.c() != '0') return g;
-        Gota barra = Gota.lineal(new Point2D.Double(ox + 14 * k, oy + 82 * k), 4.5 * k,
-                                 new Point2D.Double(ox + 42 * k, oy + 18 * k), 4.5 * k, Perfil.recto());
-        return new Grupo(g, Pintada.de(barra, Colores.dosColores(NEGRO, NEGRO))).label("cero");
+    static Geometria geometria(Letra l, List<Grafo> partes, double ox, double oy, double k) {
+        List<Geometria> hijos = new ArrayList<>(partes);
+        if (l.c() == '0') {
+            Gota barra = Gota.lineal(new Point2D.Double(ox + 14 * k, oy + 82 * k), 4.5 * k,
+                                     new Point2D.Double(ox + 42 * k, oy + 18 * k), 4.5 * k, Perfil.recto());
+            hijos.add(Pintada.de(barra, Colores.dosColores(NEGRO, NEGRO)));
+            return new Grupo(hijos.toArray(new Geometria[0])).label("cero");
+        }
+        return hijos.size() == 1 ? hijos.get(0) : new Grupo(hijos.toArray(new Geometria[0]));
     }
 
     public static void main(String[] args) throws Exception {
@@ -96,10 +124,11 @@ public class Mayusculas_by_Claude {
         StringBuilder plegadas = new StringBuilder();
         for (int i = 0; i < LETRAS.length; i++) {
             Letra l = LETRAS[i];
-            Grafo g = grafo(l, 20 + (i % cols) * cw + 10, 20 + (i / cols) * ch + 10, k);
-            int m = g.plegadas().size();
+            double ox = 20 + (i % cols) * cw + 10, oy = 20 + (i / cols) * ch + 10;
+            List<Grafo> ps = partes(l, ox, oy, k);
+            int m = ps.stream().mapToInt(g -> g.plegadas().size()).sum();
             if (m > 0) plegadas.append(l.c()).append('=').append(m).append(' ');
-            Plotter.raster(im).plot(geometria(l, 20 + (i % cols) * cw + 10, 20 + (i / cols) * ch + 10, k));
+            Plotter.raster(im).plot(geometria(l, ps, ox, oy, k));
         }
         System.out.println("plegadas: " + (plegadas.length() == 0 ? "ninguna" : plegadas));
         ImageIO.write(im, "png", new File("mayusculas_by_claude.png"));
