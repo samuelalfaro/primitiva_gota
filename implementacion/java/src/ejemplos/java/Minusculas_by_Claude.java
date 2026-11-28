@@ -1,3 +1,5 @@
+import geometria.Geometria;
+import geometria.Grupo;
 import geometria.composicion.Grafo;
 import pintado.Plotter;
 import color.Mezcla;
@@ -49,13 +51,42 @@ public class Minusculas_by_Claude {
         new Letra('z', false, new double[][] { {6,40,5}, {44,40,5}, {44,40,5}, {6,100,5}, {6,100,5}, {44,100,5} }, e(0,1, 2,3, 4,5)),
     };
 
-    static Grafo grafo(Letra l, double ox, double oy, double k) {
-        Grafo g = new Grafo().mezcla(Mezcla.RGB);
-        List<Grafo.Nodo> ns = new ArrayList<>();
-        for (double[] n : l.nodos()) ns.add(g.nodo(ox + n[0] * k, oy + n[1] * k, n[2] * k).color(NEGRO));
-        for (int[] a : l.aristas()) g.arista(ns.get(a[0]), ns.get(a[1]));
-        if (l.suave()) g.relajar().alisar();
-        return g;
+    /**
+     * Un Grafo es conexo: cada trazo sin unir es un Grafo propio (la v, la w o la z forman su vértice con nodos coincidentes de
+     * trazos distintos, no con un nodo compartido), y el carácter es el Grupo de todos sus trazos.
+     */
+    static List<Grafo> partes(Letra l, double ox, double oy, double k) {
+        int n = l.nodos().length;
+        int[] raiz = new int[n];
+        for (int i = 0; i < n; i++) raiz[i] = i;
+        for (int[] a : l.aristas()) {
+            int x = busca(raiz, a[0]), y = busca(raiz, a[1]);
+            if (x != y) raiz[Math.max(x, y)] = Math.min(x, y);
+        }
+        java.util.Map<Integer, List<Integer>> comp = new java.util.TreeMap<>();
+        for (int i = 0; i < n; i++) comp.computeIfAbsent(busca(raiz, i), c -> new ArrayList<>()).add(i);
+        List<Grafo> partes = new ArrayList<>();
+        for (List<Integer> nodos : comp.values()) {
+            Grafo g = new Grafo().mezcla(Mezcla.RGB);
+            java.util.Map<Integer, Grafo.Nodo> ns = new java.util.HashMap<>();
+            for (int i : nodos) {
+                double[] nd = l.nodos()[i];
+                ns.put(i, g.nodo(ox + nd[0] * k, oy + nd[1] * k, nd[2] * k).color(NEGRO));
+            }
+            for (int[] a : l.aristas()) if (ns.containsKey(a[0])) g.arista(ns.get(a[0]), ns.get(a[1]));
+            if (l.suave()) g.relajar().alisar();
+            partes.add(g);
+        }
+        return partes;
+    }
+
+    static int busca(int[] raiz, int i) {
+        while (raiz[i] != i) { raiz[i] = raiz[raiz[i]]; i = raiz[i]; }
+        return i;
+    }
+
+    static Geometria geometria(List<Grafo> partes) {
+        return partes.size() == 1 ? partes.get(0) : new Grupo(partes.toArray(new Geometria[0]));
     }
 
     public static void main(String[] args) throws Exception {
@@ -66,10 +97,10 @@ public class Minusculas_by_Claude {
         StringBuilder plegadas = new StringBuilder();
         for (int i = 0; i < LETRAS.length; i++) {
             Letra l = LETRAS[i];
-            Grafo g = grafo(l, 20 + (i % cols) * cw + 10, 20 + (i / cols) * ch + 10, k);
-            int n = g.plegadas().size();
+            List<Grafo> ps = partes(l, 20 + (i % cols) * cw + 10, 20 + (i / cols) * ch + 10, k);
+            int n = ps.stream().mapToInt(g -> g.plegadas().size()).sum();
             if (n > 0) plegadas.append(l.c()).append('=').append(n).append(' ');
-            Plotter.raster(im).plot(g);
+            Plotter.raster(im).plot(geometria(ps));
         }
         System.out.println("plegadas: " + (plegadas.length() == 0 ? "ninguna" : plegadas));
         ImageIO.write(im, "png", new File("minusculas_by_claude.png"));

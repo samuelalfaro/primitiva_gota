@@ -86,8 +86,11 @@ public class AlambreSvgGeometriaPruebas {
         comprueba("el label se escapa como atributo XML", sl.contains("<g id=\"a&lt;&amp;&quot;b\">") && cuenta(sl, "<g") == 2, "");
 
         Grafo gr = new Grafo().mezcla(Mezcla.RGB);
-        gr.arista(gr.nodo(60, 60, 10).centro(0xFFFF0000), gr.nodo(200, 60, 10).centro(0xFF00FF00));
-        gr.arista(gr.nodo(200, 60, 10).centro(0xFF00FF00), gr.nodo(200, 200, 10).centro(0xFF0000FF));
+        var g0 = gr.nodo(60, 60, 10).centro(0xFFFF0000);
+        var g1 = gr.nodo(200, 60, 10).centro(0xFF00FF00);
+        var g2 = gr.nodo(200, 200, 10).centro(0xFF0000FF);
+        gr.arista(g0, g1);
+        gr.arista(g1, g2);
         String sgr = svg(p -> p.plot(gr));
         int porGota = 0;
         for (Gota o : gr.gotas()) porGota += cuenta(svg(p -> p.plot(o)), "<path");

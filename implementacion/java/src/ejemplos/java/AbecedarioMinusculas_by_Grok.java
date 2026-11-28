@@ -1,3 +1,5 @@
+import geometria.Geometria;
+import geometria.Grupo;
 import geometria.composicion.Grafo;
 import pintado.Plotter;
 import coordenadas.Solape;
@@ -43,9 +45,20 @@ public class AbecedarioMinusculas_by_Grok {
         }
     }
 
+    /**
+     * Un Grafo es conexo: una letra de partes sin unir (el punto de la «i», los dos trazos de la «x»…) es un Grupo de Grafos.
+     * Se pasan en el orden en que se escribieron y se agrupan al revés, porque en un único Grafo con Solape.TRAZO quedaba
+     * encima la parte escrita antes y en un Grupo queda encima la última.
+     */
+    static Geometria grupo(Grafo... partes) {
+        Geometria[] alReves = new Geometria[partes.length];
+        for (int i = 0; i < partes.length; i++) alReves[i] = partes[partes.length - 1 - i];
+        return new Grupo(alReves);
+    }
+
     // ---------- minúsculas ----------
 
-    static Grafo letraA(double ox, double oy) {
+    static Geometria letraA(double ox, double oy) {
         Grafo g = new Grafo().mezcla(RGB).suavizado(1.3);
         // bucle + fuste
         var a = n(g, ox + 38, oy + 22, 5.5);
@@ -53,10 +66,11 @@ public class AbecedarioMinusculas_by_Grok {
         var c = n(g, ox + 22, oy + 62, 5.5);
         var d = n(g, ox + 42, oy + 58, 5.0);
         g.arista(a, b); g.arista(b, c); g.arista(c, d); g.arista(d, a);
-        var f = n(g, ox + 48, oy + 22, 5.0);
-        var bot = n(g, ox + 48, oy + 78, 5.5);
-        g.arista(f, bot);
-        return g;
+        Grafo h = new Grafo().mezcla(RGB).suavizado(1.3);
+        var f = n(h, ox + 48, oy + 22, 5.0);
+        var bot = n(h, ox + 48, oy + 78, 5.5);
+        h.arista(f, bot);
+        return grupo(g, h);
     }
 
     static Grafo letraB(double ox, double oy) {
@@ -138,23 +152,25 @@ public class AbecedarioMinusculas_by_Grok {
         return g;
     }
 
-    static Grafo letraI(double ox, double oy) {
+    static Geometria letraI(double ox, double oy) {
+        Grafo punto = new Grafo().mezcla(RGB).suavizado(0.8);
+        n(punto, ox + 28, oy + 12, 4.5);
         Grafo g = new Grafo().mezcla(RGB).suavizado(0.8);
-        n(g, ox + 28, oy + 12, 4.5); // punto
         var t = n(g, ox + 28, oy + 28, 5.0);
         var b = n(g, ox + 28, oy + 78, 5.5);
         g.arista(t, b);
-        return g;
+        return grupo(punto, g);
     }
 
-    static Grafo letraJ(double ox, double oy) {
+    static Geometria letraJ(double ox, double oy) {
+        Grafo punto = new Grafo().mezcla(RGB).suavizado(1.2);
+        n(punto, ox + 38, oy + 12, 4.5);
         Grafo g = new Grafo().mezcla(RGB).suavizado(1.2);
-        n(g, ox + 38, oy + 12, 4.5);
         curva(g,
             new double[]{ox+38, ox+38, ox+32, ox+16, ox+10},
             new double[]{oy+28, oy+62, oy+82, oy+88, oy+72},
             new double[]{5.0, 5.5, 5.5, 5.5, 4.5});
-        return g;
+        return grupo(punto, g);
     }
 
     static Grafo letraK(double ox, double oy) {
@@ -295,14 +311,16 @@ public class AbecedarioMinusculas_by_Grok {
         return g;
     }
 
-    static Grafo letraX(double ox, double oy) {
+    static Geometria letraX(double ox, double oy) {
         Grafo g = new Grafo().mezcla(RGB).suavizado(1.0);
         var a = n(g, ox + 14, oy + 28, 5.0);
         var b = n(g, ox + 48, oy + 78, 5.0);
-        var c = n(g, ox + 48, oy + 28, 5.0);
-        var d = n(g, ox + 14, oy + 78, 5.0);
-        g.arista(a, b); g.arista(c, d);
-        return g;
+        g.arista(a, b);
+        Grafo h = new Grafo().mezcla(RGB).suavizado(1.0);
+        var c = n(h, ox + 48, oy + 28, 5.0);
+        var d = n(h, ox + 14, oy + 78, 5.0);
+        h.arista(c, d);
+        return grupo(g, h);
     }
 
     static Grafo letraY(double ox, double oy) {
@@ -325,7 +343,7 @@ public class AbecedarioMinusculas_by_Grok {
         return g;
     }
 
-    static Grafo letra(char c, double ox, double oy) {
+    static Geometria letra(char c, double ox, double oy) {
         return switch (c) {
             case 'a' -> letraA(ox, oy);
             case 'b' -> letraB(ox, oy);
@@ -353,7 +371,7 @@ public class AbecedarioMinusculas_by_Grok {
             case 'x' -> letraX(ox, oy);
             case 'y' -> letraY(ox, oy);
             case 'z' -> letraZ(ox, oy);
-            default -> new Grafo();
+            default -> new Grupo();
         };
     }
 
@@ -373,7 +391,7 @@ public class AbecedarioMinusculas_by_Grok {
                 char c = s.charAt(col);
                 double ox = OX0 + col * CW;
                 double oy = OY0 + row * CH;
-                Grafo g = letra(c, ox, oy);
+                Geometria g = letra(c, ox, oy);
                 Plotter.raster(im).plot(g, opt);
             }
         }

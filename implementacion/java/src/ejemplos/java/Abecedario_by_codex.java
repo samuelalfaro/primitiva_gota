@@ -1,4 +1,6 @@
 import color.Mezcla;
+import geometria.Geometria;
+import geometria.Grupo;
 import geometria.composicion.Grafo;
 import pintado.Plotter;
 import java.awt.image.BufferedImage;
@@ -108,12 +110,14 @@ public class Abecedario_by_codex {
         return 5.0 + 1.35 * Math.sin(fase) + 0.55 * Math.cos(fase * 2.0 + total);
     }
 
-    static Grafo glifo(char c, int ox, int oy) {
-        Grafo forma = new Grafo().mezcla(Mezcla.RGB).suavizado(1.35);
+    /** Cada trazo es una polilínea de nodos propios, sin unir a los demás: un Grafo conexo por trazo y el glifo es su Grupo. */
+    static Geometria glifo(char c, int ox, int oy) {
         List<Trazo> trazos = dibujo(c);
         int cuenta = trazos.stream().mapToInt(q -> q.xy.length / 2).sum();
         int i = 0;
+        List<Geometria> partes = new java.util.ArrayList<>();
         for (Trazo trazo : trazos) {
+            Grafo forma = new Grafo().mezcla(Mezcla.RGB).suavizado(1.35);
             int n = trazo.xy.length / 2;
             Grafo.Nodo[] nodos = new Grafo.Nodo[n];
             for (int k = 0; k < n; k++, i++) {
@@ -122,8 +126,9 @@ public class Abecedario_by_codex {
                 nodos[k] = forma.nodo(x, y, radio(c, i, cuenta)).color(TINTA);
             }
             for (int k = 0; k + 1 < n; k++) forma.arista(nodos[k], nodos[k + 1]);
+            partes.add(forma.relajar().alisar());
         }
-        return forma.relajar().alisar();
+        return partes.size() == 1 ? partes.get(0) : new Grupo(partes.toArray(new Geometria[0]));
     }
 
     public static void main(String[] args) throws Exception {
