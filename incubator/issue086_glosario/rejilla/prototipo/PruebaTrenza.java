@@ -53,6 +53,31 @@ public class PruebaTrenza {
         }
     }
 
+    /**
+     * Un Grafo que decide por dentro y emite varias capas: reúne las de sus cintas, las ordena con SU regla (cuerpo antes que
+     * tapa, luego altura) y las emite de abajo a arriba, todas con la altura de la geometría (0). La Rejilla, al ordenar de
+     * forma estable, solo reparte entre geometrías distintas y respeta ese orden interno.
+     */
+    static final class GrafoOrdenado implements Geometria {
+        final List<Geometria> cintas; final Rectangle2D caja;
+        GrafoOrdenado(List<Geometria> cintas) {
+            this.cintas = cintas;
+            Rectangle2D b = null;
+            for (Geometria c : cintas) { Rectangle2D r = c.bounds(); if (b == null) b = new Rectangle2D.Double(r.getX(), r.getY(), r.getWidth(), r.getHeight()); else b.add(r); }
+            this.caja = b;
+        }
+        @Override public Rectangle2D bounds() { return caja; }
+        @Override public Shape silueta() { return caja; }
+        @Override public String label() { return null; }
+        @Override public double altura() { return 0; }
+        @Override public void capas(double x, double y, Opciones op, Consumer<Tinta> out) {
+            List<Tinta> ts = new ArrayList<>();
+            for (Geometria c : cintas) { Rectangle2D r = c.bounds(); if (x >= r.getMinX() - 2 && x <= r.getMaxX() + 2 && y >= r.getMinY() - 2 && y <= r.getMaxY() + 2) c.capas(x, y, op, ts::add); }
+            ts.sort(java.util.Comparator.comparingDouble(Tinta::altura));              // su regla: cuerpo (+1000) antes que tapa, luego altura
+            for (Tinta t : ts) out.accept(new Tinta(t.argb(), t.cobertura(), 0));      // hacia fuera, todas a la altura de la geometría
+        }
+    }
+
     static List<Geometria> cintas(List<Gota> gotas, TrenzaAleatoria.Datos d, double[] tau, double[] val, double[] ext, int n, boolean cuerpo) {
         List<Geometria> l = new ArrayList<>();
         for (int i = 0; i < n; i++) {
@@ -120,6 +145,14 @@ public class PruebaTrenza {
         Rejilla.Estadisticas e2 = rejilla(3, Rejilla.Cobertura.ESTRECHADA, cintasD, op).prensa(E);
         System.out.printf("E  Rejilla N=3 ESTRECHADA + prioridad de cuerpo  %.0f ms  dif. con A: %d px (canal hasta %d)%n", e2.nanos() / 1e6, diferencias(A, E)[0], diferencias(A, E)[1]);
         ImageIO.write(E, "png", new File(dir, "trenza_E_rejilla_n3_cuerpo.png"));
+
+        // F: el Grafo decide el orden por dentro y emite varias capas a altura 0; la Rejilla solo ordena entre geometrías (aquí, además, un fondo)
+        BufferedImage F = fondo();
+        Rejilla rf = new Rejilla(1, 32, Rejilla.Cobertura.TAL_CUAL, Rejilla.Filtro.SRGB);
+        rf.aporta(new GrafoOrdenado(cintasD), op);
+        Rejilla.Estadisticas ef = rf.prensa(F);
+        int[] dF = diferencias(D, F);
+        System.out.printf("F  Rejilla N=1 con un GrafoOrdenado (orden interno)  %.0f ms  dif. con D: %d px (canal hasta %d); con A: %d px%n", ef.nanos() / 1e6, dF[0], dF[1], diferencias(A, F)[0]);
     }
 
     static Rejilla rejilla(int n, Rejilla.Cobertura cb, List<Geometria> gs, Opciones op) {
